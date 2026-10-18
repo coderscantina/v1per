@@ -1,0 +1,77 @@
+name: Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. A report someone can reproduce without guessing saves hours, so please fill in as much as you can.
+  - type: input
+    id: version
+    attributes:
+      label: v1per version
+      description: The release tag you are running (or commit SHA). Run `v1per --version`.
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: Install method
+      options:
+        - Docker image
+        - Built from source
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Server
+        - Probe agent (v1per probe)
+        - Web UI
+        - Status page
+        - Notifications
+        - Kuma import (v1per import kuma)
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, architecture, and browser if the bug is in the web UI.
+      placeholder: Debian 13 arm64, Firefox 140
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Be specific. What did you click, call, or run?
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Relevant server or probe log lines, browser console output, or screenshots. Remove tokens and passwords first. This field is rendered as code automatically.
+      render: shell

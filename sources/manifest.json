@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "name": "holocron",
+      "role": "architecture, UI and workflow template; code is copied and adapted",
+      "url": null,
+      "localPath": "~/Development/products/holocron",
+      "commit": "84fc54ec2ac175d0e03233af6be6b45961838b85",
+      "distributable": false,
+      "license": {
+        "spdx": null,
+        "notes": "Mike's private repository. Code copied into v1per is relicensed by Mike under AGPL-3.0. Keep the Kit license notices holocron keeps."
+      },
+      "notes": "At pinning time the checkout also had uncommitted Dockerfile, .dockerignore and deploy/ files."
+    },
+    {
+      "name": "uptime-kuma-2.5.0",
+      "role": "import source schema and push URL compatibility target",
+      "url": "https://github.com/louislam/uptime-kuma.git",
+      "tag": "2.5.0",
+      "commit": "d9a60dfc73140d15111752e4e8910ed4b54bd9a3",
+      "distributable": true,
+      "license": {
+        "file": "LICENSE",
+        "spdx": "MIT",
+        "sha256": null
+      },
+      "notes": "Recorded SHA may be the annotated tag object. Milestone 01 confirms the commit and adds the license hash."
+    },
+    {
+      "name": "openstatus",
+      "role": "model reference for status pages and incidents; ideas only, no code",
+      "url": "https://github.com/openstatusHQ/openstatus.git",
+      "branch": "main",
+      "commit": "228495cad325ba807b6bcb40f59e9bee7a27daba",
+      "distributable": true,
+      "license": {
+        "file": "LICENSE",
+        "spdx": "AGPL-3.0",
+        "sha256": null
+      }
+    }
+  ]
+}

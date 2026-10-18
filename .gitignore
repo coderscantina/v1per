@@ -1,0 +1,28 @@
+# Rust
+/target
+
+# Frontend
+node_modules
+/apps/web/dist
+
+# Runtime data
+/data
+*.db
+*.db-*
+*.duckdb
+*.duckdb.*
+
+# Local sources and scratch
+.sources/
+.tmp/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Editors and OS
+.DS_Store
+/.idea
+/.vscode
+/.zed
