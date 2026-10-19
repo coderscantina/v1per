@@ -1,0 +1,73 @@
+[package]
+name = "v1per-server"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "v1per_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "v1per"
+path = "src/main.rs"
+
+[features]
+# `serve --frozen-clock`, for browser journeys at a pinned time. Off in packaged releases.
+dev-clock = []
+
+[dependencies]
+v1per-checks = { path = "../../crates/checks" }
+v1per-kuma-import = { path = "../../crates/kuma-import" }
+v1per-maintenance-schedule = { path = "../../crates/maintenance-schedule" }
+v1per-notify = { path = "../../crates/notify" }
+v1per-protocol = { path = "../../crates/protocol" }
+v1per-storage = { path = "../../crates/storage" }
+anyhow = "1"
+argon2 = "0.6"
+axum.workspace = true
+base64 = "0.22"
+# Backup archive checksums, as the storage crate hashes agent batches.
+blake3 = "1.8"
+# Verifies the bcrypt hashes of imported Kuma accounts until their first sign-in replaces them.
+bcrypt = "0.19"
+chacha20poly1305 = { version = "0.10", default-features = false, features = ["alloc"] }
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+chrono-tz = "0.10"
+clap = { version = "4", features = ["derive", "env"] }
+form_urlencoded = "1"
+futures-util = { version = "0.3", default-features = false, features = ["alloc"] }
+getrandom = "0.3"
+hmac = "0.13"
+# Status page sign-in links through the instance SMTP server; the same build as v1per-notify's.
+lettre = { version = "0.11", default-features = false, features = ["builder", "hostname", "ring", "smtp-transport", "tokio1-rustls", "webpki-roots"] }
+libc = "0.2"
+# The probe agent's client for the server; TLS through rustls with Mozilla's roots, like checks.
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+serde.workspace = true
+serde_html_form = "0.2"
+serde_json.workspace = true
+sha1 = "0.11"
+sha2 = "0.10"
+sqlx.workspace = true
+# The backup archive: one file an operator can copy, with the manifest as its first entry.
+tar = { version = "0.4", default-features = false }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "net", "signal", "fs"] }
+tower = "0.5"
+tower-http = { version = "0.7", features = ["fs", "compression-gzip", "compression-br", "trace", "set-header"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+url = "2.5"
+uuid = { version = "1", features = ["v4"] }
+webpki-roots = "1"
+
+[dev-dependencies]
+v1per-kuma-fixture = { path = "../../crates/kuma-fixture" }
+# Injected disk-full errors for the backup and retention recovery tests.
+v1per-storage = { path = "../../crates/storage", features = ["failpoints"] }
+http-body-util = "0.1"
+tempfile = "3"
+tower = { version = "0.5", features = ["util"] }

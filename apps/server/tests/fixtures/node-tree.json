@@ -1,0 +1,67 @@
+{
+  "about": "The briefing's example tree (decision 0001) with one person per kind of grant. Each person sees exactly `sees` (node name to effective role) and, above them, `placeholders` without names. `roles` pins the capability matrix in docs/contracts/capability-matrix.md.",
+  "roles": {
+    "owner": ["node.read", "monitors.manage", "incidents.manage", "maintenance.manage", "pages.manage", "channels.manage", "probes.manage", "node.write", "members.manage", "node.move", "node.delete"],
+    "admin": ["node.read", "monitors.manage", "incidents.manage", "maintenance.manage", "pages.manage", "channels.manage", "probes.manage", "node.write", "members.manage"],
+    "member": ["node.read", "monitors.manage", "incidents.manage", "maintenance.manage"],
+    "viewer": ["node.read"]
+  },
+  "tree": {
+    "operations": { "scaleway": {}, "aws": {} },
+    "products": { "b10cks": {}, "ravn": {} },
+    "client services": {
+      "kaessbohrer": { "website": {}, "landing page": {} },
+      "autohaus": { "schmidt": {}, "motormobile": {} }
+    }
+  },
+  "people": [
+    {
+      "name": "instance admin",
+      "instance_admin": true,
+      "grants": {},
+      "sees": {
+        "Root": "owner",
+        "operations": "owner", "scaleway": "owner", "aws": "owner",
+        "products": "owner", "b10cks": "owner", "ravn": "owner",
+        "client services": "owner",
+        "kaessbohrer": "owner", "website": "owner", "landing page": "owner",
+        "autohaus": "owner", "schmidt": "owner", "motormobile": "owner"
+      },
+      "placeholders": []
+    },
+    {
+      "name": "ops engineer",
+      "grants": { "operations": "owner" },
+      "sees": { "operations": "owner", "scaleway": "owner", "aws": "owner" },
+      "placeholders": ["Root"]
+    },
+    {
+      "name": "kaessbohrer client",
+      "grants": { "kaessbohrer": "admin" },
+      "sees": { "kaessbohrer": "admin", "website": "admin", "landing page": "admin" },
+      "placeholders": ["Root", "client services"]
+    },
+    {
+      "name": "autohaus client",
+      "grants": { "autohaus": "viewer" },
+      "sees": { "autohaus": "viewer", "schmidt": "viewer", "motormobile": "viewer" },
+      "placeholders": ["Root", "client services"]
+    },
+    {
+      "name": "schmidt contact",
+      "grants": { "schmidt": "member" },
+      "sees": { "schmidt": "member" },
+      "placeholders": ["Root", "client services", "autohaus"]
+    },
+    {
+      "name": "account manager",
+      "grants": { "client services": "viewer", "autohaus": "admin" },
+      "sees": {
+        "client services": "viewer",
+        "kaessbohrer": "viewer", "website": "viewer", "landing page": "viewer",
+        "autohaus": "admin", "schmidt": "admin", "motormobile": "admin"
+      },
+      "placeholders": ["Root"]
+    }
+  ]
+}
