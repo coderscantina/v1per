@@ -22,7 +22,7 @@ The first release includes:
 
 Out of the first release: page subscribers (email, RSS, webhook), Kuma badge URL compatibility, Kuma `/status/:slug` URL compatibility, Prometheus `/metrics`, the Kuma monitor types beyond the list above, Kuma notification providers beyond the core set, hosted SaaS concerns (signup, billing, plans), multi-server operation. Imported objects of unsupported kinds are kept, inventoried and paused, never dropped.
 
-**Architecture references.** Copy and adapt holocron's implementation; do not depend on it. Holocron's own reference documents describe the patterns: read `docs/contracts/architecture-patterns.md`, `docs/kit-implementation.md` and `docs/ux-v2/design.md` in Mike's checkout (`~/Development/products/holocron`) at the pinned revision. Milestone 01 ports the architecture patterns document into `docs/contracts/` so the repository stands on its own.
+**Architecture references.** Copy and adapt holocron's implementation; do not depend on it. [contracts/architecture-patterns.md](contracts/architecture-patterns.md) describes the patterns in prose: [operation registry](contracts/architecture-patterns.md#operation-registry-and-generated-contracts), [schema export and drift check](contracts/architecture-patterns.md#schema-export-and-drift-check), [commands, revisions and idempotency](contracts/architecture-patterns.md#named-commands-transactions-revisions-and-idempotency), [snapshot queries](contracts/architecture-patterns.md#snapshot-queries), [authorized scope](contracts/architecture-patterns.md#explicit-authorized-scope), [control database boundary](contracts/architecture-patterns.md#control-database-boundary), [topics and subscriptions](contracts/architecture-patterns.md#topics-cursors-and-subscriptions), [typed client](contracts/architecture-patterns.md#typed-client) and [live snapshot adapter](contracts/architecture-patterns.md#live-snapshot-adapter). The Kit and UI references, `docs/kit-implementation.md` and `docs/ux-v2/design.md`, are read in holocron's checkout (`~/Development/products/holocron`) at the pinned revision.
 
 | Holocron pattern                                    | Application in v1per                                                                                             |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -63,7 +63,6 @@ apps/
       identity/    (accounts, sessions, 2FA, API keys, secrets)
       nodes/       (tree, grants, NodeScope)
       monitors/    (definitions, evaluation, quorum, push deadlines)
-      checks/      (check execution per type, shared with probe mode)
       probes/      (built-in probe, agent registry, assignments, agent mode)
       notifications/
       incidents/   (incidents, updates, auto-incidents, maintenance)
@@ -77,6 +76,7 @@ apps/
       status/      (public status page entry)
       api/ generated/ services/ composables/ components/ assets/
 crates/
+  checks/      (check execution per type, shared by the built-in probe and agents)
   protocol/
   storage/
 fixtures/

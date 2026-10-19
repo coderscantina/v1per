@@ -24,9 +24,9 @@
       "license": {
         "file": "LICENSE",
         "spdx": "MIT",
-        "sha256": null
+        "sha256": "a0e4fe6bed45a817794411c8ddf2deffbe010ac3a2b2f47e5b8d2fe2f9486883"
       },
-      "notes": "Recorded SHA may be the annotated tag object. Milestone 01 confirms the commit and adds the license hash."
+      "notes": "Tag 2.5.0 is lightweight; its commit was confirmed with git ls-remote."
     },
     {
       "name": "openstatus",
@@ -38,7 +38,7 @@
       "license": {
         "file": "LICENSE",
         "spdx": "AGPL-3.0",
-        "sha256": null
+        "sha256": "8486a10c4393cee1c25392769ddd3b2d6c242d6ec7928e1414efff7dfb2f07ef"
       }
     }
   ]

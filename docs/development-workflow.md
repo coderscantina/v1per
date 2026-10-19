@@ -24,7 +24,7 @@ Four roles own the work. They are responsibilities, not people.
 | Protocol             | `crates/protocol`, export tooling                            | Integration        | Wire types, operation maps, typed errors, generated TypeScript and OpenAPI   |
 | HTTP and startup     | `apps/server/src/http`, `config.rs`, `state.rs`, `main.rs`   | Integration        | Router, configuration, limits, lifecycle, dependency composition             |
 | Identity and access  | `identity`, `nodes`                                          | Integration        | Principals, sessions, 2FA, API keys, sealed secrets, `NodeScope`, capabilities |
-| Checks and probes    | `checks`, `probes`                                           | Monitoring         | Typed check results, built-in probe, agent mode, assignment and batch protocol |
+| Checks and probes    | `crates/checks`, `probes`                                         | Monitoring         | Typed check results, built-in probe, agent mode, assignment and batch protocol |
 | Monitor evaluation   | `monitors`                                                   | Monitoring         | Retries, quorum, push deadlines, transitions journal                         |
 | Notifications        | `notifications`                                              | Monitoring         | Outbox, providers, templates, resend rules                                   |
 | Incidents            | `incidents`                                                  | Monitoring         | Incidents, updates, auto-incidents, maintenance schedules and suppression    |

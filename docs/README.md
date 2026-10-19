@@ -36,7 +36,7 @@ Begin with [milestone 01](milestones/01-contracts-fixtures-and-sources.md). Once
 
 Pinned in [sources/manifest.json](../sources/manifest.json):
 
-- **holocron** at `84fc54ec`: the architecture, UI and workflow template. It is Mike's private repository and not distributable. Agents on Mike's machine read it at `~/Development/products/holocron`. Code copied from it into v1per is relicensed by Mike under AGPL-3.0; keep the Kit notices that holocron keeps.
+- **holocron** at `84fc54ec`: the architecture, UI and workflow template. It is Mike's private repository and not distributable. Agents on Mike's machine read its Kit and UI documents (`docs/kit-implementation.md`, `docs/ux-v2/design.md`) at `~/Development/products/holocron`. The architecture patterns are ported into [contracts/architecture-patterns.md](contracts/architecture-patterns.md). Code copied from it into v1per is relicensed by Mike under AGPL-3.0; keep the Kit notices that holocron keeps.
 - **Uptime Kuma 2.5.0**: the import source and the push URL compatibility target (MIT).
 - **OpenStatus**: a model reference for status pages and incidents (AGPL-3.0). Borrow ideas, not code.
 
@@ -44,4 +44,4 @@ Pinned in [sources/manifest.json](../sources/manifest.json):
 
 Keep milestone status and evidence links in the milestone index. Store result reports under `docs/evidence/`, named `mNN-<slug>.md`, with screenshots in `docs/evidence/mNN/`. Keep real Kuma databases, secrets and large workloads outside Git. A report states source revision, command, fixture, machine, engine versions, result and what was not verified.
 
-All milestones are pending. No implementation exists.
+Milestone 01 is complete and 02 through 05 are in progress; see the [milestone index](milestones/README.md).

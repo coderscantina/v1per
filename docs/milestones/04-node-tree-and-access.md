@@ -12,8 +12,8 @@ Requires 03. Integration owns `nodes` and `identity`. Frontend owns the tree nav
 
 1. Implement nodes per [0001](../decisions/0001-node-tree-and-access.md): create, rename, move, delete (only when empty, or with explicit cascade), depth limit, ordering.
 2. Implement grants and `NodeScope`: effective role is the highest grant on the node or an ancestor; operations take a scope and never reveal nodes outside it. Write the capability matrix in `docs/contracts/capability-matrix.md`.
-3. Copy holocron's invitations, TOTP 2FA with recovery codes, node-level 2FA requirement and scoped API keys, adapted to nodes.
-4. Add the instance admin flag and instance settings (public URL, SMTP placeholder until 07).
+3. Add password change (the generated init password must be replaceable early). Copy holocron's invitations, TOTP 2FA with recovery codes, node-level 2FA requirement and scoped API keys, adapted to nodes.
+4. Build on the instance admin flag from 03 with instance settings (public URL, SMTP placeholder until 07).
 5. Build the UI: tree in the sidebar context selector, node overview, members and invitations, API keys, account security.
 
 ## Acceptance criteria

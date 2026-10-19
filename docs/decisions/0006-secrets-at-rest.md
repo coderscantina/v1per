@@ -12,7 +12,7 @@ One process and a data directory. Backups must be restorable. Imported credentia
 
 ## Choice
 
-- Seal secrets with an AEAD cipher under a key from `secrets.key` in the data directory, or from `V1PER_SECRETS_KEY` / `V1PER_SECRETS_KEY_FILE`. Reuse holocron's sealing code.
+- Seal secrets with an AEAD cipher under a key from `secrets.key` in the data directory, or from `V1PER_SECRETS_KEY` / `V1PER_SECRETS_KEY_FILE`. Reuse holocron's sealing code. The key is 32 random bytes, stored as base64; the key file also accepts raw bytes. `V1PER_SECRETS_KEY` is read from the environment only, never a flag, so it stays out of the process list. Each sealed value is bound to a context such as `monitor:<id>:password`, so a copied ciphertext does not open elsewhere.
 - Sealed: monitor credentials, headers marked secret, TLS keys, notification configuration, SMTP passwords, proxy passwords, TOTP secrets.
 - Page passwords are hashed with argon2, not sealed. Probe tokens, share tokens and API keys are stored as hashes.
 - Secrets never appear in logs, query results, exports or the delivery log. The UI shows that a value is set and lets you replace it.

@@ -14,7 +14,7 @@ Kuma 2.5.0 SQLite only. Config and full history. Kuma has no tree. Only push URL
 
 From read-only inspection of Kuma 2.5.0 (`sources/manifest.json`):
 
-- Schema: template `db/kuma.db`, legacy patches, then 55 knex migrations; the last is `2026-07-22-0000-fix-stat-daily-overflow`. Migration state is in `knex_migrations`.
+- Schema: template `db/kuma.db`, legacy patches, then 54 knex migrations; the last is `2026-07-22-0000-fix-stat-daily-overflow`. Migration state is in `knex_migrations`.
 - `heartbeat` has status 0 to 3, UTC text times and an optional response body. `stat_minutely`, `stat_hourly` and `stat_daily` hold up, down and latency per monitor per bucket.
 - Group monitors are monitors with `parent` links. Maintenance has six strategies. Status pages have groups, `monitor_group` links, `status_page_cname` domains and a plain-text password. `incident` is one banner per page.
 - `notification.config` is a JSON blob whose `type` picks one of 98 providers.
@@ -28,7 +28,7 @@ From read-only inspection of Kuma 2.5.0 (`sources/manifest.json`):
 - `--dry-run` prints counts, support status per monitor type and provider, secrets to seal, heartbeats inside and outside the retention window, and the inventory.
 - The real run writes into an empty target node and refuses a second import there. It is resumable by chunks and never changes the source.
 - Kuma group monitors become child nodes holding their members. A group monitor is also created on that node, keeping the group's own alerting.
-- Monitors of supported types run after import; other types are imported paused with a reason. Push tokens are kept.
+- Monitors of supported types run after import; other types are imported paused with a reason. Push tokens are kept. Each monitor's current state, its probes' state and the last push time are seeded from Kuma's newest heartbeat, so a monitor already down at cutover does not alert again and push deadlines carry over.
 - Notifications map to channels on the target node with their monitor links and default flags. Unsupported providers are imported inactive.
 - Maintenance, tags, status pages (groups, components, domains, theme, locale) and Kuma incidents map to their v1per counterparts. A Kuma incident becomes an incident with one update, resolved unless the banner is still shown. Page passwords are hashed; custom CSS and analytics settings are inventoried.
 - Kuma users become accounts with grants on the target node; the first admin also becomes instance admin. bcrypt hashes are verified at login and replaced with argon2. TOTP secrets are sealed. Sessions and API keys are not imported; keys are inventoried for reissue.
