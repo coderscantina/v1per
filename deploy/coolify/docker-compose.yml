@@ -1,0 +1,25 @@
+# v1per on a Coolify host. Set the domain of the `v1per` service in Coolify to the admin host
+# with the container port, e.g. https://status.example.com:8080. Custom status page domains
+# are added to the same service as extra domains; Coolify's Traefik passes the Host header on.
+#
+# Run `v1per init` once on the data volume before the first start; see
+# docs/operations/runbook.md.
+services:
+  v1per:
+    image: ${V1PER_IMAGE:?set V1PER_IMAGE to the pushed image, e.g. ghcr.io/coderscantina/v1per:0.1.0}
+    restart: unless-stopped
+    stop_grace_period: 35s
+    volumes:
+      - v1per-data:/data
+    environment:
+      V1PER_PUBLIC_URL: ${V1PER_PUBLIC_URL:?set V1PER_PUBLIC_URL, e.g. https://status.example.com}
+      V1PER_INSTANCE_NAME: ${V1PER_INSTANCE_NAME:-v1per}
+      RUST_LOG: ${RUST_LOG:-info}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+
+volumes:
+  v1per-data:

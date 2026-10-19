@@ -1,0 +1,48 @@
+# v1per with an optional remote probe.
+#
+#   export V1PER_PUBLIC_URL=https://status.example.com
+#   docker compose run --rm v1per init --admin-email you@example.com   # once, prints the password
+#   docker compose up -d
+#
+# The probe runs on another host in practice. Register it in the admin app, put its token in
+# V1PER_PROBE_TOKEN and start it with `docker compose --profile probe up -d probe`.
+services:
+  v1per:
+    image: ${V1PER_IMAGE:-ghcr.io/coderscantina/v1per:latest}
+    restart: unless-stopped
+    stop_grace_period: 35s
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - v1per-data:/data
+    environment:
+      V1PER_PUBLIC_URL: ${V1PER_PUBLIC_URL:?set V1PER_PUBLIC_URL, e.g. https://status.example.com}
+      V1PER_INSTANCE_NAME: ${V1PER_INSTANCE_NAME:-v1per}
+      RUST_LOG: ${RUST_LOG:-info}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+
+  probe:
+    profiles: ["probe"]
+    image: ${V1PER_IMAGE:-ghcr.io/coderscantina/v1per:latest}
+    restart: unless-stopped
+    command: ["probe"]
+    # The image's healthcheck asks the server port, which a probe does not open.
+    healthcheck:
+      disable: true
+    volumes:
+      - probe-data:/probe-data
+    environment:
+      V1PER_PROBE_SERVER: ${V1PER_PROBE_SERVER:-${V1PER_PUBLIC_URL}}
+      V1PER_PROBE_TOKEN: ${V1PER_PROBE_TOKEN:-}
+      RUST_LOG: ${RUST_LOG:-info}
+    # Docker's default ping_group_range allows unprivileged ICMP. Uncomment if your host
+    # restricts it:
+    # cap_add: [NET_RAW]
+
+volumes:
+  v1per-data:
+  probe-data:

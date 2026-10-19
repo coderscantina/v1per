@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 env:
-  BUN_VERSION: '1.3.14'
+  BUN_VERSION: '1.4.3'
   CARGO_TERM_COLOR: always
 
 # The Rust workspace and the web app do not exist yet. Every step is guarded on

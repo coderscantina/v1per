@@ -26,3 +26,6 @@ node_modules
 /.idea
 /.vscode
 /.zed
+
+# Local Uptime Kuma data for import tests (never commit)
+/kuma/
