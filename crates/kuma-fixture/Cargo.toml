@@ -1,6 +1,6 @@
 [package]
 name = "v1per-kuma-fixture"
-version = "0.1.0"
+version.workspace = true
 description = "Deterministic synthetic Uptime Kuma 2.5.0 SQLite database for import tests"
 edition.workspace = true
 rust-version.workspace = true

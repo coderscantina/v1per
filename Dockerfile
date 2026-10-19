@@ -1,10 +1,10 @@
 # One-process v1per image: the release binary with the built web app beside it. The same
 # image runs `v1per serve` (default) and `v1per probe`.
 #
-#   docker build -t v1per:$(git rev-parse --short HEAD) .
+#   docker build --build-arg V1PER_GIT_SHA=$(git rev-parse --short HEAD) -t v1per .
 #
 # The data directory is /data. Run `v1per init` on it once before `serve`; see
-# docs/operations/runbook.md.
+# docs/guide/install.md.
 
 FROM oven/bun:1.4 AS web
 WORKDIR /src/apps/web
@@ -17,6 +17,8 @@ FROM rust:1.99-trixie AS server
 # Lower it (--build-arg CARGO_BUILD_JOBS=2) on builders with little memory: DuckDB's C++
 # compile needs a lot of memory per job.
 ARG CARGO_BUILD_JOBS
+# The release commit, shown by `v1per --version`.
+ARG V1PER_GIT_SHA
 WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
 COPY apps/server apps/server

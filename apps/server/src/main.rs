@@ -32,7 +32,7 @@ const STORAGE_DRAIN: Duration = Duration::from_secs(10);
 #[derive(Parser)]
 #[command(
     name = "v1per",
-    version,
+    version = env!("V1PER_VERSION"),
     about = "Self-hosted uptime monitoring and status pages"
 )]
 struct Cli {

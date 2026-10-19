@@ -1,6 +1,6 @@
 [package]
 name = "v1per-kuma-import"
-version = "0.1.0"
+version.workspace = true
 description = "Reads an Uptime Kuma 2.5.0 SQLite database into a validated v1per import plan"
 edition.workspace = true
 rust-version.workspace = true
