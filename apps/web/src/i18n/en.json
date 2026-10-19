@@ -1605,6 +1605,7 @@
       "up": "{up}/{total} up"
     },
     "stats": {
+      "trend": "{name} over the last 24 hours",
       "label": "Status in numbers",
       "healthy": "Healthy",
       "down": "Down",

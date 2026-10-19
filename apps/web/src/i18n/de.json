@@ -1605,6 +1605,7 @@
       "up": "{up}/{total} erreichbar"
     },
     "stats": {
+      "trend": "{name} in den letzten 24 Stunden",
       "label": "Status in Zahlen",
       "healthy": "In Ordnung",
       "down": "Ausgefallen",

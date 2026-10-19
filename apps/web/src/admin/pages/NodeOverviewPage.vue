@@ -183,7 +183,10 @@ const empty = computed(() => monitors.value.length === 0 && node.value !== null 
       :aria-label="t('observe.rail')"
       class="grid content-start gap-[22px] border-divider px-shell-page-x py-[18px] xl:w-84 xl:shrink-0 xl:overflow-y-auto xl:border-l xl:bg-[color-mix(in_oklch,var(--color-card)_30%,var(--color-surface))] xl:px-[18px] max-xl:border-t"
     >
-      <ScopeStats :monitors="monitors" />
+      <ScopeStats
+        :node="node.id"
+        :monitors="monitors"
+      />
       <AttentionPanel
         :scope="node"
         :index="nodes.index.value"

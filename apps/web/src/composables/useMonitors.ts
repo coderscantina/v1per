@@ -121,6 +121,17 @@ export function useMonitorDetail(id: MaybeRefOrGetter<MonitorId | null>) {
   return live
 }
 
+/** The last 24 hours of a node and everything below it, by hour. Not pushed, so read again every minute. */
+export function useScopeTrend(node: MaybeRefOrGetter<NodeId | null>) {
+  return useQuery({
+    queryKey: computed(() => queryKeys.trend(toValue(node) ?? '')),
+    queryFn: ({ signal }) => monitorsResource.trend(toValue(node) ?? '', signal),
+    enabled: () => toValue(node) !== null,
+    refetchInterval: HISTORY_REFRESH_MS,
+    staleTime: HISTORY_REFRESH_MS,
+  })
+}
+
 /** `probe`: one probe's own results; `null` for the monitor's status. */
 type ProbeFilter = MaybeRefOrGetter<ProbeId | null>
 
