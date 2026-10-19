@@ -57,9 +57,13 @@ jobs:
         if: hashFiles('Cargo.toml') != ''
         run: cargo clippy --workspace --all-targets -- -D warnings
 
+      # The ping check opens unprivileged ICMP sockets, which the runner forbids by default.
+      - name: Allow unprivileged ping
+        run: sudo sysctl -w net.ipv4.ping_group_range="0 2147483647"
+
       - name: Test
         if: hashFiles('Cargo.toml') != ''
-        run: cargo test --workspace
+        run: cargo test --workspace --no-fail-fast
 
       - name: Check generated types
         if: hashFiles('Cargo.toml') != ''
