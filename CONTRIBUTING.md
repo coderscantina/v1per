@@ -4,7 +4,7 @@ Thank you. Whether you're fixing a typo, squashing a bug, or building a feature,
 
 This guide gets you from zero to merged PR.
 
-v1per is pre-alpha and the code scaffold has not landed yet. Until it does, the most useful contributions are feedback on the design and docs.
+v1per is in beta. Bug reports from real setups are the most useful contribution right now.
 
 ---
 
@@ -58,7 +58,20 @@ You need a stable Rust toolchain (with `rustfmt` and `clippy`) and Bun 1.3 or ne
 
 ### 3. Build and run
 
-The Cargo workspace (`apps/server`, `crates/*`) and the frontend (`apps/web`) are planned but not in the repo yet. Build and run commands will be listed here once they exist.
+The Cargo workspace (`apps/server`, `crates/*`) holds the server, and `apps/web` the Vue admin app and status pages.
+
+Create a data directory once. `init` prints the generated admin password:
+
+```bash
+cargo run -p v1per-server --bin v1per -- init --data-dir data --admin-email you@example.com
+```
+
+Run the server on `127.0.0.1:8080`, and the web app with hot reload on `http://localhost:5173`, which proxies the API to the server:
+
+```bash
+cargo run -p v1per-server --bin v1per -- serve --data-dir data
+cd apps/web && bun install && bun run dev
+```
 
 ### 4. Create a branch
 

@@ -2,7 +2,7 @@
 
 v1per is a self-hosted monitoring and status page server. One instance holds monitor targets, credentials for notification channels, and access rules for many teams and clients. We treat authentication, authorization, node isolation, probe trust, and release integrity as security-sensitive.
 
-The project is pre-alpha and has no releases yet. Reports are still welcome.
+The project is in beta. Releases use calendar versions, e.g. `v26.10.19-010a9a6`.
 
 ## Supported versions
 
