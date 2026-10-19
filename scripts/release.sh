@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Cuts a release from a clean main: sets today's CalVer version (YY.M.D) in Cargo.toml and
-# apps/web/package.json, writes a CHANGELOG.md section from the gitmoji commits since the
-# last tag, commits, tags vYY.M.D-<short commit> and pushes. The tag starts
-# .github/workflows/release.yml.
+# apps/web/package.json, regenerates the protocol contract, writes a CHANGELOG.md section
+# from the gitmoji commits since the last tag, commits, tags vYY.M.D-<short commit> and
+# pushes. The tag starts .github/workflows/release.yml.
 #
 #   scripts/release.sh                    # release
 #   scripts/release.sh highlights.md      # put a hand-written summary above the commit list
@@ -77,6 +77,8 @@ fi
 perl -0pi -e "s/(\[workspace\.package\]\nversion = )\"[^\"]*\"/\${1}\"$version\"/" Cargo.toml
 perl -pi -e "s/^  \"version\": \"[^\"]*\"/  \"version\": \"$version\"/" apps/web/package.json
 cargo update --workspace --quiet
+# The OpenAPI document carries the version.
+cargo run --quiet -p v1per-protocol --bin export-types
 
 # The new section goes above the newest one, below the file's introduction.
 printf '%s\n\n' "$section" > .release-section.md
@@ -87,7 +89,7 @@ awk 'FNR == NR { section = section $0 "\n"; next }
 mv CHANGELOG.md.next CHANGELOG.md
 rm .release-section.md
 
-git add Cargo.toml Cargo.lock apps/web/package.json CHANGELOG.md
+git add Cargo.toml Cargo.lock apps/web/package.json CHANGELOG.md crates/protocol/openapi.json apps/web/src/generated
 git commit --quiet -m "🔖 release $version"
 tag="v$version-$(git rev-parse --short HEAD)"
 git tag -a "$tag" -m "$tag"
