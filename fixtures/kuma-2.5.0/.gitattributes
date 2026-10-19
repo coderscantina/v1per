@@ -1,0 +1,2 @@
+# schema.sql keeps the CRLF line endings Kuma's template stores in sqlite_master.
+schema.sql -text
