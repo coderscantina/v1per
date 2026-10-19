@@ -4,6 +4,7 @@
 !apps/server
 !apps/web
 !crates
+!fixtures/kuma-2.5.0/schema.sql
 apps/web/node_modules
 apps/web/dist
 apps/web/e2e

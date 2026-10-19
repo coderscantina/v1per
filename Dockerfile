@@ -23,6 +23,8 @@ WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
 COPY apps/server apps/server
 COPY crates crates
+# The Kuma importer embeds Kuma's schema at compile time.
+COPY fixtures/kuma-2.5.0/schema.sql fixtures/kuma-2.5.0/schema.sql
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/src/target \
     cargo build --release --locked -p v1per-server --bin v1per \
