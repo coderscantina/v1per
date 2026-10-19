@@ -1573,6 +1573,19 @@
   "observe": {
     "scope": "Status of {name}",
     "rail": "Summary",
+    "card": {
+      "latest": "Response",
+      "uptime": "Uptime 24 h",
+      "checked": "Checked",
+      "noData": "No data",
+      "latencyTrend": "Response time of {name} over the last 24 hours",
+      "hours": "Status of {name} by hour"
+    },
+    "density": {
+      "label": "Wall density",
+      "compact": "Compact",
+      "extended": "Extended"
+    },
     "view": {
       "label": "View",
       "orbit": "Orbit",
@@ -1601,6 +1614,11 @@
       "hidden": "{count} more here; the wall shows them all"
     },
     "wall": {
+      "uptime": "{uptime} over 24 h",
+      "checked": "checked {when}",
+      "uptimeLabel": "Uptime",
+      "p95Label": "p95",
+      "newest": "Newest check",
       "direct": "Directly in {name}",
       "up": "{up}/{total} up"
     },

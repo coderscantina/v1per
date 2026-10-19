@@ -1573,6 +1573,19 @@
   "observe": {
     "scope": "Status von {name}",
     "rail": "Zusammenfassung",
+    "card": {
+      "latest": "Antwort",
+      "uptime": "Verfügbarkeit 24 h",
+      "checked": "Geprüft",
+      "noData": "Keine Daten",
+      "latencyTrend": "Antwortzeit von {name} in den letzten 24 Stunden",
+      "hours": "Status von {name} nach Stunde"
+    },
+    "density": {
+      "label": "Dichte der Wand",
+      "compact": "Kompakt",
+      "extended": "Ausführlich"
+    },
     "view": {
       "label": "Ansicht",
       "orbit": "Orbit",
@@ -1601,6 +1614,11 @@
       "hidden": "{count} weitere hier; die Wand zeigt alle"
     },
     "wall": {
+      "uptime": "{uptime} in 24 h",
+      "checked": "geprüft {when}",
+      "uptimeLabel": "Verfügbarkeit",
+      "p95Label": "p95",
+      "newest": "Letzte Prüfung",
       "direct": "Direkt in {name}",
       "up": "{up}/{total} erreichbar"
     },

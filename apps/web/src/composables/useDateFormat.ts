@@ -20,10 +20,13 @@ export function useDateFormat() {
     date: (ms: number) => format({ dateStyle: 'medium' }).format(ms),
     /** Unix milliseconds with the time, for tooltips. */
     dateTime: (ms: number) => format({ dateStyle: 'medium', timeStyle: 'short' }).format(ms),
-    /** How long before `now` a moment was, "25 seconds ago", in the largest whole unit. */
-    relative: (ms: number, now: number) => {
+    /**
+     * How long before `now` a moment was, "25 seconds ago", in the largest whole unit; `narrow`
+     * gives "25s ago" for tight spots.
+     */
+    relative: (ms: number, now: number, style: Intl.RelativeTimeFormatStyle = 'long') => {
       const seconds = Math.round((ms - now) / 1000)
-      const formatter = new Intl.RelativeTimeFormat(locale.value, { numeric: 'auto' })
+      const formatter = new Intl.RelativeTimeFormat(locale.value, { numeric: 'auto', style })
       const steps = [
         [60, 'second'],
         [3600, 'minute'],

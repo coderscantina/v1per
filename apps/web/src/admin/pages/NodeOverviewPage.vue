@@ -26,6 +26,7 @@ import { useI18n } from '~/plugins/i18n'
  * wall, the status in numbers, what needs attention, open incidents and maintenance. It reads
  * the shell's live monitor lists, so it changes the moment a status does. The view is kept in
  * this browser; until one is picked, a node with more than the orbit holds opens as the wall.
+ * The wall comes compact, a tile per monitor, or extended, a card per monitor with its last day.
  * The canvas runs edge to edge under a dot grid; on a wide screen it fits the window, the orbit or
  * wall takes the height left under the title, and the summary column scrolls on its own.
  */
@@ -52,6 +53,12 @@ const view = computed<View>({
 const views = computed(() => [
   { value: 'orbit' as const, label: t('observe.view.orbit'), icon: 'lucide:orbit' as const },
   { value: 'wall' as const, label: t('observe.view.wall'), icon: 'lucide:layout-grid' as const },
+])
+type Density = 'compact' | 'extended'
+const density = useStorage<Density>('v1per:wall-density', 'compact')
+const densities = computed(() => [
+  { value: 'compact' as const, label: t('observe.density.compact'), icon: 'lucide:layout-grid' as const },
+  { value: 'extended' as const, label: t('observe.density.extended'), icon: 'lucide:layout-list' as const },
 ])
 const LEGEND = ['up', 'pending', 'down', 'maintenance', 'paused'] as const satisfies readonly Presence[]
 /** Where the node sits, as the small line above its name. */
@@ -117,9 +124,17 @@ const empty = computed(() => monitors.value.length === 0 && node.value !== null 
             <template v-else-if="active === 0">{{ t('observe.summary.paused') }}</template>
           </p>
         </div>
-        <div class="flex items-center gap-3">
+        <div
+          v-if="!empty"
+          class="flex flex-wrap items-center gap-2"
+        >
           <ChoiceGroup
-            v-if="!empty"
+            v-if="view === 'wall'"
+            v-model="density"
+            :label="t('observe.density.label')"
+            :options="densities"
+          />
+          <ChoiceGroup
             v-model="view"
             :label="t('observe.view.label')"
             :options="views"
@@ -157,6 +172,7 @@ const empty = computed(() => monitors.value.length === 0 && node.value !== null 
         :key="node.id"
         :tree="visible.tree.value"
         :node="node"
+        :extended="density === 'extended'"
         class="-mx-1 mt-4 px-1 pb-1 xl:min-h-0 xl:flex-1 xl:overflow-y-auto"
       />
 

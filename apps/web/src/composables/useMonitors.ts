@@ -132,6 +132,17 @@ export function useScopeTrend(node: MaybeRefOrGetter<NodeId | null>) {
   })
 }
 
+/** The last 24 hours of each monitor on a node and below, by hour, for the extended wall. */
+export function useMonitorHourly(node: MaybeRefOrGetter<NodeId | null>, enabled: MaybeRefOrGetter<boolean> = true) {
+  return useQuery({
+    queryKey: computed(() => queryKeys.hourly(toValue(node) ?? '')),
+    queryFn: ({ signal }) => monitorsResource.hourly(toValue(node) ?? '', signal),
+    enabled: () => toValue(node) !== null && toValue(enabled),
+    refetchInterval: HISTORY_REFRESH_MS,
+    staleTime: HISTORY_REFRESH_MS,
+  })
+}
+
 /** `probe`: one probe's own results; `null` for the monitor's status. */
 type ProbeFilter = MaybeRefOrGetter<ProbeId | null>
 
