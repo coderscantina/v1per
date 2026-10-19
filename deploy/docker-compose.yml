@@ -18,7 +18,7 @@ services:
     environment:
       V1PER_PUBLIC_URL: ${V1PER_PUBLIC_URL:?set V1PER_PUBLIC_URL, e.g. https://status.example.com}
       V1PER_INSTANCE_NAME: ${V1PER_INSTANCE_NAME:-v1per}
-      RUST_LOG: ${RUST_LOG:-info}
+      V1PER_LOG: ${V1PER_LOG:-info,sqlx=warn}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
       interval: 30s
@@ -38,7 +38,7 @@ services:
     environment:
       V1PER_PROBE_SERVER: ${V1PER_PROBE_SERVER:-${V1PER_PUBLIC_URL}}
       V1PER_PROBE_TOKEN: ${V1PER_PROBE_TOKEN:-}
-      RUST_LOG: ${RUST_LOG:-info}
+      V1PER_LOG: ${V1PER_LOG:-info,sqlx=warn}
     # Docker's default ping_group_range allows unprivileged ICMP. Uncomment if your host
     # restricts it:
     # cap_add: [NET_RAW]

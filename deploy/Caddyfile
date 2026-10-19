@@ -1,7 +1,7 @@
 # Caddy in front of v1per. Caddy gets and renews a certificate for every domain listed here,
 # and passes the Host header through, which v1per uses to pick the status page.
 #
-# Add one block per custom status page domain, or use on-demand TLS (see the runbook).
+# Add one block per custom status page domain. See docs/guide/install.md.
 
 status.example.com {
 	reverse_proxy 127.0.0.1:8080

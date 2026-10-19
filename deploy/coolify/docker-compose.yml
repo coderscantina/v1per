@@ -3,10 +3,10 @@
 # are added to the same service as extra domains; Coolify's Traefik passes the Host header on.
 #
 # Run `v1per init` once on the data volume before the first start; see
-# docs/operations/runbook.md.
+# docs/guide/install.md.
 services:
   v1per:
-    image: ${V1PER_IMAGE:?set V1PER_IMAGE to the pushed image, e.g. ghcr.io/coderscantina/v1per:0.1.0}
+    image: ${V1PER_IMAGE:?set V1PER_IMAGE to the pushed image, e.g. ghcr.io/coderscantina/v1per:26.10.19}
     restart: unless-stopped
     stop_grace_period: 35s
     volumes:
@@ -14,7 +14,7 @@ services:
     environment:
       V1PER_PUBLIC_URL: ${V1PER_PUBLIC_URL:?set V1PER_PUBLIC_URL, e.g. https://status.example.com}
       V1PER_INSTANCE_NAME: ${V1PER_INSTANCE_NAME:-v1per}
-      RUST_LOG: ${RUST_LOG:-info}
+      V1PER_LOG: ${V1PER_LOG:-info,sqlx=warn}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
       interval: 30s
