@@ -1,0 +1,34 @@
+/* Status colors of the page, from the shared status tokens, which keep 3:1 on the page's card and
+   canvas in both modes. Each tone is set with `data-tone` and read as `var(--tone)`. */
+:root {
+  --tone-operational: var(--status-up);
+  --tone-maintenance: var(--status-maintenance);
+  --tone-degraded: var(--status-pending);
+  --tone-partial_outage: var(--status-partial);
+  --tone-major_outage: var(--status-down);
+  --tone-none: var(--status-none);
+}
+
+[data-tone='operational'] {
+  --tone: var(--tone-operational);
+}
+[data-tone='maintenance'] {
+  --tone: var(--tone-maintenance);
+}
+[data-tone='degraded'] {
+  --tone: var(--tone-degraded);
+}
+[data-tone='partial_outage'] {
+  --tone: var(--tone-partial_outage);
+}
+[data-tone='major_outage'] {
+  --tone: var(--tone-major_outage);
+}
+[data-tone='none'] {
+  --tone: var(--tone-none);
+}
+/* A day without data is an absence, not a state: its bar stays the quiet `faint` gray so a new
+   page's strip does not outshout the colors that mean something. Its label says "No data". */
+[data-day][data-tone='none'] {
+  --tone: var(--faint);
+}

@@ -1,0 +1,7 @@
+/* The public status page's stylesheet: the same tokens, with utilities generated only from
+   `src/status`, so the page does not carry the admin app's classes. */
+
+@import 'tailwindcss' source(none);
+@import './tokens.css';
+
+@source '../../status';

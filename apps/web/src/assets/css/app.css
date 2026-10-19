@@ -1,0 +1,5 @@
+/* The admin app's stylesheet: Tailwind over the shared tokens. */
+
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import './tokens.css';

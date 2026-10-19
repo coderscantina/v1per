@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>v1per</title>
+    <script>
+      // Before first paint, so a dark-mode visitor never sees a light flash. Shares its key and
+      // values with src/composables/useColorMode.ts.
+      try {
+        var mode = localStorage.getItem('v1per:color-mode')
+        var dark =
+          mode === 'dark' ||
+          ((mode === null || mode === 'system') && matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.classList.toggle('dark', dark)
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+      } catch (_) {}
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/admin/main.ts"></script>
+  </body>
+</html>
