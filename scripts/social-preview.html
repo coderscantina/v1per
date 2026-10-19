@@ -1,0 +1,62 @@
+<!doctype html>
+<!-- The GitHub social card, 1280x640. `bun scripts/demo-shots.ts` renders it to .github/social-preview.png after the screenshots. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      body {
+        width: 1280px;
+        height: 640px;
+        overflow: hidden;
+        background: radial-gradient(900px 500px at 85% 110%, rgb(99 91 255 / 0.28), transparent 70%), #0e0f12;
+        color: #f4f4f6;
+        font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      }
+      .text {
+        position: absolute;
+        left: 80px;
+        top: 96px;
+        width: 500px;
+      }
+      h1 {
+        font-size: 112px;
+        font-weight: 700;
+        letter-spacing: -0.04em;
+        line-height: 1;
+      }
+      h1 span {
+        color: #8b83ff;
+      }
+      p {
+        margin-top: 32px;
+        font-size: 36px;
+        line-height: 1.25;
+        font-weight: 500;
+        color: #c9c9d1;
+        text-wrap: balance;
+      }
+      .shot {
+        position: absolute;
+        left: 640px;
+        top: 72px;
+        width: 760px;
+        height: 620px;
+        border-radius: 16px;
+        border: 1px solid rgb(255 255 255 / 0.12);
+        background: url('../docs/assets/dashboard.png') 0 0 / 1060px auto no-repeat;
+        box-shadow: 0 30px 80px rgb(0 0 0 / 0.55);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="text">
+      <h1>v1<span>per</span></h1>
+      <p>Uptime monitoring and status pages for every client you look after</p>
+    </div>
+    <div class="shot"></div>
+  </body>
+</html>
