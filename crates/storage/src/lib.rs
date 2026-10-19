@@ -32,8 +32,8 @@ pub use failpoint::BOUNDARIES as FAILPOINTS;
 pub use failpoint::fail_disk;
 pub use heartbeats::{HEARTBEAT_SCHEMA, KumaStat};
 pub use queries::{
-    Counts, DayBar, HeartbeatCursor, HeartbeatPage, ImportedRows, Latency, LatencyPoint,
-    Resolution, Series, UptimeWindow,
+    Counts, DayBar, HeartbeatCursor, HeartbeatPage, Hourly, ImportedRows, Latency, LatencyPoint,
+    Resolution, Series, TrendBucket, UptimeWindow,
 };
 pub use reader::{Read, ReadError, Snapshot};
 pub use record::{BatchId, Heartbeat, INBOX_FORMAT, MonitorId, MonitorStatus, ProbeId, Status};
@@ -503,6 +503,32 @@ impl Storage {
             queries::latency(s.connection(), monitor, series, resolution, from_ms, to_ms)
         })
         .await
+    }
+
+    /// The last `hours` UTC hours of the monitor series of `monitors` taken together, oldest
+    /// first, the hour holding `now_ms` last; hours without data have zero counts.
+    pub async fn trend(
+        &self,
+        monitors: &[MonitorId],
+        now_ms: i64,
+        hours: u32,
+    ) -> Result<Read<Vec<TrendBucket>>, ReadError> {
+        let monitors = monitors.to_vec();
+        self.read(move |s| queries::trend(s.connection(), &monitors, now_ms, hours))
+            .await
+    }
+
+    /// The last `hours` UTC hours of each monitor's monitor series, oldest first, the hour
+    /// holding `now_ms` last; every monitor asked for is present.
+    pub async fn hourly(
+        &self,
+        monitors: &[MonitorId],
+        now_ms: i64,
+        hours: u32,
+    ) -> Result<Read<Hourly>, ReadError> {
+        let monitors = monitors.to_vec();
+        self.read(move |s| queries::hourly(s.connection(), &monitors, now_ms, hours))
+            .await
     }
 
     /// Writes imported Kuma `stat_*` rows of one monitor and resolution as they are. Rows in

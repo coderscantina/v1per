@@ -51,6 +51,7 @@ Capabilities without an operation yet are the contract for the milestones named 
 | `apiKeys.revoke`, `apiKeys.list`   | The caller's own keys                                                                     | any                            |
 | `instance.settings`, `instance.updateSettings` | The instance admin flag                                                       | instance admin                 |
 | `monitors.list`, `monitors.get`, `monitors.heartbeats`, `monitors.uptime`, `monitors.latency`, `monitors.dayBars` | `node.read` on the monitor's node; `monitors.get` shows the push token only with `monitors.manage` | viewer and up |
+| `monitors.trend`, `monitors.hourly` | `node.read` on the node; cover every monitor on it and below | viewer and up |
 | `monitors.create`, `monitors.update`, `monitors.pause`, `monitors.resume`, `monitors.setManualStatus`, `monitors.delete` | `monitors.manage` on the monitor's node; a `group` must sit on that node or an ancestor the caller reads; `probes` must be registered on that node or an ancestor, readable or not | member and up |
 | `probes.list`, `probes.available`      | `node.read`; `probes.available` also names probes on ancestors the caller cannot read, without their node | viewer and up |
 | `probes.create`                        | `probes.manage` on the node; instance-wide probes go on the root                          | admin and up                   |

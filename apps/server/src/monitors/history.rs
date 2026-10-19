@@ -12,8 +12,9 @@ use v1per_protocol::limits::{
     DAY_BARS_MAX, HEARTBEATS_PAGE_DEFAULT, HEARTBEATS_PAGE_MAX, LATENCY_POINTS_MAX,
 };
 use v1per_protocol::operations::monitors::{
-    DayBar, DayBarList, DayBarsArgs, Heartbeat, HeartbeatPage, HeartbeatsArgs, LatencyArgs,
-    LatencyPoint, LatencySeries, MonitorUptime, Resolution, UptimeArgs,
+    DayBar, DayBarList, DayBarsArgs, Heartbeat, HeartbeatPage, HeartbeatsArgs, HourPoint,
+    HourState, LatencyArgs, LatencyPoint, LatencySeries, MonitorHourly, MonitorHourlyList,
+    MonitorUptime, Resolution, ScopeTrend, TrendPoint, UptimeArgs,
 };
 use v1per_storage::{
     self as storage, Counts, HeartbeatCursor, ReadError, Series, Storage, UptimeWindow,
@@ -57,6 +58,78 @@ pub async fn uptime_24h(
         .into_iter()
         .filter_map(|(monitor, counts)| Some((MonitorId::new(monitor.0), counts.uptime()?)))
         .collect())
+}
+
+/// The last 24 UTC hours of the monitors taken together, the current hour last.
+pub async fn trend(
+    storage: &Storage,
+    monitors: &[MonitorId],
+    now_ms: i64,
+) -> Result<ScopeTrend, ApiError> {
+    let ids: Vec<_> = monitors.iter().copied().map(id).collect();
+    let buckets = storage
+        .trend(&ids, now_ms, 24)
+        .await
+        .map_err(read_failed)?
+        .value;
+    Ok(ScopeTrend {
+        points: buckets
+            .into_iter()
+            .map(|bucket| TrendPoint {
+                bucket: bucket.bucket_ms,
+                uptime: bucket.counts.uptime(),
+                latency_ms: bucket.counts.latency.map(|latency| latency.avg_ms),
+                healthy: bucket.healthy,
+                down: bucket.down,
+                pending: bucket.pending,
+                maintenance: bucket.maintenance,
+            })
+            .collect(),
+    })
+}
+
+/// The last 24 UTC hours of each monitor, the current hour last.
+pub async fn hourly(
+    storage: &Storage,
+    monitors: &[MonitorId],
+    now_ms: i64,
+) -> Result<MonitorHourlyList, ApiError> {
+    let ids: Vec<_> = monitors.iter().copied().map(id).collect();
+    let hourly = storage
+        .hourly(&ids, now_ms, 24)
+        .await
+        .map_err(read_failed)?
+        .value;
+    Ok(MonitorHourlyList {
+        from: hourly.from_ms,
+        monitors: hourly
+            .counts
+            .into_iter()
+            .map(|(monitor, hours)| MonitorHourly {
+                monitor: MonitorId::new(monitor.0),
+                points: hours.iter().map(hour_point).collect(),
+            })
+            .collect(),
+    })
+}
+
+fn hour_point(counts: &Counts) -> HourPoint {
+    let state = if counts.down > 0 {
+        Some(HourState::Down)
+    } else if counts.pending > 0 {
+        Some(HourState::Pending)
+    } else if counts.maintenance > 0 {
+        Some(HourState::Maintenance)
+    } else if counts.up > 0 {
+        Some(HourState::Up)
+    } else {
+        None
+    };
+    HourPoint {
+        state,
+        uptime: counts.uptime(),
+        latency_ms: counts.latency.map(|latency| latency.avg_ms),
+    }
 }
 
 pub async fn uptime(

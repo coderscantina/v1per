@@ -371,6 +371,8 @@ async fn monitors_follow_node_scope_and_capabilities() {
         ("monitors.get", format!("monitor={on_b}")),
         ("monitors.get", "monitor=999999".to_owned()),
         ("monitors.uptime", format!("monitor={on_b}")),
+        ("monitors.trend", format!("node={b}")),
+        ("monitors.hourly", format!("node={b}")),
     ] {
         let hidden = harness.query(Some(&member), name, &query).await;
         assert_eq!(hidden.code(), "not_found", "{name} {query}");
@@ -878,6 +880,43 @@ async fn subtree_lists_and_events_name_their_monitor() {
         .await
         .json();
     assert_eq!(page["heartbeats"].as_array().unwrap().len(), 1);
+    let trend = harness
+        .query(Some(&admin), "monitors.trend", &format!("node={team}"))
+        .await
+        .json();
+    let cursor = trend["cursor"].as_str().unwrap();
+    assert!(cursor.starts_with(&format!("monitor-tree:{team}@")));
+    let points = trend["points"].as_array().unwrap();
+    assert_eq!(points.len(), 24);
+    assert_eq!(
+        (&points[23]["healthy"], &points[23]["uptime"]),
+        (&json!(1), &json!(1.0))
+    );
+    assert_eq!(points[22]["healthy"], 0);
+    let quiet = create(&harness, &admin, &team, push("quiet-token")).await;
+    let hourly = harness
+        .query(Some(&admin), "monitors.hourly", &format!("node={team}"))
+        .await
+        .json();
+    assert_eq!(hourly["from"].as_i64().unwrap() % 3_600_000, 0);
+    let monitors = hourly["monitors"].as_array().unwrap();
+    let ids: Vec<_> = monitors.iter().map(|m| m["monitor"].clone()).collect();
+    assert_eq!(ids.len(), 2);
+    assert!(ids.contains(&json!(on_client)) && ids.contains(&json!(quiet)));
+    for monitor in monitors {
+        assert_eq!(monitor["points"].as_array().unwrap().len(), 24);
+    }
+    let pushed = monitors.iter().find(|m| m["monitor"] == on_client).unwrap();
+    assert_eq!(
+        (
+            &pushed["points"][23]["state"],
+            &pushed["points"][23]["uptime"]
+        ),
+        (&json!("up"), &json!(1.0))
+    );
+    assert_eq!(pushed["points"][22], json!({}));
+    let silent = monitors.iter().find(|m| m["monitor"] == quiet).unwrap();
+    assert_eq!(silent["points"][23], json!({}));
     background.stop().await;
 }
 

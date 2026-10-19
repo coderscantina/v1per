@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::ids::{ChannelId, MonitorId, NodeId, ProbeId};
+use crate::operations::nodes::NodeArgs;
 
 crate::domain! {
     pub trait MonitorsHandlers;
@@ -63,6 +64,14 @@ crate::domain! {
         /// Daily bars for the last `days` days in `timezone`, today included: of the monitor,
         /// or of one `probe`'s own results.
         "monitors.dayBars" => monitors_day_bars (Person, key): DayBarsArgs => DayBarList;
+        /// The last 24 hours of every monitor on `node` and below, in UTC hour buckets, oldest
+        /// first and the current hour last, from the monitors' own status. Needs `node.read`.
+        /// On the `monitor-tree:<id>` topic.
+        "monitors.trend" => monitors_trend (Person, key): NodeArgs => ScopeTrend;
+        /// The last 24 hours of each monitor on `node` and below, by UTC hour, oldest first and
+        /// the current hour last, from the monitors' own status. Needs `node.read`. On the
+        /// `monitor-tree:<id>` topic.
+        "monitors.hourly" => monitors_hourly (Person, key): NodeArgs => MonitorHourlyList;
     }
 }
 
@@ -764,4 +773,80 @@ pub struct DayBarList {
     pub timezone: String,
     /// Oldest first.
     pub bars: Vec<DayBar>,
+}
+
+/// One UTC hour of the monitors under a node. A monitor counts by its worst beat in the hour.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct TrendPoint {
+    /// Bucket start, Unix milliseconds (UTC hour).
+    pub bucket: i64,
+    /// From 0 to 1 over every monitor's beats in the hour, pending counted as down and
+    /// maintenance left out; absent without up, down or pending beats.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub uptime: Option<f64>,
+    /// Mean latency of the hour's up beats across monitors, weighted by beat count; absent
+    /// without up beats.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub latency_ms: Option<f64>,
+    /// Monitors whose worst beat was up or maintenance.
+    pub healthy: u32,
+    /// Monitors with at least one down beat.
+    pub down: u32,
+    /// Monitors with pending beats and no down beat.
+    pub pending: u32,
+    /// Monitors with maintenance beats and no down or pending beat; also counted in
+    /// `healthy`.
+    pub maintenance: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct ScopeTrend {
+    /// Exactly 24, oldest first; hours without beats have zero counts.
+    pub points: Vec<TrendPoint>,
+}
+
+/// The worst beat of a monitor's hour: down, then pending, then maintenance, then up.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum HourState {
+    Up,
+    Maintenance,
+    Pending,
+    Down,
+}
+
+/// One UTC hour of one monitor.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct HourPoint {
+    /// The worst beat of the hour; absent without beats.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub state: Option<HourState>,
+    /// From 0 to 1, pending counted as down and maintenance left out; absent without up, down
+    /// or pending beats.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub uptime: Option<f64>,
+    /// Mean latency of the hour's up beats; absent without up beats.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub latency_ms: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct MonitorHourly {
+    pub monitor: MonitorId,
+    /// Exactly 24, oldest first, the current partial hour last.
+    pub points: Vec<HourPoint>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct MonitorHourlyList {
+    /// Start of the first bucket, Unix milliseconds (UTC hour). Bucket i starts at `from` + i
+    /// hours.
+    pub from: i64,
+    /// Every monitor on the node and below, also those without beats in the window.
+    pub monitors: Vec<MonitorHourly>,
 }

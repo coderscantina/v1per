@@ -5,7 +5,7 @@ use std::time::Duration;
 use chrono::NaiveDate;
 use v1per_storage::{
     Budgets, Counts, Heartbeat, HeartbeatCursor, KumaStat, Latency, LatencyPoint, MonitorId,
-    MonitorStatus, ProbeId, Resolution, Series, Status, Storage, UptimeWindow,
+    MonitorStatus, ProbeId, Resolution, Series, Status, Storage, TrendBucket, UptimeWindow,
 };
 
 const NOW_MS: i64 = 1_790_812_800_000; // 2026-10-01T00:00:00Z
@@ -518,6 +518,99 @@ async fn the_import_day_adds_native_hours_to_the_kuma_day() {
             today.utc_approximate
         ),
         (date(2026, 10, 1), 201, 1, true)
+    );
+    storage.close().await.unwrap();
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn trend_counts_each_monitor_by_its_worst_beat_per_hour() {
+    let dir = tempfile::tempdir().unwrap();
+    let storage = open(&dir).await;
+    let earlier = NOW_MS - 2 * HOUR_MS;
+    admit_visible(
+        &storage,
+        &[
+            // Before the window.
+            beat(1, NOW_MS - DAY_MS, Status::Down, None),
+            beat(1, earlier + MINUTE_MS, Status::Up, Some(100)),
+            beat(1, earlier + 2 * MINUTE_MS, Status::Down, None),
+            beat(2, earlier + MINUTE_MS, Status::Up, Some(200)),
+            beat(2, earlier + 2 * MINUTE_MS, Status::Maintenance, None),
+            beat(3, earlier + MINUTE_MS, Status::Pending, None),
+            beat(1, NOW_MS + MINUTE_MS, Status::Up, Some(50)),
+            beat(2, NOW_MS + MINUTE_MS, Status::Maintenance, None),
+            // Not asked for.
+            beat(4, NOW_MS + MINUTE_MS, Status::Down, None),
+        ],
+    )
+    .await;
+    let monitors = [MonitorId(1), MonitorId(2), MonitorId(3)];
+    let trend = storage
+        .trend(&monitors, NOW_MS + 30 * MINUTE_MS, 24)
+        .await
+        .unwrap()
+        .value;
+
+    assert_eq!(trend.len(), 24);
+    assert_eq!(trend[0].bucket_ms, NOW_MS - 23 * HOUR_MS);
+    let mix = |b: &TrendBucket| (b.healthy, b.down, b.pending, b.maintenance);
+    let past = &trend[21];
+    assert_eq!(past.bucket_ms, earlier);
+    assert_eq!(mix(past), (1, 1, 1, 1));
+    assert_eq!(past.counts.uptime(), Some(0.5));
+    assert_eq!(past.counts.latency.map(|l| l.avg_ms), Some(150.0));
+    let current = &trend[23];
+    assert_eq!(current.bucket_ms, NOW_MS);
+    assert_eq!(mix(current), (2, 0, 0, 1));
+    assert_eq!(current.counts.uptime(), Some(1.0));
+    let empty = &trend[22];
+    assert_eq!(mix(empty), (0, 0, 0, 0));
+    assert_eq!(empty.counts, Counts::default());
+    storage.close().await.unwrap();
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn hourly_keeps_each_monitor_by_hour_with_empty_hours() {
+    let dir = tempfile::tempdir().unwrap();
+    let storage = open(&dir).await;
+    let earlier = NOW_MS - 2 * HOUR_MS;
+    admit_visible(
+        &storage,
+        &[
+            beat(1, earlier + MINUTE_MS, Status::Up, Some(100)),
+            beat(1, earlier + 2 * MINUTE_MS, Status::Down, None),
+            beat(1, NOW_MS + MINUTE_MS, Status::Up, Some(50)),
+            beat(2, NOW_MS + MINUTE_MS, Status::Maintenance, None),
+            // Not asked for.
+            beat(4, NOW_MS + MINUTE_MS, Status::Down, None),
+        ],
+    )
+    .await;
+    let hourly = storage
+        .hourly(
+            &[MonitorId(1), MonitorId(2), MonitorId(3)],
+            NOW_MS + 30 * MINUTE_MS,
+            24,
+        )
+        .await
+        .unwrap()
+        .value;
+
+    assert_eq!(hourly.from_ms, NOW_MS - 23 * HOUR_MS);
+    assert_eq!(
+        hourly.counts.keys().copied().collect::<Vec<_>>(),
+        [MonitorId(1), MonitorId(2), MonitorId(3)]
+    );
+    let first = &hourly.counts[&MonitorId(1)];
+    assert_eq!(first.len(), 24);
+    assert_eq!((first[21].up, first[21].down), (1, 1));
+    assert_eq!(first[22], Counts::default());
+    assert_eq!(first[23].latency.map(|l| l.avg_ms), Some(50.0));
+    assert_eq!(hourly.counts[&MonitorId(2)][23].maintenance, 1);
+    assert!(
+        hourly.counts[&MonitorId(3)]
+            .iter()
+            .all(|hour| *hour == Counts::default())
     );
     storage.close().await.unwrap();
 }

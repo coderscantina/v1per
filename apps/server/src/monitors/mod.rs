@@ -30,11 +30,12 @@ use v1per_protocol::errors::FieldErrorCode;
 use v1per_protocol::ids::{MonitorId, NodeId, ProbeId};
 use v1per_protocol::operations::monitors::{
     DayBarList, DayBarsArgs, HeartbeatPage, HeartbeatStatus, HeartbeatsArgs, LatencyArgs,
-    LatencySeries, ManualStatus, Monitor, MonitorArgs, MonitorDeleted, MonitorDetail, MonitorList,
-    MonitorResult, MonitorSettings, MonitorState, MonitorSummary, MonitorType, MonitorUptime,
-    MonitorsCreateArgs, MonitorsHandlers, MonitorsListArgs, MonitorsSetManualStatusArgs,
-    MonitorsUpdateArgs, ProbeState, UptimeArgs,
+    LatencySeries, ManualStatus, Monitor, MonitorArgs, MonitorDeleted, MonitorDetail,
+    MonitorHourlyList, MonitorList, MonitorResult, MonitorSettings, MonitorState, MonitorSummary,
+    MonitorType, MonitorUptime, MonitorsCreateArgs, MonitorsHandlers, MonitorsListArgs,
+    MonitorsSetManualStatusArgs, MonitorsUpdateArgs, ProbeState, ScopeTrend, UptimeArgs,
 };
+use v1per_protocol::operations::nodes::NodeArgs;
 use v1per_protocol::registry::Snapshot;
 use v1per_storage::Status;
 
@@ -536,6 +537,23 @@ async fn readable(ctx: &mut QueryCtx, monitor: MonitorId) -> Result<Topic, ApiEr
     Ok(Topic::monitors(scope.node()))
 }
 
+/// `node.read` on `node`; the monitors on it and below.
+async fn monitors_below(ctx: &mut QueryCtx, node: NodeId) -> Result<Vec<MonitorId>, ApiError> {
+    ctx.node_scope(node, Capability::NodeRead).await?;
+    let ids: Vec<i64> = sqlx::query_scalar(
+        "WITH RECURSIVE below(id) AS (
+             SELECT ?1
+             UNION ALL
+             SELECT n.id FROM nodes n JOIN below b ON n.parent_id = b.id
+         )
+         SELECT m.id FROM monitors m WHERE m.node_id IN (SELECT id FROM below)",
+    )
+    .bind(node.get())
+    .fetch_all(ctx.conn())
+    .await?;
+    Ok(ids.into_iter().map(MonitorId::new).collect())
+}
+
 impl MonitorsHandlers for AppState {
     async fn monitors_create(
         &self,
@@ -949,6 +967,30 @@ impl MonitorsHandlers for AppState {
         Ok(Snapshot {
             topic,
             data: history::latency(&self.storage, &args).await?,
+        })
+    }
+
+    async fn monitors_trend(
+        &self,
+        ctx: &mut QueryCtx,
+        args: NodeArgs,
+    ) -> Result<Snapshot<ScopeTrend>, ApiError> {
+        let ids = monitors_below(ctx, args.node).await?;
+        Ok(Snapshot {
+            topic: Topic::monitor_tree(args.node),
+            data: history::trend(&self.storage, &ids, self.clock.now_ms()).await?,
+        })
+    }
+
+    async fn monitors_hourly(
+        &self,
+        ctx: &mut QueryCtx,
+        args: NodeArgs,
+    ) -> Result<Snapshot<MonitorHourlyList>, ApiError> {
+        let ids = monitors_below(ctx, args.node).await?;
+        Ok(Snapshot {
+            topic: Topic::monitor_tree(args.node),
+            data: history::hourly(&self.storage, &ids, self.clock.now_ms()).await?,
         })
     }
 

@@ -24,6 +24,10 @@ export const queryKeys = {
     ['monitor-history', monitor, 'monitors.latency', range, probe] as const,
   dayBars: (monitor: string, timezone: string) => ['monitor-history', monitor, 'monitors.dayBars', timezone] as const,
   heartbeats: (monitor: string, probe: string) => ['monitor-history', monitor, 'monitors.heartbeats', probe] as const,
+  /** The hourly trend of a node and everything below it; read it again when a status changes. */
+  trend: (node: string) => ['monitors.trend', node] as const,
+  /** Each monitor's last 24 hours on a node and everything below it; read it again when a status changes. */
+  hourly: (node: string) => ['monitors.hourly', node] as const,
   /** A monitor's recent alerts, refreshed with its history. */
   monitorDeliveries: (monitor: string) => ['monitor-history', monitor, 'channels.monitorDeliveries'] as const,
   /** One delivery, such as a test send, read until it finishes. */

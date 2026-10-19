@@ -132,6 +132,32 @@ pub struct LatencyPoint {
     pub latency: Latency,
 }
 
+/// One UTC hour of a set of monitors' monitor-level series.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct TrendBucket {
+    /// Bucket start, UTC Unix milliseconds.
+    pub bucket_ms: i64,
+    /// Every monitor's beats in the hour, summed.
+    pub counts: Counts,
+    /// Monitors without down or pending beats, maintenance ones included.
+    pub healthy: u32,
+    /// Monitors with at least one down beat.
+    pub down: u32,
+    /// Monitors with pending beats and no down beat.
+    pub pending: u32,
+    /// Monitors with maintenance beats and no down or pending beat.
+    pub maintenance: u32,
+}
+
+/// Each monitor's last hours, by UTC hour.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Hourly {
+    /// Start of the first hour, UTC Unix milliseconds. Entry i starts at `from_ms` + i hours.
+    pub from_ms: i64,
+    /// Oldest first, the current partial hour last.
+    pub counts: BTreeMap<MonitorId, Vec<Counts>>,
+}
+
 /// Rollup rows summed exactly: latency keeps sum and count so averages merge.
 #[derive(Debug, Clone, Copy, Default)]
 struct Sum {
@@ -566,6 +592,108 @@ pub(crate) fn latency(
             })
             .collect(),
     )
+}
+
+/// `[from, to)` of the last `hours` UTC hours, the hour holding `now_ms` last.
+fn hour_window(now_ms: i64, hours: u32) -> (i64, i64) {
+    let to = now_ms.div_euclid(HOUR_MS) * HOUR_MS + HOUR_MS;
+    (to - i64::from(hours) * HOUR_MS, to)
+}
+
+/// The monitor series of `monitors` summed per monitor and UTC hour in `[from, to)`, in one
+/// query; hours without beats have no row.
+fn hour_sums(
+    conn: &Connection,
+    monitors: &[MonitorId],
+    from_ms: i64,
+    to_ms: i64,
+) -> duckdb::Result<Vec<(MonitorId, i64, Sum)>> {
+    if monitors.is_empty() {
+        return Ok(Vec::new());
+    }
+    rollups(
+        conn,
+        Resolution::Hour,
+        Series::Monitor,
+        monitors,
+        from_ms,
+        to_ms,
+        true,
+    )
+}
+
+/// The last `hours` UTC hours of the monitor series of `monitors` taken together, the hour
+/// holding `now_ms` last. Each monitor is classified per hour by its worst beat. Hours
+/// without data are present with zero counts.
+pub(crate) fn trend(
+    conn: &Connection,
+    monitors: &[MonitorId],
+    now_ms: i64,
+    hours: u32,
+) -> duckdb::Result<Vec<TrendBucket>> {
+    let (from, to) = hour_window(now_ms, hours);
+    let rows = hour_sums(conn, monitors, from, to)?;
+    let mut hours: BTreeMap<i64, (Sum, TrendBucket)> = (from..to)
+        .step_by(HOUR_MS as usize)
+        .map(|bucket_ms| {
+            let bucket = TrendBucket {
+                bucket_ms,
+                ..TrendBucket::default()
+            };
+            (bucket_ms, (Sum::default(), bucket))
+        })
+        .collect();
+    for (_, bucket_ms, sum) in rows {
+        let Some((total, bucket)) = hours.get_mut(&bucket_ms) else {
+            continue;
+        };
+        total.add(&sum);
+        if sum.down > 0 {
+            bucket.down += 1;
+        } else if sum.pending > 0 {
+            bucket.pending += 1;
+        } else if sum.up + sum.maintenance > 0 {
+            bucket.healthy += 1;
+            if sum.maintenance > 0 {
+                bucket.maintenance += 1;
+            }
+        }
+    }
+    Ok(hours
+        .into_values()
+        .map(|(total, bucket)| TrendBucket {
+            counts: total.counts(),
+            ..bucket
+        })
+        .collect())
+}
+
+/// The last `hours` UTC hours of each monitor's monitor series, the hour holding `now_ms`
+/// last. Every monitor asked for is present with `hours` entries; hours without data have
+/// zero counts.
+pub(crate) fn hourly(
+    conn: &Connection,
+    monitors: &[MonitorId],
+    now_ms: i64,
+    hours: u32,
+) -> duckdb::Result<Hourly> {
+    let (from_ms, to_ms) = hour_window(now_ms, hours);
+    let rows = hour_sums(conn, monitors, from_ms, to_ms)?;
+    let mut counts: BTreeMap<MonitorId, Vec<Counts>> = monitors
+        .iter()
+        .map(|&monitor| (monitor, vec![Counts::default(); hours as usize]))
+        .collect();
+    for (monitor, bucket_ms, sum) in rows {
+        let hour = usize::try_from((bucket_ms - from_ms) / HOUR_MS).ok();
+        if let Some(slot) = counts
+            .get_mut(&monitor)
+            .zip(hour)
+            .and_then(|(hours, hour)| hours.get_mut(hour))
+        {
+            *slot = sum.counts();
+        }
+    }
+    Ok(Hourly { from_ms, counts })
 }
 
 /// Rows the Kuma import wrote for a set of monitors: raw heartbeats of the `kuma-import`
