@@ -2,7 +2,9 @@
 
 Build a Rust uptime monitoring and status page server for teams that run Uptime Kuma today. v1per imports an Uptime Kuma 2.5.0 SQLite database with its history, runs checks from a built-in probe and remote probe agents, and publishes status pages with incident management. One instance serves many teams and clients through a tree of nodes.
 
-Nothing is built yet. This handoff describes work to build. The architecture, UI and development flow are taken from holocron, Mike's Rust analytics app, and adapted here.
+The server, admin app, probe agent, Kuma import and operator commands are built, and v1per is heading for its first public beta. The architecture, UI and development flow are taken from holocron, Mike's Rust analytics app, and adapted here.
+
+To install, run or use v1per, read the [user guide](guide/README.md). The rest of this index is for people who work on v1per.
 
 ## Read in this order
 
@@ -44,4 +46,4 @@ Pinned in [sources/manifest.json](../sources/manifest.json):
 
 Keep milestone status and evidence links in the milestone index. Store result reports under `docs/evidence/`, named `mNN-<slug>.md`, with screenshots in `docs/evidence/mNN/`. Keep real Kuma databases, secrets and large workloads outside Git. A report states source revision, command, fixture, machine, engine versions, result and what was not verified.
 
-Milestone 01 is complete and 02 through 05 are in progress; see the [milestone index](milestones/README.md).
+Milestone 01 is complete, 02 through 11 are in progress and 12 is pending; see the [milestone index](milestones/README.md).
