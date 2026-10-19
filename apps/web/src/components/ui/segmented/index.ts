@@ -1,25 +1,26 @@
 import { cva, type VariantProps } from 'class-variance-authority'
 
 /**
- * The one segmented control look: a filled track with the chosen option set into it in the
- * canvas colour, so it reads as a cut-out of the page. Shared by `ChoiceGroup`, `Tabs` and the toggle groups, which mark
- * the chosen option with `aria-checked`, `data-state=on` or `data-state=active`.
+ * The one segmented control look: a bordered track a step off its background, with the chosen
+ * option raised onto it in the fill colour. Shared by `ChoiceGroup`, `Tabs`, the toggle groups and
+ * the mode switch, which mark the chosen option with `aria-checked`, `data-state=on` or
+ * `data-state=active`.
  */
-export const segmentedTrack = 'inline-flex max-w-full flex-wrap gap-0.5 rounded-control bg-fill p-1'
+export const segmentedTrack = 'inline-flex max-w-full flex-wrap gap-0.5 rounded-[11px] border border-hairline bg-surface p-[3px]'
 
 const raised = [
-  'aria-checked:bg-surface aria-checked:text-primary aria-checked:shadow-soft-sm aria-checked:ring-1 aria-checked:ring-hairline aria-checked:ring-inset',
-  'data-[state=on]:bg-surface data-[state=on]:text-primary data-[state=on]:shadow-soft-sm data-[state=on]:ring-1 data-[state=on]:ring-hairline data-[state=on]:ring-inset',
-  'data-[state=active]:bg-surface data-[state=active]:text-primary data-[state=active]:shadow-soft-sm data-[state=active]:ring-1 data-[state=active]:ring-hairline data-[state=active]:ring-inset',
+  'aria-checked:bg-fill-strong aria-checked:text-primary aria-checked:shadow-[inset_0_1px_0_color-mix(in_oklch,white_7%,transparent)]',
+  'data-[state=on]:bg-fill-strong data-[state=on]:text-primary data-[state=on]:shadow-[inset_0_1px_0_color-mix(in_oklch,white_7%,transparent)]',
+  'data-[state=active]:bg-fill-strong data-[state=active]:text-primary data-[state=active]:shadow-[inset_0_1px_0_color-mix(in_oklch,white_7%,transparent)]',
 ].join(' ')
 
 export const segmentedItem = cva(
-  `inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg font-medium whitespace-nowrap text-muted transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 ${raised}`,
+  `inline-flex cursor-pointer items-center justify-center gap-1.5 font-medium whitespace-nowrap text-muted transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 ${raised}`,
   {
     variants: {
       size: {
-        sm: 'h-7 px-2.5 text-[0.875rem] max-sm:min-h-8',
-        md: 'h-8 px-4 text-[0.90625rem] max-sm:px-3',
+        sm: 'h-[26px] rounded-[7px] px-2.5 text-xs max-sm:min-h-8',
+        md: 'h-[30px] rounded-lg px-3.5 text-[0.8125rem] max-sm:px-3',
       },
     },
     defaultVariants: { size: 'sm' },

@@ -1,6 +1,8 @@
 <script setup lang="ts" generic="Value extends string | number">
 // From holocron (84fc54ec): apps/web/src/components/report/ChoiceGroup.vue.
+import Icon from '~/components/Icon.vue'
 import { segmentedItem, segmentedTrack } from '~/components/ui/segmented'
+import type { IconName } from '~/lib/icons'
 
 /**
  * A labelled single choice drawn as segments: a radio group with one tab stop, arrow keys to
@@ -8,7 +10,7 @@ import { segmentedItem, segmentedTrack } from '~/components/ui/segmented'
  */
 const props = defineProps<{
   label: string
-  options: { value: Value; label: string }[]
+  options: { value: Value; label: string; icon?: IconName }[]
 }>()
 
 const model = defineModel<Value>({ required: true })
@@ -46,6 +48,12 @@ const move = (index: number, delta: number) => {
       @keydown.left.prevent="move(index, -1)"
       @keydown.up.prevent="move(index, -1)"
     >
+      <Icon
+        v-if="option.icon"
+        :name="option.icon"
+        size="13"
+        aria-hidden="true"
+      />
       {{ option.label }}
     </button>
   </div>
