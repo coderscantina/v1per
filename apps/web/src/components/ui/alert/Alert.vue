@@ -6,52 +6,49 @@ import Icon from '~/components/Icon.vue'
 import type { IconName } from '~/lib/icons'
 import { cn } from '~/lib/utils'
 
-const alertVariants = cva('relative w-full p-3', {
-  variants: {
-    color: {
-      default: 'border-border bg-card text-foreground',
-      info: 'border-info/40 text-info bg-info-background/10',
-      destructive: 'border-destructive/40 text-destructive-foreground bg-destructive-background/10',
-      success: 'border-success/40 text-success bg-success-background/10',
-      warning: 'border-warning/40 text-warning bg-warning-background/10',
+/**
+ * A message on a faint wash of its colour with a glowing bar at the left. `color` sets `--tone`;
+ * only the bar, the wash and the icon carry it, the text keeps the regular ink.
+ */
+const alertVariants = cva(
+  'relative w-full rounded-r-lg bg-[color-mix(in_oklab,var(--tone)_11%,var(--card))] p-3 pl-4 text-foreground before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-(--tone) before:shadow-[0_0_10px_var(--tone)]',
+  {
+    variants: {
+      color: {
+        default: '[--tone:var(--faint)]',
+        info: '[--tone:var(--info)]',
+        destructive: '[--tone:var(--destructive)]',
+        success: '[--tone:var(--success)]',
+        warning: '[--tone:var(--warning)]',
+      },
     },
-    variant: {
-      default: 'rounded-lg border',
-      modern: 'border-l-3',
-      outline: 'rounded-lg border bg-transparent',
+    defaultVariants: {
+      color: 'default',
     },
-  },
-  defaultVariants: {
-    variant: 'default',
-    color: 'default',
-  },
-})
-
-type AlertVariants = VariantProps<typeof alertVariants>
+  }
+)
 
 interface AlertProps {
   icon?: IconName
-  variant?: AlertVariants['variant']
-  color?: AlertVariants['color']
+  color?: VariantProps<typeof alertVariants>['color']
   class?: HTMLAttributes['class']
 }
 
 const props = withDefaults(defineProps<AlertProps>(), {
-  variant: 'default',
   color: 'default',
 })
 </script>
 
 <template>
   <div
-    :class="cn(alertVariants({ variant, color }), props.class)"
+    :class="cn(alertVariants({ color }), props.class)"
     role="alert"
   >
-    <div class="items-top flex gap-2">
+    <div class="flex items-start gap-2">
       <Icon
         v-if="icon"
         :name="icon"
-        class="mt-1 shrink-0"
+        class="mt-0.5 size-4.5 shrink-0 text-(--tone)"
       />
       <div>
         <slot />
