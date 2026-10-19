@@ -4341,7 +4341,7 @@ dependencies = [
 
 [[package]]
 name = "v1per-checks"
-version = "0.1.0"
+version = "26.10.19"
 dependencies = [
  "base64 0.23.1",
  "chrono",
@@ -4364,7 +4364,7 @@ dependencies = [
 
 [[package]]
 name = "v1per-kuma-fixture"
-version = "0.1.0"
+version = "26.10.19"
 dependencies = [
  "base64 0.22.1",
  "bcrypt",
@@ -4378,7 +4378,7 @@ dependencies = [
 
 [[package]]
 name = "v1per-kuma-import"
-version = "0.1.0"
+version = "26.10.19"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -4396,7 +4396,7 @@ dependencies = [
 
 [[package]]
 name = "v1per-maintenance-schedule"
-version = "0.1.0"
+version = "26.10.19"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -4408,7 +4408,7 @@ dependencies = [
 
 [[package]]
 name = "v1per-notify"
-version = "0.1.0"
+version = "26.10.19"
 dependencies = [
  "axum",
  "base64 0.23.1",
@@ -4432,7 +4432,7 @@ dependencies = [
 
 [[package]]
 name = "v1per-protocol"
-version = "0.1.0"
+version = "26.10.19"
 dependencies = [
  "schemars",
  "serde",
@@ -4443,7 +4443,7 @@ dependencies = [
 
 [[package]]
 name = "v1per-server"
-version = "0.1.0"
+version = "26.10.19"
 dependencies = [
  "anyhow",
  "argon2",
@@ -4491,7 +4491,7 @@ dependencies = [
 
 [[package]]
 name = "v1per-storage"
-version = "0.1.0"
+version = "26.10.19"
 dependencies = [
  "blake3",
  "chrono",
@@ -4508,7 +4508,7 @@ dependencies = [
 
 [[package]]
 name = "v1per-workload"
-version = "0.1.0"
+version = "26.10.19"
 dependencies = [
  "chrono",
  "chrono-tz",
