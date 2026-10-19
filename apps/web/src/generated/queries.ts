@@ -45,6 +45,7 @@ import type { MemberList } from './MemberList'
 import type { MonitorArgs } from './MonitorArgs'
 import type { MonitorDeliveriesArgs } from './MonitorDeliveriesArgs'
 import type { MonitorDetail } from './MonitorDetail'
+import type { MonitorHourlyList } from './MonitorHourlyList'
 import type { MonitorList } from './MonitorList'
 import type { MonitorUptime } from './MonitorUptime'
 import type { MonitorsListArgs } from './MonitorsListArgs'
@@ -57,8 +58,10 @@ import type { PageList } from './PageList'
 import type { PagePreview } from './PagePreview'
 import type { PagesListArgs } from './PagesListArgs'
 import type { PagesPreviewArgs } from './PagesPreviewArgs'
+import type { Preferences } from './Preferences'
 import type { ProbeChoiceList } from './ProbeChoiceList'
 import type { ProbeList } from './ProbeList'
+import type { ScopeTrend } from './ScopeTrend'
 import type { SessionState } from './SessionState'
 import type { TwoFactorStatus } from './TwoFactorStatus'
 import type { UptimeArgs } from './UptimeArgs'
@@ -66,6 +69,7 @@ import type { UptimeArgs } from './UptimeArgs'
 export interface Queries {
   'account.get': { args: Empty; result: AccountResult; access: 'person'; key: false }
   'account.grants': { args: Empty; result: GrantList; access: 'person'; key: false }
+  'account.preferences': { args: Empty; result: Preferences; access: 'person'; key: false }
   'apiKeys.list': { args: Empty; result: ApiKeyList; access: 'person'; key: false }
   'auth.session': { args: Empty; result: SessionState; access: 'anonymous'; key: false }
   'channels.available': { args: NodeArgs; result: ChannelChoiceList; access: 'person'; key: true }
@@ -93,8 +97,10 @@ export interface Queries {
   'monitors.dayBars': { args: DayBarsArgs; result: DayBarList; access: 'person'; key: true }
   'monitors.get': { args: MonitorArgs; result: MonitorDetail; access: 'person'; key: true }
   'monitors.heartbeats': { args: HeartbeatsArgs; result: HeartbeatPage; access: 'person'; key: true }
+  'monitors.hourly': { args: NodeArgs; result: MonitorHourlyList; access: 'person'; key: true }
   'monitors.latency': { args: LatencyArgs; result: LatencySeries; access: 'person'; key: true }
   'monitors.list': { args: MonitorsListArgs; result: MonitorList; access: 'person'; key: true }
+  'monitors.trend': { args: NodeArgs; result: ScopeTrend; access: 'person'; key: true }
   'monitors.uptime': { args: UptimeArgs; result: MonitorUptime; access: 'person'; key: true }
   'nodes.get': { args: NodeArgs; result: NodeResult; access: 'person'; key: true }
   'nodes.tree': { args: Empty; result: NodeTree; access: 'person'; key: true }
@@ -106,4 +112,4 @@ export interface Queries {
   'twoFactor.status': { args: Empty; result: TwoFactorStatus; access: 'person'; key: false }
 }
 
-export const queryNames = ['account.get', 'account.grants', 'apiKeys.list', 'auth.session', 'channels.available', 'channels.deliveries', 'channels.delivery', 'channels.get', 'channels.list', 'channels.monitorDeliveries', 'components.list', 'imports.get', 'imports.inventory', 'imports.list', 'incidents.get', 'incidents.list', 'incidents.publications', 'instance.info', 'instance.operations', 'instance.settings', 'invitations.preview', 'maintenance.get', 'maintenance.list', 'maintenance.preview', 'members.invitations', 'members.list', 'monitors.dayBars', 'monitors.get', 'monitors.heartbeats', 'monitors.latency', 'monitors.list', 'monitors.uptime', 'nodes.get', 'nodes.tree', 'pages.get', 'pages.list', 'pages.preview', 'probes.available', 'probes.list', 'twoFactor.status'] as const satisfies readonly (keyof Queries)[]
+export const queryNames = ['account.get', 'account.grants', 'account.preferences', 'apiKeys.list', 'auth.session', 'channels.available', 'channels.deliveries', 'channels.delivery', 'channels.get', 'channels.list', 'channels.monitorDeliveries', 'components.list', 'imports.get', 'imports.inventory', 'imports.list', 'incidents.get', 'incidents.list', 'incidents.publications', 'instance.info', 'instance.operations', 'instance.settings', 'invitations.preview', 'maintenance.get', 'maintenance.list', 'maintenance.preview', 'members.invitations', 'members.list', 'monitors.dayBars', 'monitors.get', 'monitors.heartbeats', 'monitors.hourly', 'monitors.latency', 'monitors.list', 'monitors.trend', 'monitors.uptime', 'nodes.get', 'nodes.tree', 'pages.get', 'pages.list', 'pages.preview', 'probes.available', 'probes.list', 'twoFactor.status'] as const satisfies readonly (keyof Queries)[]

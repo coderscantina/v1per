@@ -68,6 +68,7 @@ import type { PagesHostnameArgs } from './PagesHostnameArgs'
 import type { PagesUpdateAccessArgs } from './PagesUpdateAccessArgs'
 import type { PagesUpdateArgs } from './PagesUpdateArgs'
 import type { PagesUpdateLayoutArgs } from './PagesUpdateLayoutArgs'
+import type { Preferences } from './Preferences'
 import type { ProbeArgs } from './ProbeArgs'
 import type { ProbeCreated } from './ProbeCreated'
 import type { ProbeResult } from './ProbeResult'
@@ -85,6 +86,7 @@ import type { TwoFactorStatus } from './TwoFactorStatus'
 
 export interface Commands {
   'account.changePassword': { args: ChangePasswordArgs; result: Empty; access: 'person'; key: false; reauth: 'never' }
+  'account.updatePreferences': { args: Preferences; result: Preferences; access: 'person'; key: false; reauth: 'never' }
   'apiKeys.create': { args: ApiKeysCreateArgs; result: ApiKeyCreated; access: 'person'; key: false; reauth: 'always' }
   'apiKeys.revoke': { args: ApiKeyArgs; result: ApiKeyResult; access: 'person'; key: false; reauth: 'never' }
   'auth.login': { args: LoginArgs; result: LoginResult; access: 'anonymous'; key: false; reauth: 'never' }
@@ -147,4 +149,4 @@ export interface Commands {
   'twoFactor.regenerateRecoveryCodes': { args: Empty; result: RecoveryCodes; access: 'person'; key: false; reauth: 'always' }
 }
 
-export const commandNames = ['account.changePassword', 'apiKeys.create', 'apiKeys.revoke', 'auth.login', 'auth.logout', 'auth.reauthenticate', 'auth.verifySecondFactor', 'channels.create', 'channels.delete', 'channels.test', 'channels.update', 'components.create', 'components.delete', 'components.update', 'incidents.addUpdate', 'incidents.create', 'incidents.delete', 'incidents.publish', 'incidents.unpublish', 'incidents.update', 'instance.testSmtp', 'instance.updateSettings', 'instance.updateSmtp', 'invitations.accept', 'maintenance.create', 'maintenance.delete', 'maintenance.pause', 'maintenance.resume', 'maintenance.update', 'members.invite', 'members.remove', 'members.revokeInvitation', 'members.updateRole', 'monitors.create', 'monitors.delete', 'monitors.pause', 'monitors.resume', 'monitors.setManualStatus', 'monitors.update', 'nodes.create', 'nodes.delete', 'nodes.move', 'nodes.rename', 'nodes.reorder', 'nodes.requireTwoFactor', 'pages.claimHostname', 'pages.create', 'pages.createShareToken', 'pages.delete', 'pages.releaseHostname', 'pages.removeLogo', 'pages.revokeShareToken', 'pages.update', 'pages.updateAccess', 'pages.updateLayout', 'probes.create', 'probes.revoke', 'twoFactor.begin', 'twoFactor.confirm', 'twoFactor.disable', 'twoFactor.regenerateRecoveryCodes'] as const satisfies readonly (keyof Commands)[]
+export const commandNames = ['account.changePassword', 'account.updatePreferences', 'apiKeys.create', 'apiKeys.revoke', 'auth.login', 'auth.logout', 'auth.reauthenticate', 'auth.verifySecondFactor', 'channels.create', 'channels.delete', 'channels.test', 'channels.update', 'components.create', 'components.delete', 'components.update', 'incidents.addUpdate', 'incidents.create', 'incidents.delete', 'incidents.publish', 'incidents.unpublish', 'incidents.update', 'instance.testSmtp', 'instance.updateSettings', 'instance.updateSmtp', 'invitations.accept', 'maintenance.create', 'maintenance.delete', 'maintenance.pause', 'maintenance.resume', 'maintenance.update', 'members.invite', 'members.remove', 'members.revokeInvitation', 'members.updateRole', 'monitors.create', 'monitors.delete', 'monitors.pause', 'monitors.resume', 'monitors.setManualStatus', 'monitors.update', 'nodes.create', 'nodes.delete', 'nodes.move', 'nodes.rename', 'nodes.reorder', 'nodes.requireTwoFactor', 'pages.claimHostname', 'pages.create', 'pages.createShareToken', 'pages.delete', 'pages.releaseHostname', 'pages.removeLogo', 'pages.revokeShareToken', 'pages.update', 'pages.updateAccess', 'pages.updateLayout', 'probes.create', 'probes.revoke', 'twoFactor.begin', 'twoFactor.confirm', 'twoFactor.disable', 'twoFactor.regenerateRecoveryCodes'] as const satisfies readonly (keyof Commands)[]

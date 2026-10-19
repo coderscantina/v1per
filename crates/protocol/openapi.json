@@ -155,6 +155,114 @@
         }
       }
     },
+    "/api/queries/account.preferences": {
+      "get": {
+        "operationId": "account.preferences",
+        "description": "The caller's preferences, so another browser picks them up. On the caller's\n `user:<id>` topic.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SnapshotMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Preferences"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/commands/account.updatePreferences": {
+      "post": {
+        "operationId": "account.updatePreferences",
+        "description": "Replaces the caller's preferences. Absent fields fall back to the app's default.\n Records `account.preferences_changed` on the caller's `user:<id>` topic.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x-v1per-request",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CommandKey"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Preferences"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Preferences"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/commands/apiKeys.create": {
       "post": {
         "operationId": "apiKeys.create",
@@ -1119,7 +1227,7 @@
     "/api/commands/channels.test": {
       "post": {
         "operationId": "channels.test",
-        "description": "Queues a test message, Kuma's \"Test\" button, through the outbox with a single\n attempt. `settings` is the form as it stands; secret fields without `value` come\n from `channel`, which must be on `node`. Follow `channel.delivery` on the node's\n `channels:<id>` topic and read the outcome with `channels.delivery`. Needs\n `channels.manage`.",
+        "description": "Queues a test, Kuma's \"Test\" button, through the outbox with a single attempt. It\n sends Kuma's test message, or with `sample` a monitor down or up alert rendered like\n a real one, for checking templates. `settings` is the form as it stands; secret fields without `value` come\n from `channel`, which must be on `node`. Follow `channel.delivery` on the node's\n `channels:<id>` topic and read the outcome with `channels.delivery`. Needs\n `channels.manage`.",
         "security": [
           {
             "session": []
@@ -4187,6 +4295,59 @@
         }
       }
     },
+    "/api/queries/monitors.hourly": {
+      "get": {
+        "operationId": "monitors.hourly",
+        "description": "The last 24 hours of each monitor on `node` and below, by UTC hour, oldest first and\n the current hour last, from the monitors' own status. Needs `node.read`. On the\n `monitor-tree:<id>` topic.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "node",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/NodeId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SnapshotMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/MonitorHourlyList"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/queries/monitors.latency": {
       "get": {
         "operationId": "monitors.latency",
@@ -4538,6 +4699,59 @@
                     },
                     {
                       "$ref": "#/components/schemas/MonitorResult"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/queries/monitors.trend": {
+      "get": {
+        "operationId": "monitors.trend",
+        "description": "The last 24 hours of every monitor on `node` and below, in UTC hour buckets, oldest\n first and the current hour last, from the monitors' own status. Needs `node.read`.\n On the `monitor-tree:<id>` topic.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "node",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/NodeId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SnapshotMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ScopeTrend"
                     }
                   ]
                 }
@@ -6971,6 +7185,36 @@
           "viewer"
         ]
       },
+      "Preferences": {
+        "type": "object",
+        "properties": {
+          "accent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AppAccent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "description": "Per-person display settings. The browser applies them; the server only stores them."
+      },
+      "AppAccent": {
+        "type": "string",
+        "enum": [
+          "indigo",
+          "ultraviolet",
+          "magenta",
+          "pink",
+          "tangerine",
+          "volt",
+          "aqua",
+          "azure"
+        ],
+        "description": "Accent colour presets of the admin app, apart from the status page presets. Indigo is the\ndefault; the others are neon."
+      },
       "ApiKeysCreateArgs": {
         "type": "object",
         "properties": {
@@ -8532,6 +8776,28 @@
           },
           "settings": {
             "$ref": "#/components/schemas/ChannelSettings"
+          },
+          "sample": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TestSample"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Send a monitor alert instead of Kuma's test message."
+          },
+          "monitor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MonitorId"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "With `sample`: the monitor whose details fill the alert. Must be on `node` or below.\nWithout it a made-up example monitor is used."
           }
         },
         "required": [
@@ -8539,6 +8805,14 @@
           "name",
           "settings"
         ]
+      },
+      "TestSample": {
+        "type": "string",
+        "enum": [
+          "monitor_down",
+          "monitor_up"
+        ],
+        "description": "The alert a channel test sends in place of Kuma's test message."
       },
       "ChannelTestQueued": {
         "type": "object",
@@ -12871,6 +13145,89 @@
           "retries"
         ]
       },
+      "MonitorHourlyList": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Start of the first bucket, Unix milliseconds (UTC hour). Bucket i starts at `from` + i\nhours."
+          },
+          "monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonitorHourly"
+            },
+            "description": "Every monitor on the node and below, also those without beats in the window."
+          }
+        },
+        "required": [
+          "from",
+          "monitors"
+        ]
+      },
+      "MonitorHourly": {
+        "type": "object",
+        "properties": {
+          "monitor": {
+            "$ref": "#/components/schemas/MonitorId"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HourPoint"
+            },
+            "description": "Exactly 24, oldest first, the current partial hour last."
+          }
+        },
+        "required": [
+          "monitor",
+          "points"
+        ]
+      },
+      "HourPoint": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HourState"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The worst beat of the hour; absent without beats."
+          },
+          "uptime": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "From 0 to 1, pending counted as down and maintenance left out; absent without up, down\nor pending beats."
+          },
+          "latency_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Mean latency of the hour's up beats; absent without up beats."
+          }
+        },
+        "description": "One UTC hour of one monitor."
+      },
+      "HourState": {
+        "type": "string",
+        "enum": [
+          "up",
+          "maintenance",
+          "pending",
+          "down"
+        ],
+        "description": "The worst beat of a monitor's hour: down, then pending, then maintenance, then up."
+      },
       "LatencyArgs": {
         "type": "object",
         "properties": {
@@ -13114,6 +13471,79 @@
         "required": [
           "monitor"
         ]
+      },
+      "ScopeTrend": {
+        "type": "object",
+        "properties": {
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrendPoint"
+            },
+            "description": "Exactly 24, oldest first; hours without beats have zero counts."
+          }
+        },
+        "required": [
+          "points"
+        ]
+      },
+      "TrendPoint": {
+        "type": "object",
+        "properties": {
+          "bucket": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Bucket start, Unix milliseconds (UTC hour)."
+          },
+          "uptime": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "From 0 to 1 over every monitor's beats in the hour, pending counted as down and\nmaintenance left out; absent without up, down or pending beats."
+          },
+          "latency_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Mean latency of the hour's up beats across monitors, weighted by beat count; absent\nwithout up beats."
+          },
+          "healthy": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Monitors whose worst beat was up or maintenance."
+          },
+          "down": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Monitors with at least one down beat."
+          },
+          "pending": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Monitors with pending beats and no down beat."
+          },
+          "maintenance": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Monitors with maintenance beats and no down or pending beat; also counted in\n`healthy`."
+          }
+        },
+        "required": [
+          "bucket",
+          "healthy",
+          "down",
+          "pending",
+          "maintenance"
+        ],
+        "description": "One UTC hour of the monitors under a node. A monitor counts by its worst beat in the hour."
       },
       "MonitorsUpdateArgs": {
         "type": "object",
