@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
-    "@iconify-json/lucide": "1.2.129",
+    "@iconify-json/lucide": "1.2.145",
     "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "26.4.1",
