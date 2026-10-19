@@ -18,7 +18,7 @@ export const probeStatusFill: Record<ProbeStatus, string> = {
 
 /** The command that starts an agent for a new probe, as the operator runs it on the other machine. */
 export const probeCommand = (origin: string, token: string): string =>
-  `v1per probe --server ${origin.replace(/\/+$/, '')} --token ${token}`
+  `v1per-probe --server ${origin.replace(/\/+$/, '')} --token ${token}`
 
 /** What holds a probe back, most serious first; empty when it keeps up. */
 export type ProbeLag =

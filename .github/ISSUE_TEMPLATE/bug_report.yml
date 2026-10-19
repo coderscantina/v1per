@@ -30,7 +30,7 @@ body:
       label: Component
       options:
         - Server
-        - Probe agent (v1per probe)
+        - Probe agent (v1per-probe)
         - Web UI
         - Status page
         - Notifications

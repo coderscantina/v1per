@@ -1,7 +1,7 @@
 //! The control database: one writer connection, a separate read pool, settings applied once.
 
 use std::path::Path;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use sqlx::SqlitePool;
 use sqlx::migrate::Migrator;
@@ -71,12 +71,7 @@ impl Db {
     }
 }
 
-pub fn now_ms() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_millis() as i64)
-        .unwrap_or_default()
-}
+pub use v1per_probe_core::now_ms;
 
 pub fn new_id() -> String {
     uuid::Uuid::new_v4().to_string()

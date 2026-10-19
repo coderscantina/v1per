@@ -1,25 +1,38 @@
-//! A real agent process against a real server process, both the built `v1per` binary. The
-//! agent only connects out, picks up assignment changes through its long poll, keeps checking
+//! A real `v1per-probe` process against a real `v1per serve` process. The agent only connects out, picks up assignment changes through its long poll, keeps checking
 //! and buffering while the server is killed, and after the restart every check it ran arrives
 //! exactly once. A revoked agent stops with a clear message.
 //!
 //! Real time with 20-second intervals and a 30-second outage: it takes under a minute.
+//!
+//! The server binary is taken from beside the agent's, so build it first: `cargo test
+//! --workspace` does, `cargo test -p v1per-probe` alone needs `cargo build -p v1per-server`.
 
 use std::fs::File;
 use std::net::{SocketAddr, TcpListener};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use axum::Router;
 use axum::extract::OriginalUri;
 use serde_json::{Value, json};
-use v1per_server::db::now_ms;
+use v1per_probe_core::now_ms;
 
-const BIN: &str = env!("CARGO_BIN_EXE_v1per");
+const AGENT: &str = env!("CARGO_BIN_EXE_v1per-probe");
 const PASSWORD: &str = "correct horse battery";
 
+/// The `v1per` server binary of the same build.
+fn server_bin() -> PathBuf {
+    let bin = Path::new(AGENT).with_file_name("v1per");
+    assert!(
+        bin.exists(),
+        "{} is missing: run `cargo build -p v1per-server` first",
+        bin.display()
+    );
+    bin
+}
 /// Kills the process when the test ends, passed or not.
 struct Process(Child);
 
@@ -32,7 +45,7 @@ impl Drop for Process {
 
 fn serve(data: &Path, port: u16, log: &Path) -> Process {
     let log = File::options().create(true).append(true).open(log).unwrap();
-    let child = Command::new(BIN)
+    let child = Command::new(server_bin())
         .args(["serve", "--data-dir"])
         .arg(data)
         .args(["--bind", &format!("127.0.0.1:{port}")])
@@ -88,7 +101,9 @@ struct Api {
 impl Api {
     async fn send(&self, name: &str, body: Value) -> reqwest::Response {
         let mut body = body;
-        body["idempotency_key"] = json!(uuid::Uuid::new_v4().to_string());
+        static SENT: AtomicU64 = AtomicU64::new(0);
+        let key = format!("{}-{}", now_ms(), SENT.fetch_add(1, Ordering::Relaxed));
+        body["idempotency_key"] = json!(key);
         self.client
             .post(format!("{}/api/commands/{name}", self.origin))
             .header("origin", &self.origin)
@@ -233,7 +248,7 @@ async fn an_agent_survives_a_server_restart_without_loss_or_duplicates() {
     let (data, agent_dir) = (dir.path().join("server"), dir.path().join("agent"));
     let (server_log, agent_log) = (dir.path().join("server.log"), dir.path().join("agent.log"));
     std::fs::write(dir.path().join("password"), PASSWORD).unwrap();
-    let init = Command::new(BIN)
+    let init = Command::new(server_bin())
         .args(["init", "--data-dir"])
         .arg(&data)
         .args([
@@ -263,8 +278,8 @@ async fn an_agent_survives_a_server_restart_without_loss_or_duplicates() {
     let probe = created["probe"]["id"].as_str().unwrap().to_owned();
     let token = created["secret"].as_str().unwrap();
 
-    let agent = Command::new(BIN)
-        .args(["probe", "--server", &origin, "--data-dir"])
+    let agent = Command::new(AGENT)
+        .args(["--server", &origin, "--data-dir"])
         .arg(&agent_dir)
         .env("V1PER_PROBE_TOKEN", token)
         .stdout(Stdio::null())

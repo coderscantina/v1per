@@ -65,6 +65,39 @@ jobs:
       - name: Check generated types
         run: cargo run -p v1per-protocol --bin export-types -- --check
 
+  # Decision 0011: the static probe agent stays at most 15 MB.
+  probe-size:
+    name: Probe size
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --target x86_64-unknown-linux-musl
+          rustup default stable
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends musl-tools
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: probe-musl
+
+      - name: Build the static probe
+        run: cargo build --locked --profile probe --target x86_64-unknown-linux-musl -p v1per-probe
+
+      - name: Check its size
+        run: |
+          size=$(stat -c %s target/x86_64-unknown-linux-musl/probe/v1per-probe)
+          echo "v1per-probe: $size bytes"
+          if [ "$size" -gt 15000000 ]; then
+            echo "::error::v1per-probe is $size bytes, over the 15 MB budget of decision 0011"
+            exit 1
+          fi
+
   web:
     name: Web
     runs-on: ubuntu-latest

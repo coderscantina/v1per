@@ -1,6 +1,7 @@
 *
 !Cargo.toml
 !Cargo.lock
+!apps/probe
 !apps/server
 !apps/web
 !crates
@@ -8,6 +9,7 @@
 apps/web/node_modules
 apps/web/dist
 apps/web/e2e
+apps/probe/tests
 apps/server/tests
 crates/*/tests
 **/.DS_Store

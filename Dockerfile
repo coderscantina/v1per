@@ -1,5 +1,5 @@
-# One-process v1per image: the release binary with the built web app beside it. The same
-# image runs `v1per serve` (default) and `v1per probe`.
+# One-process v1per image: the release binary with the built web app beside it. Remote probe
+# agents have their own image, built from Dockerfile.probe.
 #
 #   docker build --build-arg V1PER_GIT_SHA=$(git rev-parse --short HEAD) -t v1per .
 #
@@ -21,6 +21,8 @@ ARG CARGO_BUILD_JOBS
 ARG V1PER_GIT_SHA
 WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
+# The probe's manifest completes the workspace; `v1per` does not build it.
+COPY apps/probe apps/probe
 COPY apps/server apps/server
 COPY crates crates
 # The Kuma importer embeds Kuma's schema at compile time.
@@ -35,14 +37,12 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl tzdata \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --uid 10001 --home-dir /data v1per \
-    && install -d -o v1per -g v1per /data /probe-data
-# /probe-data is the probe agent's result buffer; mount a volume there to keep it.
+    && install -d -o v1per -g v1per /data
 # `serve` finds the web app in the `web` directory next to the executable.
 COPY --from=server /v1per /opt/v1per/v1per
 COPY --from=web /src/apps/web/dist /opt/v1per/web
 ENV PATH=/opt/v1per:$PATH \
     V1PER_DATA_DIR=/data \
-    V1PER_PROBE_DATA_DIR=/probe-data \
     V1PER_BIND=0.0.0.0:8080
 USER v1per
 VOLUME /data

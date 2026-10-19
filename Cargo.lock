@@ -4431,6 +4431,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "v1per-probe"
+version = "26.10.19"
+dependencies = [
+ "axum",
+ "clap",
+ "crc32fast",
+ "getrandom 0.3.4",
+ "libc",
+ "reqwest",
+ "rustls",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "v1per-probe-core",
+ "v1per-protocol",
+ "webpki-roots",
+]
+
+[[package]]
+name = "v1per-probe-core"
+version = "26.10.19"
+dependencies = [
+ "serde",
+ "tokio",
+ "v1per-checks",
+ "v1per-protocol",
+]
+
+[[package]]
 name = "v1per-protocol"
 version = "26.10.19"
 dependencies = [
@@ -4462,8 +4495,6 @@ dependencies = [
  "http-body-util",
  "lettre",
  "libc",
- "reqwest",
- "rustls",
  "serde",
  "serde_html_form",
  "serde_json",
@@ -4484,9 +4515,9 @@ dependencies = [
  "v1per-kuma-import",
  "v1per-maintenance-schedule",
  "v1per-notify",
+ "v1per-probe-core",
  "v1per-protocol",
  "v1per-storage",
- "webpki-roots",
 ]
 
 [[package]]

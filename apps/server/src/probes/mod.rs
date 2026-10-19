@@ -1,22 +1,20 @@
 //! Probes (decision 0003, milestones 05 and 06): the built-in probe inside the server, remote
-//! agents registered on nodes, the agent protocol under `/api/probe/*`, and `v1per probe`, the
-//! agent mode of this binary. Owns `probes.*`.
+//! agents registered on nodes, and the agent protocol under `/api/probe/*` that `v1per-probe`
+//! (`apps/probe`, decision 0011) speaks. Owns `probes.*`.
 //!
 //! A probe registered on a node serves monitors on that node and below; instance-wide probes,
 //! the built-in one included, live on the root. A monitor runs on the probes it names, the
 //! built-in probe by default. Checks and the scheduler are shared: the built-in probe and
-//! agents run the same [`schedule`] code over `v1per_checks`.
+//! agents run the same [`schedule`] code from `v1per_probe_core` over `v1per_checks`.
 //!
 //! Topics: `probe.created`, `probe.revoked`, `probe.online` and `probe.offline` on the probe
 //! node's `probes:<id>` topic, each with the probe's ID.
 
-pub mod agent;
 mod api;
-mod buffer;
 mod builtin;
 pub(crate) mod registry;
-pub mod schedule;
-pub mod wire;
+
+pub use v1per_probe_core::{schedule, wire};
 
 pub(crate) use api::{assignments, results};
 pub use builtin::run;

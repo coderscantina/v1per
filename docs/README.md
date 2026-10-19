@@ -23,7 +23,7 @@ The technical briefing owns product requirements. The monitoring contract owns s
 | Replace a running Uptime Kuma 2.5.0         | One-shot import of config, secrets, raw heartbeats and `stat_*` rollups. Push URLs keep working. Imported uptime numbers match.   |
 | Self-hosted, one process, one data directory | Rust serves the built Vue assets. SQLite holds control data, embedded DuckDB holds heartbeats. No Node, external database or queue. |
 | Many teams and clients on one instance       | A tree of uniform nodes with inherited, additive grants. Every read and write goes through an authorized node scope.               |
-| Checks from several networks                 | The server has a built-in probe; remote agents run the same binary over outbound HTTPS. Monitor status uses a probe quorum.       |
+| Checks from several networks                 | The server has a built-in probe; remote agents run the slim `v1per-probe` over outbound HTTPS. Monitor status uses a probe quorum. |
 | Status pages for public, clients and teams   | Pages pick components from their node's subtree and support public, login, password, magic link and share token access.          |
 | Holocron is the template                     | Copy and adapt its workspace layout, protocol registry, identity, storage patterns, Kit-based UI and doc-driven delivery.         |
 | Small reference machine                      | Prove 2,000 monitors on 2 vCPU and 4 GiB RAM with 90 days of raw heartbeats.                                                      |

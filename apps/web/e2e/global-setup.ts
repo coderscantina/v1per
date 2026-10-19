@@ -13,11 +13,14 @@ const repo = resolve(web, '../..')
 /** The built assets: `V1PER_E2E_DIST`, or `dist`. A separate directory lets suites run side by side. */
 const dist = process.env.V1PER_E2E_DIST ?? join(web, 'dist')
 
-/** The `v1per` binary: `V1PER_BIN`, or a debug build of the workspace, built here if needed. */
+/**
+ * The `v1per` binary: `V1PER_BIN`, or a debug build of the workspace, built here with the
+ * `v1per-probe` agent beside it if needed.
+ */
 function serverBinary(): string {
   if (process.env.V1PER_BIN) return process.env.V1PER_BIN
-  const built = spawnSync('cargo', ['build', '-p', 'v1per-server'], { cwd: repo, stdio: 'inherit' })
-  if (built.status !== 0) throw new Error('cargo build -p v1per-server failed')
+  const built = spawnSync('cargo', ['build', '-p', 'v1per-server', '-p', 'v1per-probe'], { cwd: repo, stdio: 'inherit' })
+  if (built.status !== 0) throw new Error('cargo build -p v1per-server -p v1per-probe failed')
   return join(process.env.CARGO_TARGET_DIR ?? join(repo, 'target'), 'debug', 'v1per')
 }
 
@@ -46,8 +49,9 @@ export default async function globalSetup(config: FullConfig) {
   if (!process.env.V1PER_E2E_URL) {
     if (!existsSync(join(dist, 'index.html'))) throw new Error(`${dist} is missing: run \`bun run build\` first`)
     const binary = serverBinary()
-    // Probe journeys start agents from the same binary.
     process.env.V1PER_BIN = binary
+    // Probe journeys start agents: `V1PER_PROBE_BIN`, or the one beside the server binary.
+    process.env.V1PER_PROBE_BIN ??= join(dirname(binary), 'v1per-probe')
     const scratch = mkdtempSync(join(tmpdir(), 'v1per-e2e-'))
     const data = join(scratch, 'data')
     const passwordFile = join(scratch, 'password')

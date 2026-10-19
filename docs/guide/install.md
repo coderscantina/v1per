@@ -1,6 +1,6 @@
 # Install
 
-v1per ships as one Docker image, `ghcr.io/coderscantina/v1per`, for linux/amd64 and linux/arm64. The same image runs the server (`v1per serve`, the default) and remote probe agents (`v1per probe`). It needs no database server, queue or Node runtime.
+v1per ships as a Docker image, `ghcr.io/coderscantina/v1per`, for linux/amd64 and linux/arm64. It runs the server (`v1per serve`, the default). Remote probe agents have their own small image and binary, `v1per-probe`, see [Probes](probes.md#run-an-agent). It needs no database server, queue or Node runtime.
 
 ## Image tags
 

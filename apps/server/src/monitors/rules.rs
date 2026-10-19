@@ -1,6 +1,7 @@
 //! Kuma 2.5.0's status rules as decision 0008 settles them: retries, upside down, quorum,
 //! groups, important beats and notifications. Pure functions; the evaluator applies them.
 
+use v1per_probe_core::retry::Round;
 use v1per_protocol::operations::monitors::Quorum;
 use v1per_storage::Status;
 
@@ -10,8 +11,6 @@ pub enum Verdict {
     Pass(String),
     /// A failure that goes through retries: pending while retries are left, then down.
     Fail(String),
-    /// A failure that is down at once (json-query with `retry_only_on_status_code_failure`).
-    FailNow(String),
     /// A status set without a failure: a manual monitor's, or a group's pending. Retries reset.
     Set(Status, String),
 }
@@ -25,7 +24,6 @@ impl Verdict {
             Verdict::Pass(_) => Verdict::Fail("Flip UP to DOWN".to_owned()),
             Verdict::Set(Status::Pending, message) => Verdict::Set(Status::Pending, message),
             Verdict::Fail(message)
-            | Verdict::FailNow(message)
             | Verdict::Set(Status::Down | Status::Up | Status::Maintenance, message) => {
                 Verdict::Pass(message)
             }
@@ -41,20 +39,23 @@ pub struct Retried {
     pub message: String,
 }
 
-/// Kuma's retry rule: a failure is pending while `retries < max_retries`, then down; the
-/// count keeps rising while down and resets on anything else.
+/// Kuma's retry rule, the one probes apply ([`v1per_probe_core::retry`]); a set status resets
+/// the count.
 pub fn retry(verdict: Verdict, retries: u32, max_retries: u32) -> Retried {
-    let (status, retries, message) = match verdict {
-        Verdict::Pass(message) => (Status::Up, 0, message),
-        Verdict::Set(status, message) => (status, 0, message),
-        Verdict::FailNow(message) => (Status::Down, 0, message),
-        Verdict::Fail(message) if max_retries > 0 && retries < max_retries => {
-            (Status::Pending, retries + 1, message)
+    let (round, message) = match verdict {
+        Verdict::Set(status, message) => {
+            return Retried {
+                status,
+                retries: 0,
+                message,
+            };
         }
-        Verdict::Fail(message) => (Status::Down, retries.saturating_add(1), message),
+        Verdict::Pass(message) => (Round::Pass, message),
+        Verdict::Fail(message) => (Round::Fail, message),
     };
+    let (status, retries) = v1per_probe_core::retry::retry(round, retries, max_retries);
     Retried {
-        status,
+        status: super::status_from_wire(status),
         retries,
         message,
     }
@@ -190,7 +191,6 @@ mod tests {
             ]
         );
         assert_eq!(retry(fail(), 0, 0).status, Down);
-        assert_eq!(retry(Verdict::FailNow("x".into()), 0, 5).status, Down);
     }
 
     #[test]

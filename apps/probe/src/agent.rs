@@ -1,35 +1,30 @@
-//! `v1per probe`: a remote probe agent (decision 0003). It only connects out to the server: it
-//! long-polls its assignment list, runs the shared scheduler and checks, seals results into its
-//! local [`Buffer`] every second, and delivers the buffer oldest first, so results taken while
-//! the server is unreachable arrive once it is back. It never opens the control database or
-//! DuckDB. Credentials stay in memory only, so an agent started while the server is unreachable
-//! checks nothing until it gets its list.
+//! The agent loop (decisions 0003 and 0011). It only connects out to the server: it long-polls
+//! its assignment list, runs the shared scheduler and checks, seals results every second, and
+//! delivers them oldest first through the [`Buffer`], which keeps them on disk while the server
+//! is unreachable. Credentials stay in memory only, so an agent started while the server is
+//! unreachable checks nothing until it gets its list.
 
 use std::collections::HashMap;
 use std::future::Future;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use clap::Args;
 use reqwest::StatusCode;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use tokio::sync::{Notify, mpsc, watch};
 use tokio::task::JoinHandle;
 use url::Url;
-use v1per_protocol::ids::MonitorId;
-
-use super::buffer::Buffer;
-use super::schedule::{Checker, Grid, Lag, Start};
-use super::wire::{
+use v1per_probe_core::clock::Clock;
+use v1per_probe_core::now_ms;
+use v1per_probe_core::schedule::{Checker, Grid, Lag, Start};
+use v1per_probe_core::wire::{
     Assignment, AssignmentList, AssignmentsRequest, BATCH_RESULTS_MAX, BatchAck, Health, PROTOCOL,
     PROTOCOL_HEADER, ProbeResult, Refusal, ResultBatch,
 };
-use crate::clock::Clock;
-use crate::db::now_ms;
-use crate::init::{Exit, Failure};
-use crate::lock::DataLock;
+use v1per_protocol::ids::MonitorId;
+
+use crate::buffer::Buffer;
 
 /// How long results gather before they are sealed into one batch.
 const SEAL_EVERY: Duration = Duration::from_secs(1);
@@ -39,38 +34,16 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const RETRY_FIRST: Duration = Duration::from_secs(1);
 const RETRY_MAX: Duration = Duration::from_secs(30);
 
-#[derive(Clone, Args)]
-pub struct ProbeArgs {
-    /// The v1per server, e.g. `https://status.example.com`.
-    #[arg(long, env = "V1PER_PROBE_SERVER")]
-    pub server: Url,
-
-    /// The token shown when the probe was registered. Prefer `V1PER_PROBE_TOKEN`: a flag shows
-    /// in the process list.
-    #[arg(long, env = "V1PER_PROBE_TOKEN", hide_env_values = true)]
-    pub token: String,
-
-    /// Directory for the result buffer. One agent at a time uses it.
-    #[arg(long, env = "V1PER_PROBE_DATA_DIR", default_value = "probe-data")]
-    pub data_dir: PathBuf,
-
-    /// Largest result buffer, in MiB. When the server stays unreachable longer than it holds,
-    /// the oldest results are dropped and the drop is reported.
-    #[arg(long, env = "V1PER_PROBE_BUFFER_MB", default_value_t = 64)]
-    pub buffer_mb: u64,
-}
-
-/// Runs the agent until `shutdown` or until the server refuses it for good (revoked token,
-/// unsupported protocol). Results not delivered by then stay buffered for the next start.
-pub async fn run(args: ProbeArgs, shutdown: impl Future<Output = ()>) -> Result<(), Failure> {
-    let dir = &args.data_dir;
-    std::fs::create_dir_all(dir).map_err(|e| Failure::storage(dir, e))?;
-    let _lock = DataLock::acquire(dir)?;
-    let buffer = Buffer::open(dir, args.buffer_mb * 1024 * 1024)
-        .await
-        .map(Arc::new)
-        .map_err(|e| Failure::storage(dir, e))?;
-    let server = Server::new(args.server, args.token);
+/// Runs until `shutdown`, or returns the server's refusal for good (revoked token, unsupported
+/// protocol). Undelivered results are on disk either way.
+pub async fn run(
+    server: Url,
+    token: String,
+    buffer: Buffer,
+    shutdown: impl Future<Output = ()>,
+) -> Result<(), String> {
+    let buffer = Arc::new(buffer);
+    let server = Server::new(server, token);
     tracing::info!(server = %server.base, buffered = buffer.buffered(), "probe agent starting");
 
     let lag = Arc::new(Lag::default());
@@ -85,13 +58,15 @@ pub async fn run(args: ProbeArgs, shutdown: impl Future<Output = ()>) -> Result<
         refused = deliver(&server, &buffer, &sealed) => Err(refused),
         _ = shutdown => Ok(()),
     };
-    // Checks stop first; the sealer then stores what they produced and ends.
+    // Checks stop first; the sealer then seals what they produced and ends.
     let _ = stop.send(true);
     let _ = scheduler.await;
     let _ = sealer.await;
+    if let Err(error) = buffer.spill() {
+        tracing::error!(%error, "writing the result buffer failed; undelivered results are lost");
+    }
     tracing::info!(buffered = buffer.buffered(), "probe agent stopped");
-    buffer.close().await;
-    outcome.map_err(|message| Failure::new(Exit::Refused, "probe_refused", message))
+    outcome
 }
 
 /// Why a request failed.
@@ -194,6 +169,13 @@ impl Backoff {
     }
 }
 
+/// Tells the buffer whether the server answers; going offline spills what waits in memory.
+fn reachable(buffer: &Buffer, reachable: bool) {
+    if let Err(error) = buffer.set_offline(!reachable) {
+        tracing::error!(%error, "writing the result buffer failed");
+    }
+}
+
 /// Polls the assignment list with the agent's health; returns the server's final refusal.
 async fn poll(
     server: &Server,
@@ -222,6 +204,7 @@ async fn poll(
         {
             Ok(list) => {
                 backoff.reset();
+                reachable(buffer, true);
                 if let Some(assignments) = list.assignments {
                     tracing::info!(monitors = assignments.len(), version = %list.version, "new assignments");
                     assigned.send_replace(assignments);
@@ -229,8 +212,13 @@ async fn poll(
                 version = Some(list.version);
             }
             Err(Failed::Refused(message)) => return message,
-            Err(Failed::Retry(message) | Failed::Rejected(message)) => {
+            Err(Failed::Retry(message)) => {
                 tracing::warn!(%message, "polling assignments failed; retrying");
+                reachable(buffer, false);
+                backoff.wait().await;
+            }
+            Err(Failed::Rejected(message)) => {
+                tracing::warn!(%message, "the server rejected the poll; retrying");
                 backoff.wait().await;
             }
         }
@@ -242,7 +230,7 @@ async fn poll(
 async fn deliver(server: &Server, buffer: &Buffer, sealed: &Notify) -> String {
     let mut backoff = Backoff::new();
     loop {
-        let mut batch = match buffer.oldest().await {
+        let batch = match buffer.oldest() {
             Ok(Some(batch)) => batch,
             Ok(None) => {
                 sealed.notified().await;
@@ -257,7 +245,7 @@ async fn deliver(server: &Server, buffer: &Buffer, sealed: &Notify) -> String {
         let body = ResultBatch {
             batch: batch.id.clone(),
             sent_at: now_ms(),
-            results: std::mem::take(&mut batch.results),
+            results: batch.results.clone(),
         };
         let delivered = match server
             .post::<_, BatchAck>("api/probe/results", &body, REQUEST_TIMEOUT)
@@ -274,11 +262,12 @@ async fn deliver(server: &Server, buffer: &Buffer, sealed: &Notify) -> String {
                 false
             }
         };
+        reachable(buffer, delivered);
         if !delivered {
             backoff.wait().await;
-        } else if let Err(error) = buffer.remove(&batch).await {
+        } else if let Err(error) = buffer.delivered(&batch) {
             // The next attempt resends it and the server answers it as a repeat.
-            tracing::error!(%error, "removing a delivered batch failed");
+            tracing::error!(%error, "marking a delivered batch failed");
             backoff.wait().await;
         } else {
             backoff.reset();
@@ -286,8 +275,8 @@ async fn deliver(server: &Server, buffer: &Buffer, sealed: &Notify) -> String {
     }
 }
 
-/// Seals results into the buffer once a second, or sooner when a batch is full, until every
-/// check task is gone.
+/// Seals results once a second, or sooner when a batch is full, until every check task is
+/// gone.
 async fn seal(mut results: mpsc::Receiver<ProbeResult>, buffer: Arc<Buffer>, sealed: Arc<Notify>) {
     while let Some(first) = results.recv().await {
         let mut pending = vec![first];
@@ -298,9 +287,9 @@ async fn seal(mut results: mpsc::Receiver<ProbeResult>, buffer: Arc<Buffer>, sea
                 Ok(None) | Err(_) => break,
             }
         }
-        while let Err(error) = buffer.push(&pending).await {
-            tracing::error!(%error, "writing the result buffer failed; retrying");
-            tokio::time::sleep(RETRY_FIRST).await;
+        if let Err(error) = buffer.push(pending) {
+            // The batch stays in memory and spills with the next one.
+            tracing::error!(%error, "writing the result buffer failed");
         }
         sealed.notify_one();
     }

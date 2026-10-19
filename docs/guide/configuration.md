@@ -10,7 +10,6 @@ Settings you change at runtime, such as the instance name, timezone, mail server
 | --- | --- |
 | `v1per init` | Creates a data directory with the instance admin and the secrets key |
 | `v1per serve` | Runs the server: admin app, API, status pages, push endpoint, probe endpoints and checks. The image's default |
-| `v1per probe` | Runs a remote probe agent. See [Probes](probes.md) |
 | `v1per import kuma` | Imports an Uptime Kuma 2.5.0 database. See [Migrate from Uptime Kuma](kuma-migration.md) |
 | `v1per backup` | Writes a verified backup archive |
 | `v1per restore` | Restores a backup into a new, empty data directory |
@@ -20,25 +19,27 @@ Settings you change at runtime, such as the instance name, timezone, mail server
 
 The last five are covered in [Operations](operations.md).
 
+The remote probe agent is a separate program, `v1per-probe`. See [Probes](probes.md#run-an-agent).
+
 ## Environment variables
 
 | Variable | Flag | Used by | Default | Meaning |
 | --- | --- | --- | --- | --- |
-| `V1PER_DATA_DIR` | `--data-dir` | all but `probe` | `/data` in the image; `data` for `serve` and `import kuma` outside it | The data directory. `init`, `backup`, `restore`, `retention`, `diagnostics` and `upgrade` require it |
+| `V1PER_DATA_DIR` | `--data-dir` | all `v1per` commands | `/data` in the image; `data` for `serve` and `import kuma` outside it | The data directory. `init`, `backup`, `restore`, `retention`, `diagnostics` and `upgrade` require it |
 | `V1PER_BIND` | `--bind` | `serve` | `0.0.0.0:8080` in the image, `127.0.0.1:8080` otherwise | Address and port to listen on |
 | `V1PER_PUBLIC_URL` | `--public-url` | `serve` | none | The URL the admin app is reached at, see [Public URL](#public-url) |
 | `V1PER_INSTANCE_NAME` | `--instance-name` | `serve` | the name set in the admin app, else `v1per` | Name shown in the admin app and the authenticator app |
 | `V1PER_WEB_DIR` | `--web-dir` | `serve` | `web` next to the executable | The built admin app. The image sets it up for you |
 | `V1PER_WORKER_THREADS` | `--worker-threads` | `serve` | `2` | Worker threads of the server's runtime. Raise it on hosts with more cores |
 | `V1PER_MIGRATE` | `--migrate` | `serve` | off | Applies schema migrations at start without a backup, see [Upgrade](operations.md#upgrade) |
-| `V1PER_SECRETS_KEY` | none | all but `probe` | none | The secrets key itself, base64 of 32 bytes. Environment only, see [Secrets key](#secrets-key) |
-| `V1PER_SECRETS_KEY_FILE` | `--secrets-key-file` | all but `probe` | `secrets.key` in the data directory | A file holding the secrets key |
+| `V1PER_SECRETS_KEY` | none | all `v1per` commands | none | The secrets key itself, base64 of 32 bytes. Environment only, see [Secrets key](#secrets-key) |
+| `V1PER_SECRETS_KEY_FILE` | `--secrets-key-file` | all `v1per` commands | `secrets.key` in the data directory | A file holding the secrets key |
 | `V1PER_KUMA_DB` | `--source` | `import kuma` | none | Path of Kuma's `kuma.db` |
-| `V1PER_PROBE_SERVER` | `--server` | `probe` | none, required | The v1per server URL, for example `https://status.example.com` |
-| `V1PER_PROBE_TOKEN` | `--token` | `probe` | none, required | The token shown when the probe was registered |
-| `V1PER_PROBE_DATA_DIR` | `--data-dir` | `probe` | `/probe-data` in the image, `probe-data` otherwise | Where the agent buffers results |
-| `V1PER_PROBE_BUFFER_MB` | `--buffer-mb` | `probe` | `64` | Largest result buffer in MiB |
-| `V1PER_LOG` | none | all | `info,sqlx=warn` | Log filter, see [Logs](#logs) |
+| `V1PER_PROBE_SERVER` | `--server` | `v1per-probe` | none, required | The v1per server URL, for example `https://status.example.com` |
+| `V1PER_PROBE_TOKEN` | `--token` | `v1per-probe` | none, required | The token shown when the probe was registered |
+| `V1PER_PROBE_DATA_DIR` | `--data-dir` | `v1per-probe` | `/probe-data` in the image, `probe-data` otherwise | Where the agent buffers results |
+| `V1PER_PROBE_BUFFER_MB` | `--buffer-mb` | `v1per-probe` | `64` | Largest result buffer on disk, in MiB |
+| `V1PER_LOG` | none | all | `info,sqlx=warn`; `info` for `v1per-probe` | Log filter, see [Logs](#logs) |
 
 `V1PER_MIGRATE` is a switch: `true`, `1`, `yes` or `on` turn it on, `false`, `0`, `no` or `off` leave it off.
 
@@ -101,7 +102,7 @@ There is no command to change the key yet. The key you start with stays the key 
 
 ## Logs
 
-v1per logs to stderr. `V1PER_LOG` sets the filter with the usual `tracing` syntax: a level such as `debug`, or a list such as `info,v1per_server=debug`. The default is `info,sqlx=warn`.
+v1per logs to stderr. `V1PER_LOG` sets the filter with the usual `tracing` syntax: a level such as `debug`, or a list such as `info,v1per_server=debug`. The default is `info,sqlx=warn`. `v1per-probe` takes levels and `target=level` pairs only, for example `info,v1per_probe=debug`.
 
 ```sh
 docker run ... -e V1PER_LOG=debug ghcr.io/coderscantina/v1per:latest

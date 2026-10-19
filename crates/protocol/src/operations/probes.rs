@@ -18,7 +18,7 @@ crate::domain! {
     pub trait ProbesHandlers;
     commands {
         /// Registers a remote probe on `node` and discloses its token once. Needs
-        /// `probes.manage`. Run the agent with `v1per probe --server <url> --token <secret>`.
+        /// `probes.manage`. Run the agent with `v1per-probe --server <url> --token <secret>`.
         "probes.create" => probes_create (Person, secret): ProbesCreateArgs => ProbeCreated;
         /// Revokes a probe's token at once: the agent's next request is refused and the probe
         /// leaves every monitor it served. Needs `probes.manage` on the probe's node. The

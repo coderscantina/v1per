@@ -6335,7 +6335,7 @@
     "/api/commands/probes.create": {
       "post": {
         "operationId": "probes.create",
-        "description": "Registers a remote probe on `node` and discloses its token once. Needs\n `probes.manage`. Run the agent with `v1per probe --server <url> --token <secret>`.",
+        "description": "Registers a remote probe on `node` and discloses its token once. Needs\n `probes.manage`. Run the agent with `v1per-probe --server <url> --token <secret>`.",
         "security": [
           {
             "session": []

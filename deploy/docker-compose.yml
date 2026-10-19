@@ -27,18 +27,14 @@ services:
 
   probe:
     profiles: ["probe"]
-    image: ${V1PER_IMAGE:-ghcr.io/coderscantina/v1per:latest}
+    image: ${V1PER_PROBE_IMAGE:-ghcr.io/coderscantina/v1per-probe:latest}
     restart: unless-stopped
-    command: ["probe"]
-    # The image's healthcheck asks the server port, which a probe does not open.
-    healthcheck:
-      disable: true
     volumes:
       - probe-data:/probe-data
     environment:
       V1PER_PROBE_SERVER: ${V1PER_PROBE_SERVER:-${V1PER_PUBLIC_URL}}
       V1PER_PROBE_TOKEN: ${V1PER_PROBE_TOKEN:-}
-      V1PER_LOG: ${V1PER_LOG:-info,sqlx=warn}
+      V1PER_LOG: ${V1PER_LOG:-info}
     # Docker's default ping_group_range allows unprivileged ICMP. Uncomment if your host
     # restricts it:
     # cap_add: [NET_RAW]

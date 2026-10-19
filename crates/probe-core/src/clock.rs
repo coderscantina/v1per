@@ -3,7 +3,7 @@
 //! and tests can move time by hand.
 
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use tokio::sync::watch;
 
@@ -37,7 +37,7 @@ impl Clock {
     /// Unix milliseconds.
     pub fn now_ms(&self) -> i64 {
         match &self.0 {
-            Source::System => crate::db::now_ms(),
+            Source::System => now_ms(),
             Source::Frozen(at) => *at,
             Source::Manual(now) => *now.borrow(),
         }
@@ -73,4 +73,12 @@ impl Clock {
             }
         }
     }
+}
+
+/// Unix milliseconds on the system clock.
+pub fn now_ms() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or_default()
 }

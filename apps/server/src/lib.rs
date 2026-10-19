@@ -1,9 +1,9 @@
 //! v1per server: admin API, live subscriptions, monitoring with the built-in probe and remote
-//! probe agents, runtime configuration and the built web app in one process. The same binary
-//! runs as a probe agent.
+//! probe agents, runtime configuration and the built web app in one process. Remote agents are
+//! the separate `v1per-probe` binary (`apps/probe`).
 
 pub mod background;
-pub mod clock;
+pub use v1per_probe_core::clock;
 pub mod config;
 pub mod context;
 pub mod db;

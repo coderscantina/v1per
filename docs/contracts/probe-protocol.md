@@ -1,16 +1,16 @@
 # Probe protocol
 
-How a remote probe agent and the server talk, how results become monitor status, and how the agent buffers. Decision [0003](../decisions/0003-probes-checks-and-quorum.md) sets the requirements. The code owns the wire types in `apps/server/src/probes/wire.rs`; this page describes them.
+How a remote probe agent and the server talk, how results become monitor status, and how the agent buffers. Decisions [0003](../decisions/0003-probes-checks-and-quorum.md) and [0011](../decisions/0011-slim-probe-agent.md) set the requirements. The code owns the wire types in `crates/probe-core/src/wire.rs`; this page describes them.
 
 ## Running an agent
 
-Register a probe with `probes.create` on a node (needs `probes.manage`, so admin and up). The answer shows the token once. Then run the same binary on the other machine:
+Register a probe with `probes.create` on a node (needs `probes.manage`, so admin and up). The answer shows the token once. Then run the agent, `v1per-probe` of the same release, on the other machine:
 
 ```sh
-V1PER_PROBE_TOKEN=<token> v1per probe --server https://status.example.com --data-dir /var/lib/v1per-probe
+V1PER_PROBE_TOKEN=<token> v1per-probe --server https://status.example.com --data-dir /var/lib/v1per-probe
 ```
 
-`--token` works too, but shows in the process list. `--buffer-mb` sets the buffer size (default 64). The agent only opens outbound connections to the server; it listens on nothing, so it works behind NAT with outbound HTTPS alone. It never opens `control.sqlite` or DuckDB. One agent at a time uses a data directory.
+`--token` works too, but shows in the process list. `--buffer-mb` sets the largest buffer on disk (default 64). The agent only opens outbound connections to the server; it listens on nothing, so it works behind NAT with outbound HTTPS alone. It has no access to `control.sqlite` or DuckDB. One agent at a time uses a data directory.
 
 A probe on a node serves monitors on that node and below. Instance-wide probes, the built-in one included, live on the root. `probes.revoke` ends a token at once: the agent's next request is refused, it exits with status 3 and the message, and the probe leaves every monitor it served.
 
@@ -140,8 +140,12 @@ With no live probe the monitor is pending with the message "No live probe". This
 
 ## Buffer
 
-The agent seals the results of each second, at most 1,000, into one batch in `buffer.sqlite` in its data directory, and delivers batches oldest first, each until the server acknowledges it. Batch IDs are `<buffer id>-<sequence>`, where the buffer ID is random per buffer file, so a new buffer never reuses an old ID.
+The agent seals the results of each second, at most 1,000, into one batch and delivers batches oldest first, each until the server acknowledges it. Batch IDs are `<run id>-<sequence>`, where the run ID is random per agent start, so a later run never reuses an old ID. A batch keeps its ID on disk.
 
-A small SQLite file rather than an append log: dropping the oldest batch, removing a delivered one and surviving a crash mid-write are single transactions instead of file rewrites and recovery code, and SQLx is already in the binary. It runs WAL with `synchronous=NORMAL`: an agent crash loses nothing sealed, a power loss may lose the last commits, and results not yet sealed (under a second) are lost with the process.
+Batches wait in memory while the server answers. They spill to an append-only segment log in `buffer/` in the data directory when a poll or delivery fails, when more than ten batches wait, and at shutdown. A healthy agent therefore writes nothing. Every batch on disk is older than every batch in memory, so delivery stays in order.
 
-When the buffer passes its size, the oldest whole batches are dropped and counted. The count is kept in the buffer file and reported as `dropped_results` with every poll. A batch never changes once sealed, so a resend after a lost acknowledgment is always recognized as a repeat.
+- Each record carries its length and a CRC32 checksum, and each spill is synced before it returns. At start, a record that is cut short or fails its checksum is truncated with everything after it.
+- A delivered record is marked in place without a sync. After a power loss it may be sent again, and the server answers it as a repeat. A segment is deleted once all its records are delivered.
+- An agent crash loses the results that wait in memory, at most about ten seconds. Results not yet sealed (under a second) are lost with the process.
+
+When the log passes `--buffer-mb`, the oldest whole segment, at most an eighth of the size, is dropped and its undelivered results counted. The count is kept in `buffer/dropped` and reported as `dropped_results` with every poll. A batch never changes once sealed, so a resend after a lost acknowledgment is always recognized as a repeat.

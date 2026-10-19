@@ -30,7 +30,7 @@ One self-hosted instance for your agency, your clients and their teams. Monitors
 
 - **Node tree and access.** Nested nodes, invitations, owner, admin, member and viewer roles, and a two-factor requirement per node.
 - **Monitors.** HTTP, keyword, JSON query, TCP port, ping, DNS, push, group, manual and TLS certificate expiry.
-- **Probes.** A built-in probe, plus remote agents from the same binary (`v1per probe`) that only make outbound HTTPS calls. A majority of probes decides whether a monitor is down.
+- **Probes.** A built-in probe, plus remote agents (`v1per-probe`, a static binary of a few MB) that only make outbound HTTPS calls. A majority of probes decides whether a monitor is down.
 - **Status pages.** Public, sign-in, password, magic link or share token access. Custom domains, 90-day uptime bars, live updates, badges, logos, English and German.
 - **Incidents and maintenance.** Manual incidents with updates and per-component impact, incidents that monitors open on their own, and one-off or recurring maintenance windows.
 - **Notifications.** Email (SMTP), Slack, Discord, Microsoft Teams, Telegram, ntfy, Pushover and webhooks, with a test button and a delivery log.

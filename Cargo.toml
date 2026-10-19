@@ -1,5 +1,5 @@
 [workspace]
-members = ["apps/server", "crates/*"]
+members = ["apps/probe", "apps/server", "crates/*"]
 resolver = "3"
 
 [workspace.package]
@@ -34,3 +34,12 @@ debug = "line-tables-only"
 # the server where a release build returns an error.
 [profile.release.package.libduckdb-sys]
 debug = false
+
+# The probe agent's release build (decision 0011): small and stripped, built with
+# `cargo build --profile probe -p v1per-probe`.
+[profile.probe]
+inherits = "release"
+debug = false
+strip = true
+lto = true
+codegen-units = 1

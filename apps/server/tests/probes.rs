@@ -1,6 +1,6 @@
 //! Probes in process: registration on the tree, the agent protocol spoken through the router as
-//! `v1per probe` speaks it, and the quorum over live probes on a manual clock. A real agent
-//! process against a real server is in `agent_process.rs`.
+//! `v1per-probe` speaks it, and the quorum over live probes on a manual clock. A real agent
+//! process against a real server is in `apps/probe/tests/agent_process.rs`.
 
 mod common;
 

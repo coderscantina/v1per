@@ -19,7 +19,6 @@ use v1per_server::maintenance::commands::{
     self as maintenance, BackupArgs, DiagnosticsArgs, RestoreArgs, RetentionArgs, UpgradeArgs,
 };
 use v1per_server::maintenance::versions;
-use v1per_server::probes::agent::{self, ProbeArgs};
 use v1per_server::{AppState, router};
 use v1per_storage::{Budgets, Storage};
 
@@ -56,9 +55,6 @@ enum Command {
     },
     /// Serves the admin app, its API and the live event streams.
     Serve(ServeArgs),
-    /// Runs a remote probe agent: checks the monitors the server assigns to this probe and
-    /// sends the results. It only connects out to the server.
-    Probe(ProbeArgs),
     /// Imports from another monitoring tool.
     Import {
         #[command(subcommand)]
@@ -112,7 +108,6 @@ fn main() -> ExitCode {
                 secrets,
             } => run_init(data_dir, admin_email, admin_password_file, secrets).await,
             Command::Serve(args) => serve(args).await,
-            Command::Probe(args) => agent::run(args, shutdown_signal()).await,
             Command::Import {
                 command: imports::Command::Kuma(args),
             } => run_import(args).await,

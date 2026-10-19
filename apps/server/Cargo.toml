@@ -23,6 +23,7 @@ v1per-checks = { path = "../../crates/checks" }
 v1per-kuma-import = { path = "../../crates/kuma-import" }
 v1per-maintenance-schedule = { path = "../../crates/maintenance-schedule" }
 v1per-notify = { path = "../../crates/notify" }
+v1per-probe-core = { path = "../../crates/probe-core" }
 v1per-protocol = { path = "../../crates/protocol" }
 v1per-storage = { path = "../../crates/storage" }
 anyhow = "1"
@@ -44,9 +45,6 @@ hmac = "0.13"
 # Status page sign-in links through the instance SMTP server; the same build as v1per-notify's.
 lettre = { version = "0.11", default-features = false, features = ["builder", "hostname", "ring", "smtp-transport", "tokio1-rustls", "webpki-roots"] }
 libc = "0.2"
-# The probe agent's client for the server; TLS through rustls with Mozilla's roots, like checks.
-reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
-rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 serde.workspace = true
 serde_html_form = "0.2"
 serde_json.workspace = true
@@ -62,7 +60,6 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2.5"
 uuid = { version = "1", features = ["v4"] }
-webpki-roots = "1"
 
 [dev-dependencies]
 v1per-kuma-fixture = { path = "../../crates/kuma-fixture" }

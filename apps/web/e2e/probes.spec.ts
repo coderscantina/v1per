@@ -11,7 +11,7 @@ import { configure, expectAccessible, expectNoHorizontalOverflow, schemes, shot,
 import { sessionFile } from './session'
 
 /**
- * Milestone 06 journeys against a real server and a real `v1per probe` agent the test starts:
+ * Milestone 06 journeys against a real server and a real `v1per-probe` agent the test starts:
  * an admin registers a probe, runs the agent with the command the dialog shows, assigns the
  * probe to an http monitor next to the built-in one and sees each probe's status; then revokes
  * the probe and sees the agent refused and stopped.
@@ -49,7 +49,7 @@ test.afterAll(async () => {
     const done = exited(running)
     process.kill(running.pid, 'SIGTERM')
     await done
-    console.log(`stopped v1per probe, pid ${running.pid}`)
+    console.log(`stopped v1per-probe, pid ${running.pid}`)
   }
   if (agentData) rmSync(agentData, { recursive: true, force: true })
   if (target) {
@@ -79,8 +79,8 @@ async function addProbe(page: Page, name: string): Promise<string> {
 }
 
 test('a registered probe runs a monitor next to the built-in one', async ({ browser }) => {
-  const binary = process.env.V1PER_BIN
-  if (!binary) throw new Error('global setup sets V1PER_BIN to the v1per binary')
+  const binary = process.env.V1PER_PROBE_BIN
+  if (!binary) throw new Error('global setup sets V1PER_PROBE_BIN to the v1per-probe binary')
   target = await startTarget()
   targetUrl = `http://127.0.0.1:${(target.address() as AddressInfo).port}/health`
 
@@ -94,18 +94,18 @@ test('a registered probe runs a monitor next to the built-in one', async ({ brow
   await expect(probeRow(page, 'Built-in').locator('[data-probe-status="online"]')).toBeVisible()
 
   const command = await addProbe(page, 'Frankfurt')
-  const [, server, token] = command.match(/^v1per probe --server (\S+) --token (\S+)$/) ?? []
+  const [, server, token] = command.match(/^v1per-probe --server (\S+) --token (\S+)$/) ?? []
   expect(server).toBe(new URL(page.url()).origin)
   expect(token).toBeTruthy()
   await page.getByRole('dialog', { name: 'Probe added' }).getByRole('button', { name: 'Done' }).click()
   await expect(probeRow(page, 'Frankfurt').locator('[data-probe-status="waiting"]')).toBeVisible()
 
   agentData = mkdtempSync(join(tmpdir(), 'v1per-e2e-probe-'))
-  agent = spawn(binary, ['probe', '--server', server ?? '', '--token', token ?? '', '--data-dir', agentData], {
+  agent = spawn(binary, ['--server', server ?? '', '--token', token ?? '', '--data-dir', agentData], {
     stdio: ['ignore', 'ignore', 'inherit'],
     env: { ...process.env, V1PER_LOG: 'warn' },
   })
-  console.log(`started v1per probe, pid ${agent.pid}`)
+  console.log(`started v1per-probe, pid ${agent.pid}`)
   await expect(probeRow(page, 'Frankfurt').locator('[data-probe-status="online"]')).toBeVisible(STATUS_WAIT)
   await expect(probeRow(page, 'Frankfurt')).toContainText('On time')
 

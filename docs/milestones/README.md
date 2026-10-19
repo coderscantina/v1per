@@ -1,6 +1,6 @@
 # Implementation milestones
 
-Milestone 01 is complete; 02 through 11 are in progress. Mark one complete only after its acceptance criteria pass and an evidence report is linked here. The [technical briefing](../technical-briefing.md) owns product scope. The [workflow](../development-workflow.md) defines ownership and handoffs.
+Milestone 01 is complete; 02 through 11 and 13 are in progress. Mark one complete only after its acceptance criteria pass and an evidence report is linked here. The [technical briefing](../technical-briefing.md) owns product scope. The [workflow](../development-workflow.md) defines ownership and handoffs.
 
 ## Sequence and gates
 
@@ -18,6 +18,7 @@ Milestone 01 is complete; 02 through 11 are in progress. Mark one complete only 
 | 10  | [Kuma import and cutover](10-kuma-import-and-cutover.md)                   | 05, 07, 08, 09     | Storage and import               | In progress: [evidence](../evidence/m10-kuma-import-and-cutover.md) |
 | 11  | [Operations and recovery](11-operations-and-recovery.md)                   | 02, 04; 10 for import state | Storage and import      | In progress: [evidence](../evidence/m11-operations-and-recovery.md) |
 | 12  | [Integrated release gate](12-integrated-release-gate.md)                   | 01 through 11      | Integration                      | Pending |
+| 13  | [Slim probe agent](13-slim-probe-agent.md)                                 | 06                 | Monitoring and integration       | In progress: [evidence](../evidence/m13-slim-probe-agent.md) |
 
 02 and 03 run in parallel once 01 has settled the protocol envelope and status semantics. The storage gate authorizes the engine design, not a capacity claim; 12 repeats the workload with agents, notifications and pages running.
 

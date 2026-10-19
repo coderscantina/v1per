@@ -15,10 +15,9 @@ use tokio::sync::Semaphore;
 use v1per_checks::{CheckContext, Failure};
 use v1per_protocol::ids::MonitorId;
 
-use super::wire::{Assignment, ChainCertificate, ProbeResult, TlsChain};
 use crate::clock::Clock;
-use crate::monitors::rules::{self, Verdict};
-use crate::monitors::wire_status;
+use crate::retry::{Round, retry};
+use crate::wire::{Assignment, ChainCertificate, ProbeResult, TlsChain};
 
 /// Checks in flight at once. A check mostly waits on the network; this bounds sockets and
 /// memory when many targets hang until their timeout.
@@ -161,26 +160,25 @@ impl Checker {
         self.lag.record(started - due, assignment.interval_ms);
         let result = v1per_checks::run(&assignment.definition, &self.checks).await;
         drop(permit);
-        let message = result.message.clone();
-        let verdict = match (result.status, &result.failure) {
-            (v1per_checks::Status::Up, _) => Verdict::Pass(message),
+        let round = match (result.status, &result.failure) {
+            (v1per_checks::Status::Up, _) => Round::Pass,
             (_, Some(Failure::JsonQueryMismatch)) if assignment.down_on_query_mismatch => {
-                Verdict::FailNow(message)
+                Round::FailNow
             }
-            _ => Verdict::Fail(message),
+            _ => Round::Fail,
         };
-        let retried = rules::retry(verdict, *retries, assignment.max_retries);
-        *retries = retried.retries;
+        let (status, retried) = retry(round, *retries, assignment.max_retries);
+        *retries = retried;
         ProbeResult {
             monitor: assignment.monitor,
             revision: assignment.revision,
             time: started,
-            status: wire_status(retried.status),
-            retries: retried.retries,
+            status,
+            retries: retried,
             latency_ms: result
                 .latency_ms
                 .map(|ms| u32::try_from(ms).unwrap_or(u32::MAX)),
-            message: retried.message,
+            message: result.message,
             http_status: result.http_status,
             cert_expiry: result
                 .tls

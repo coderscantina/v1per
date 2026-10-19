@@ -1,12 +1,12 @@
 //! The agent protocol under `/api/probe/*`, as `docs/contracts/probe-protocol.md` describes it.
-//! Both sides live in this binary: the server's handlers and `v1per probe`.
+//! The server's handlers and `v1per-probe` both build on these types.
 
 use serde::{Deserialize, Serialize};
 use v1per_checks::CheckDefinition;
 use v1per_protocol::ids::MonitorId;
 use v1per_protocol::operations::monitors::HeartbeatStatus;
 
-use super::schedule::Next;
+use crate::schedule::Next;
 
 /// The protocol version this build speaks. A server refuses agents of any other.
 pub const PROTOCOL: u32 = 1;

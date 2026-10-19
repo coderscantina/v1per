@@ -1,0 +1,30 @@
+# The v1per-probe image: one static binary on an empty base (decision 0011). Mozilla's CA
+# roots are compiled in, so the image needs no files besides the binary.
+#
+#   docker build -f Dockerfile.probe -t v1per-probe .
+#
+# The result buffer is /probe-data; mount a volume there to keep it across restarts.
+
+FROM rust:1.99-alpine AS build
+# ring compiles a little C.
+RUN apk add --no-cache musl-dev
+WORKDIR /src
+COPY Cargo.toml Cargo.lock ./
+# The server's manifest completes the workspace; nothing of it is built.
+COPY apps/probe apps/probe
+COPY apps/server apps/server
+COPY crates crates
+# Alpine's Rust targets musl and links statically by default.
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/src/target \
+    cargo build --profile probe --locked -p v1per-probe \
+    && cp target/probe/v1per-probe /v1per-probe \
+    && install -d -o 10001 -g 10001 /probe-data
+
+FROM scratch
+COPY --from=build /v1per-probe /v1per-probe
+COPY --from=build --chown=10001:10001 /probe-data /probe-data
+ENV V1PER_PROBE_DATA_DIR=/probe-data
+USER 10001:10001
+VOLUME /probe-data
+ENTRYPOINT ["/v1per-probe"]
