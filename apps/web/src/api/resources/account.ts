@@ -1,10 +1,12 @@
-import type { ApiKeyId, ApiKeysCreateArgs, ChangePasswordArgs } from '~/generated'
+import type { ApiKeyId, ApiKeysCreateArgs, ChangePasswordArgs, Preferences } from '~/generated'
 
 import { api } from '..'
 
-/** The caller's own account: password, second factor and API keys. */
+/** The caller's own account: password, second factor, API keys and display preferences. */
 export const accountResource = {
   changePassword: (args: ChangePasswordArgs) => api.command('account.changePassword', args),
+  preferences: (signal?: AbortSignal) => api.query('account.preferences', {}, { signal }),
+  updatePreferences: (preferences: Preferences) => api.command('account.updatePreferences', preferences),
   twoFactor: (signal?: AbortSignal) => api.query('twoFactor.status', {}, { signal }),
   beginTwoFactor: () => api.command('twoFactor.begin', {}),
   confirmTwoFactor: (code: string) => api.command('twoFactor.confirm', { code }),

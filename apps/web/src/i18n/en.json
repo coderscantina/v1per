@@ -22,6 +22,17 @@
     "signOut": "Sign out",
     "description": "Use the account created with v1per init, or one an administrator made for you."
   },
+  "accent": {
+    "label": "Accent",
+    "indigo": "Indigo",
+    "ultraviolet": "Ultraviolet",
+    "magenta": "Magenta",
+    "pink": "Hot pink",
+    "tangerine": "Tangerine",
+    "volt": "Volt",
+    "aqua": "Aqua",
+    "azure": "Azure"
+  },
   "colorMode": {
     "label": "Appearance",
     "light": "Light",

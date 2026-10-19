@@ -530,6 +530,112 @@
   --ring: oklch(80% 0.138 212);
 }
 
+/* The admin app's own presets, picked per person and kept in their preferences. Neon to go
+   with the glowing status colours. The label on the fill is white or near-black, whichever
+   reads better by APCA, and clears 4.5:1 by WCAG 2 as well: volt and aqua stay light and carry
+   near-black, the others carry white, which keeps their fill a little darker and makes it
+   darken under the pointer. In light mode the accent as text and the ring drop to a darker
+   shade of the same hue, at 4.5:1 on the gray-100 frame; in dark mode they take the bright
+   neon shade, at 4.5:1 on the popover. Status pages keep the presets above. */
+
+[data-accent='ultraviolet'] {
+  --accent: oklch(59.5% 0.263 302);
+  --accent-hover: oklch(54.5% 0.282 302);
+  --accent-foreground: var(--color-white);
+  --accent-text: oklch(55% 0.285 302);
+  --ring: oklch(55% 0.285 302);
+}
+
+.dark[data-accent='ultraviolet'],
+.dark [data-accent='ultraviolet'] {
+  --accent-text: oklch(70% 0.187 302);
+  --ring: oklch(70% 0.187 302);
+}
+
+[data-accent='magenta'] {
+  --accent: oklch(59.5% 0.259 335);
+  --accent-hover: oklch(54.5% 0.238 335);
+  --accent-foreground: var(--color-white);
+  --accent-text: oklch(54.5% 0.238 335);
+  --ring: oklch(54.5% 0.238 335);
+}
+
+.dark[data-accent='magenta'],
+.dark [data-accent='magenta'] {
+  --accent-text: oklch(68% 0.296 335);
+  --ring: oklch(68% 0.296 335);
+}
+
+[data-accent='pink'] {
+  --accent: oklch(59% 0.234 2);
+  --accent-hover: oklch(54% 0.214 2);
+  --accent-foreground: var(--color-white);
+  --accent-text: oklch(54% 0.214 2);
+  --ring: oklch(54% 0.214 2);
+}
+
+.dark[data-accent='pink'],
+.dark [data-accent='pink'] {
+  --accent-text: oklch(70% 0.202 2);
+  --ring: oklch(70% 0.202 2);
+}
+
+[data-accent='tangerine'] {
+  --accent: oklch(57.5% 0.164 44);
+  --accent-hover: oklch(52.5% 0.15 44);
+  --accent-foreground: var(--color-white);
+  --accent-text: oklch(53% 0.151 44);
+  --ring: oklch(53% 0.151 44);
+}
+
+.dark[data-accent='tangerine'],
+.dark [data-accent='tangerine'] {
+  --accent-text: oklch(71.5% 0.184 44);
+  --ring: oklch(71.5% 0.184 44);
+}
+
+[data-accent='volt'] {
+  --accent: oklch(93% 0.212 118);
+  --accent-hover: oklch(97% 0.098 118);
+  --accent-foreground: var(--color-gray-950);
+  --accent-text: oklch(50.5% 0.115 118);
+  --ring: oklch(50.5% 0.115 118);
+}
+
+.dark[data-accent='volt'],
+.dark [data-accent='volt'] {
+  --accent-text: oklch(93% 0.212 118);
+  --ring: oklch(93% 0.212 118);
+}
+
+[data-accent='aqua'] {
+  --accent: oklch(88% 0.147 195);
+  --accent-hover: oklch(92% 0.125 195);
+  --accent-foreground: var(--color-gray-950);
+  --accent-text: oklch(50.5% 0.085 195);
+  --ring: oklch(50.5% 0.085 195);
+}
+
+.dark[data-accent='aqua'],
+.dark [data-accent='aqua'] {
+  --accent-text: oklch(88% 0.147 195);
+  --ring: oklch(88% 0.147 195);
+}
+
+[data-accent='azure'] {
+  --accent: oklch(56% 0.164 252);
+  --accent-hover: oklch(51% 0.15 252);
+  --accent-foreground: var(--color-white);
+  --accent-text: oklch(51.5% 0.151 252);
+  --ring: oklch(51.5% 0.151 252);
+}
+
+.dark[data-accent='azure'],
+.dark [data-accent='azure'] {
+  --accent-text: oklch(68% 0.17 252);
+  --ring: oklch(68% 0.17 252);
+}
+
 /* Flips foreground/primary so a light-on-dark island reads correctly inside a
    light page, and the reverse in dark mode. */
 .inverse {

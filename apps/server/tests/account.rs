@@ -560,3 +560,41 @@ async fn a_key_reaches_only_its_subtree_until_revoked() {
     assert_eq!(revoked.status, StatusCode::UNAUTHORIZED);
     assert_eq!(revoked.bytes, unknown.bytes);
 }
+
+/// Preferences follow the person, not the browser: saved by one session, read by another.
+#[tokio::test]
+async fn preferences_are_kept_per_person() {
+    let harness = Harness::new().await;
+    let first = harness.session(&harness.member).await;
+    let second = harness.session(&harness.member).await;
+    assert_eq!(
+        harness
+            .query(Some(&second), "account.preferences", "")
+            .await
+            .json()["accent"],
+        Value::Null
+    );
+
+    harness
+        .ok(
+            &first,
+            "account.updatePreferences",
+            json!({ "accent": "volt" }),
+        )
+        .await;
+    assert_eq!(
+        harness
+            .query(Some(&second), "account.preferences", "")
+            .await
+            .json()["accent"],
+        "volt"
+    );
+    let unknown = harness
+        .run(
+            Some(&first),
+            "account.updatePreferences",
+            json!({ "accent": "beige" }),
+        )
+        .await;
+    assert_eq!(unknown.status, StatusCode::BAD_REQUEST);
+}

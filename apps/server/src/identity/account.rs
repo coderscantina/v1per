@@ -1,11 +1,11 @@
-//! `account.*` operations: the caller's own account and grants.
+//! `account.*` operations: the caller's own account, grants and preferences.
 
 use serde_json::json;
 use v1per_protocol::envelope::{Empty, Topic};
 use v1per_protocol::errors::ErrorCode;
 use v1per_protocol::ids::NodeId;
 use v1per_protocol::operations::account::{
-    AccountHandlers, AccountResult, ChangePasswordArgs, Grant, GrantList,
+    AccountHandlers, AccountResult, ChangePasswordArgs, Grant, GrantList, Preferences,
 };
 use v1per_protocol::registry::Snapshot;
 
@@ -43,6 +43,26 @@ impl AccountHandlers for AppState {
         ctx.record(&Topic::user(&user), "account.password_changed", json!({}))
             .await?;
         Ok(Empty {})
+    }
+
+    async fn account_update_preferences(
+        &self,
+        ctx: &mut CommandCtx,
+        args: Preferences,
+    ) -> Result<Preferences, ApiError> {
+        let user = signed_in(ctx.caller())?;
+        sqlx::query("UPDATE users SET preferences = ? WHERE id = ?")
+            .bind(serde_json::to_string(&args).expect("preferences serialize"))
+            .bind(user.as_str())
+            .execute(ctx.conn())
+            .await?;
+        ctx.record(
+            &Topic::user(&user),
+            "account.preferences_changed",
+            json!({}),
+        )
+        .await?;
+        Ok(args)
     }
 
     async fn account_get(
@@ -93,6 +113,24 @@ impl AccountHandlers for AppState {
         Ok(Snapshot {
             topic: Topic::user(&user),
             data: GrantList { grants },
+        })
+    }
+
+    async fn account_preferences(
+        &self,
+        ctx: &mut QueryCtx,
+        _args: Empty,
+    ) -> Result<Snapshot<Preferences>, ApiError> {
+        let user = signed_in(ctx.caller())?;
+        let stored: String = sqlx::query_scalar("SELECT preferences FROM users WHERE id = ?")
+            .bind(user.as_str())
+            .fetch_one(ctx.conn())
+            .await?;
+        // A preset a later release dropped reads as the default, not as an error.
+        let preferences = serde_json::from_str(&stored).unwrap_or_default();
+        Ok(Snapshot {
+            topic: Topic::user(&user),
+            data: preferences,
         })
     }
 }

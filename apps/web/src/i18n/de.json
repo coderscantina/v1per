@@ -22,6 +22,17 @@
     "signOut": "Abmelden",
     "description": "Verwende das Konto aus v1per init oder eines, das eine Administration für dich angelegt hat."
   },
+  "accent": {
+    "label": "Akzentfarbe",
+    "indigo": "Indigo",
+    "ultraviolet": "Ultraviolett",
+    "magenta": "Magenta",
+    "pink": "Pink",
+    "tangerine": "Mandarine",
+    "volt": "Neongelb",
+    "aqua": "Aqua",
+    "azure": "Azur"
+  },
   "colorMode": {
     "label": "Darstellung",
     "light": "Hell",

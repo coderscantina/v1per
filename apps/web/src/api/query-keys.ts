@@ -6,6 +6,7 @@
 export const queryKeys = {
   session: ['auth.session'] as const,
   twoFactor: ['twoFactor.status'] as const,
+  preferences: ['account.preferences'] as const,
   apiKeys: ['apiKeys.list'] as const,
   instanceSettings: ['instance.settings'] as const,
   instanceInfo: ['instance.info'] as const,

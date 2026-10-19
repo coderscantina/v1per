@@ -7,8 +7,8 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>v1per</title>
     <script>
-      // Before first paint, so a dark-mode visitor never sees a light flash. Shares its key and
-      // values with src/composables/useColorMode.ts.
+      // Before first paint, so a dark-mode visitor never sees a light flash or the wrong accent.
+      // Shares its keys and values with src/composables/useColorMode.ts and useAccentColor.ts.
       try {
         var mode = localStorage.getItem('v1per:color-mode')
         var dark =
@@ -16,6 +16,8 @@
           ((mode === null || mode === 'system') && matchMedia('(prefers-color-scheme: dark)').matches)
         document.documentElement.classList.toggle('dark', dark)
         document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+        var accent = localStorage.getItem('v1per:accent')
+        if (accent) document.documentElement.dataset.accent = accent
       } catch (_) {}
     </script>
   </head>
