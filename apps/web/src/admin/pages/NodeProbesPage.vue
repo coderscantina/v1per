@@ -4,7 +4,6 @@ import { useNow } from '@vueuse/core'
 
 import { probesResource } from '~/api/resources/probes'
 import Icon from '~/components/Icon.vue'
-import LiveIndicator from '~/components/LiveIndicator.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import CreateProbeDialog from '~/components/probes/CreateProbeDialog.vue'
 import ProbeStatusLabel from '~/components/probes/ProbeStatusLabel.vue'
@@ -103,12 +102,6 @@ const columns = 7
           <Icon name="lucide:plus" />
           {{ t('probes.create') }}
         </Button>
-      </template>
-      <template
-        v-if="own.data.value"
-        #freshness
-      >
-        <LiveIndicator :status="own.status.value" />
       </template>
     </PageHeader>
 

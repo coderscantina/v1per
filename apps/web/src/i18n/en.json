@@ -78,13 +78,6 @@
     "noAccess": "No access yet",
     "noAccessHint": "Your account holds no role on any node. Ask an admin for an invitation."
   },
-  "live": {
-    "current": "Live",
-    "stale": "Updating",
-    "connecting": "Connecting",
-    "resyncing": "Reconnecting",
-    "disconnected": "Offline, retrying"
-  },
   "nav": {
     "label": "Main navigation",
     "drawerDescription": "Pages of this instance",

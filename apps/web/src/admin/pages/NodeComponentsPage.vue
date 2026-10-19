@@ -3,7 +3,6 @@ import { useMutation } from '@tanstack/vue-query'
 
 import { componentsResource } from '~/api/resources/components'
 import Icon from '~/components/Icon.vue'
-import LiveIndicator from '~/components/LiveIndicator.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import ComponentDialog from '~/components/static/ComponentDialog.vue'
 import { Alert } from '~/components/ui/alert'
@@ -82,12 +81,6 @@ const columns = 3
           <Icon name="lucide:plus" />
           {{ t('components.create') }}
         </Button>
-      </template>
-      <template
-        v-if="live.data.value"
-        #freshness
-      >
-        <LiveIndicator :status="live.status.value" />
       </template>
     </PageHeader>
 

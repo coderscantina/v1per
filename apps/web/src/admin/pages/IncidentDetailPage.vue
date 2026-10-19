@@ -9,7 +9,6 @@ import IncidentPublications from '~/components/incidents/IncidentPublications.vu
 import IncidentStateBadge from '~/components/incidents/IncidentStateBadge.vue'
 import IncidentTimeline from '~/components/incidents/IncidentTimeline.vue'
 import IncidentUpdateForm from '~/components/incidents/IncidentUpdateForm.vue'
-import LiveIndicator from '~/components/LiveIndicator.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import { Alert } from '~/components/ui/alert'
 import { Button } from '~/components/ui/button'
@@ -138,12 +137,6 @@ const remove = async (dismiss: boolean) => {
           <Icon name="lucide:trash-2" />
           {{ t('incidents.delete') }}
         </Button>
-      </template>
-      <template
-        v-if="incident"
-        #freshness
-      >
-        <LiveIndicator :status="live.status.value" />
       </template>
     </PageHeader>
 

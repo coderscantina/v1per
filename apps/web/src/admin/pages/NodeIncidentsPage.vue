@@ -5,7 +5,6 @@ import ChoiceGroup from '~/components/ChoiceGroup.vue'
 import Icon from '~/components/Icon.vue'
 import ImpactLabel from '~/components/incidents/ImpactLabel.vue'
 import IncidentStateBadge from '~/components/incidents/IncidentStateBadge.vue'
-import LiveIndicator from '~/components/LiveIndicator.vue'
 import FilterSelect from '~/components/monitors/FilterSelect.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import { Alert } from '~/components/ui/alert'
@@ -104,12 +103,6 @@ const columns = 6
             {{ t('incidents.create') }}
           </RouterLink>
         </Button>
-      </template>
-      <template
-        v-if="incidents.data.value"
-        #freshness
-      >
-        <LiveIndicator :status="incidents.status.value" />
       </template>
     </PageHeader>
 

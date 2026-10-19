@@ -178,7 +178,6 @@ test('monitor screens hold up at desktop and phone sizes, light and dark', async
 
       await page.goto(`/n/${ids.root}/monitors`)
       await expect(page.getByRole('table', { name: 'Monitors' }).getByRole('link', { name: 'Web shop' })).toBeVisible()
-      await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
       await check('list')
 
       await page.goto(`/n/${ids.root}/monitors/${ids.http}`)

@@ -4,23 +4,23 @@ import type { LiveFrame } from '~/generated'
 
 import { onFrame, onStreamError, type LiveState } from './live'
 
-const start: LiveState = { cursor: 'page:1@4', connection: 'connecting', failures: 0 }
+const start: LiveState = { cursor: 'page:1@4', failures: 0 }
 
 describe('onFrame', () => {
-  it('goes live on subscribed and resumes from its cursor', () => {
+  it('resets failures on subscribed and resumes from its cursor', () => {
     expect(onFrame(start, { kind: 'subscribed', head: 'page:1@6', cursor: 'page:1@4' })).toEqual({
-      state: { cursor: 'page:1@4', connection: 'live', failures: 0 },
+      state: { cursor: 'page:1@4', failures: 0 },
       action: 'none',
     })
   })
 
   it('reads the snapshot again on events and moves the cursor', () => {
     const { state, action } = onFrame(
-      { ...start, connection: 'reconnecting', failures: 3 },
+      { ...start, failures: 3 },
       { kind: 'events', cursor: 'page:1@5', events: [{ seq: 5, kind: 'page.status_changed' }] }
     )
     expect(action).toBe('refetch')
-    expect(state).toEqual({ cursor: 'page:1@5', connection: 'live', failures: 0 })
+    expect(state).toEqual({ cursor: 'page:1@5', failures: 0 })
   })
 
   it('reloads when the page is deleted', () => {
@@ -47,6 +47,6 @@ describe('onStreamError', () => {
       state = next.state
     }
     expect(delays).toEqual([1000, 2000, 4000, 8000, 16_000, 30_000, 30_000])
-    expect(state).toEqual({ cursor: 'page:1@4', connection: 'reconnecting', failures: 7 })
+    expect(state).toEqual({ cursor: 'page:1@4', failures: 7 })
   })
 })

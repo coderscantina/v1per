@@ -184,7 +184,6 @@ test('a down monitor alerts both channels and shows in their delivery logs', asy
   await page.goto(`/n/${ids.node}/channels/${ids.discord}`)
   const log = page.getByRole('table', { name: 'Delivery log' })
   await expect(log.locator('[data-delivery-row="delivered"]').filter({ hasText: '[Web API] [🔴 Down]' })).toBeVisible()
-  await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
 
   // The monitor editor shows what was picked.
   await page.goto(`/n/${ids.node}/monitors/${ids.monitor}/edit`)

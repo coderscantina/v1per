@@ -7,7 +7,6 @@ import SettingsSection from '~/components/account/SettingsSection.vue'
 import TestSend from '~/components/channels/TestSend.vue'
 import CommandAlert from '~/components/CommandAlert.vue'
 import FormField from '~/components/FormField.vue'
-import LiveIndicator from '~/components/LiveIndicator.vue'
 import SecretInputField from '~/components/monitors/SecretInputField.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import SelectField from '~/components/SelectField.vue'
@@ -237,12 +236,6 @@ const testArgs = (): InstanceTestSmtpArgs | null => {
       :title="t('instance.title')"
       :description="info.data.value?.name"
     >
-      <template
-        v-if="settings.data.value"
-        #freshness
-      >
-        <LiveIndicator :status="settings.status.value" />
-      </template>
     </PageHeader>
 
     <Alert

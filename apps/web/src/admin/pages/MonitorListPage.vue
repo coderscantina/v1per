@@ -2,7 +2,6 @@
 import { useIntervalFn } from '@vueuse/core'
 
 import Icon from '~/components/Icon.vue'
-import LiveIndicator from '~/components/LiveIndicator.vue'
 import FilterSelect from '~/components/monitors/FilterSelect.vue'
 import StatusLabel from '~/components/monitors/StatusLabel.vue'
 import NodePath from '~/components/nodes/NodePath.vue'
@@ -151,12 +150,6 @@ const columns = 5
             {{ t('monitors.create') }}
           </RouterLink>
         </Button>
-      </template>
-      <template
-        v-if="own.data.value"
-        #freshness
-      >
-        <LiveIndicator :status="own.status.value" />
       </template>
     </PageHeader>
 

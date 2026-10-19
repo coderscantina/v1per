@@ -3,7 +3,6 @@ import { useMutation } from '@tanstack/vue-query'
 
 import { maintenanceResource } from '~/api/resources/maintenance'
 import Icon from '~/components/Icon.vue'
-import LiveIndicator from '~/components/LiveIndicator.vue'
 import MaintenanceStatusLabel from '~/components/maintenance/MaintenanceStatusLabel.vue'
 import WindowList from '~/components/maintenance/WindowList.vue'
 import PageHeader from '~/components/PageHeader.vue'
@@ -89,12 +88,6 @@ const columns = 6
             {{ t('maintenance.create') }}
           </RouterLink>
         </Button>
-      </template>
-      <template
-        v-if="live.data.value"
-        #freshness
-      >
-        <LiveIndicator :status="live.status.value" />
       </template>
     </PageHeader>
 

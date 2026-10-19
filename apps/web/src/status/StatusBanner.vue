@@ -2,13 +2,12 @@
 import type { PageStatus } from '~/generated'
 
 import { formatClock } from './format'
-import type { Connection } from './live'
 import { locale, t, type MessageKey } from './messages'
 import StatusIcon from './StatusIcon.vue'
 import { toneIcon } from './tones'
 
-/** The page's overall status, when it was read, and whether it follows live. */
-defineProps<{ status: PageStatus; generatedAt: number; connection: Connection }>()
+/** The page's overall status and when it was read. */
+defineProps<{ status: PageStatus; generatedAt: number }>()
 
 const headline: Record<PageStatus, MessageKey> = {
   operational: 'banner.operational',
@@ -32,20 +31,6 @@ const headline: Record<PageStatus, MessageKey> = {
     <h2 class="min-w-0 flex-1 text-lg font-semibold text-primary">{{ t(headline[status]) }}</h2>
     <div class="flex w-full items-center gap-3 pl-10 text-sm text-muted sm:w-auto sm:pl-0">
       <span>{{ t('banner.updated', { time: formatClock(generatedAt, locale) }) }}</span>
-      <span
-        role="status"
-        class="inline-flex items-center gap-1.5"
-        data-testid="live"
-      >
-        <template v-if="connection !== 'connecting'">
-          <span
-            class="size-2 rounded-full"
-            :class="connection === 'live' ? 'bg-success' : 'animate-pulse bg-warning'"
-            aria-hidden="true"
-          />
-          {{ connection === 'live' ? t('live.live') : t('live.reconnecting') }}
-        </template>
-      </span>
     </div>
   </section>
 </template>

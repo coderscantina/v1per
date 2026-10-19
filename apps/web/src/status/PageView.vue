@@ -5,14 +5,13 @@ import type { PageClient } from './client'
 import ComponentGroup from './ComponentGroup.vue'
 import IncidentCard from './IncidentCard.vue'
 import IncidentHistory from './IncidentHistory.vue'
-import type { Connection } from './live'
 import LocaleSwitch from './LocaleSwitch.vue'
 import MaintenanceCard from './MaintenanceCard.vue'
 import { t } from './messages'
 import StatusBanner from './StatusBanner.vue'
 import { pageView } from './view'
 
-const props = defineProps<{ snapshot: PageSnapshot; base: string; connection: Connection; client: PageClient }>()
+const props = defineProps<{ snapshot: PageSnapshot; base: string; client: PageClient }>()
 
 const view = computed(() => pageView(props.snapshot, props.base))
 const incidentsKey = computed(() =>
@@ -53,7 +52,6 @@ const incidentsKey = computed(() =>
       <StatusBanner
         :status="view.status"
         :generated-at="view.generatedAt"
-        :connection="connection"
       />
 
       <section

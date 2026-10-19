@@ -3,7 +3,6 @@ import { useMutation } from '@tanstack/vue-query'
 
 import { channelsResource } from '~/api/resources/channels'
 import Icon from '~/components/Icon.vue'
-import LiveIndicator from '~/components/LiveIndicator.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import { Alert } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
@@ -91,12 +90,6 @@ const columns = 5
             {{ t('channels.create') }}
           </RouterLink>
         </Button>
-      </template>
-      <template
-        v-if="live.data.value"
-        #freshness
-      >
-        <LiveIndicator :status="live.status.value" />
       </template>
     </PageHeader>
 

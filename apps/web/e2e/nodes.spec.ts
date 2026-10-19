@@ -234,7 +234,6 @@ test('node screens at desktop and phone width in light and dark', async ({ brows
       }
 
       await page.goto(`/n/${ids.Autohaus}`)
-      await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
       await check('overview')
 
       // On a phone the tree lives in the drawer.

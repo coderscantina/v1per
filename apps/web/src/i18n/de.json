@@ -78,13 +78,6 @@
     "noAccess": "Noch kein Zugriff",
     "noAccessHint": "Dein Konto hat auf keinem Knoten eine Rolle. Bitte eine Administration um eine Einladung."
   },
-  "live": {
-    "current": "Live",
-    "stale": "Wird aktualisiert",
-    "connecting": "Verbinde",
-    "resyncing": "Verbinde neu",
-    "disconnected": "Offline, neuer Versuch läuft"
-  },
   "nav": {
     "label": "Hauptnavigation",
     "drawerDescription": "Seiten dieser Instanz",

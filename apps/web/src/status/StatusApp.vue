@@ -4,7 +4,7 @@ import type { PageBoot, PageSnapshot } from '~/generated'
 import AccessGate from './AccessGate.vue'
 import { linkCode } from './boot'
 import { pageClient } from './client'
-import { followPage, type Connection } from './live'
+import { followPage } from './live'
 import { locale, t } from './messages'
 import PageView from './PageView.vue'
 import { applyAppearance } from './theme'
@@ -18,7 +18,6 @@ const props = defineProps<{ boot: PageBoot | null }>()
 const base = props.boot?.base ?? ''
 const client = pageClient(base)
 const snapshot = shallowRef<PageSnapshot | null>(props.boot?.kind === 'page' ? props.boot.snapshot : null)
-const connection = ref<Connection>('connecting')
 
 // A sign-in link opened while already let in: drop the code from the address.
 if (props.boot?.kind === 'page' && linkCode(base) !== null) window.history.replaceState(null, '', base || '/')
@@ -39,7 +38,6 @@ watch(
       client,
       cursor: snapshot.value.cursor,
       apply: show,
-      connection: (next) => (connection.value = next),
       reload: () => window.location.reload(),
     })
   },
@@ -53,7 +51,6 @@ onBeforeUnmount(() => stop?.())
     v-if="snapshot"
     :snapshot="snapshot"
     :base="base"
-    :connection="connection"
     :client="client"
   />
   <AccessGate

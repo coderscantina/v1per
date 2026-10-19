@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import Icon from '~/components/Icon.vue'
-import LiveIndicator from '~/components/LiveIndicator.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import { Button } from '~/components/ui/button'
 import { EmptyState } from '~/components/ui/empty-state'
@@ -69,12 +68,6 @@ const links = [
             {{ t('pages.open') }}
           </a>
         </Button>
-      </template>
-      <template
-        v-if="page"
-        #freshness
-      >
-        <LiveIndicator :status="live.status.value" />
       </template>
     </PageHeader>
 

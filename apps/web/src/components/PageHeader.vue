@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * The page title row at the top of the canvas: name, bullet, muted context, then the actions and
- * the freshness note at the right, with a hairline below. It spans the canvas edge to edge, so it
+ * The page title row at the top of the canvas: name, bullet, muted context, then the actions at
+ * the right, with a hairline below. It spans the canvas edge to edge, so it
  * must be the first thing in the page. `eyebrow` adds small context after the description.
  */
 defineProps<{
@@ -29,16 +29,10 @@ defineProps<{
       <slot name="eyebrow" />
     </div>
     <div
-      v-if="$slots.actions || $slots.freshness"
+      v-if="$slots.actions"
       class="ml-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-2"
     >
       <slot name="actions" />
-      <div
-        v-if="$slots.freshness"
-        class="flex items-center gap-2 text-sm text-muted"
-      >
-        <slot name="freshness" />
-      </div>
     </div>
   </div>
 </template>

@@ -99,7 +99,6 @@ test('an incident is opened, updated with a new impact and resolved', async ({ b
   await expect(status.locator('[data-affected="Support"] [data-impact="degraded"]')).toBeVisible()
   // The latest update that names a component wins; the other keeps its impact.
   await expect(status.locator('[data-affected="Checkout"] [data-impact="major_outage"]')).toBeVisible()
-  await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
 
   await page.getByRole('button', { name: 'Resolve' }).click()
   await expect(status.locator('[data-state="resolved"]')).toBeVisible()

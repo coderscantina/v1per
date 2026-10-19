@@ -3,7 +3,6 @@
 // per node and inherited, so each row says where the person's role comes from.
 import { membersResource } from '~/api/resources/members'
 import Icon from '~/components/Icon.vue'
-import LiveIndicator from '~/components/LiveIndicator.vue'
 import InviteDialog from '~/components/nodes/InviteDialog.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import { Alert } from '~/components/ui/alert'
@@ -159,12 +158,6 @@ const stateVariants: Record<InvitationState, 'warning' | 'success' | 'secondary'
           <Icon name="lucide:user-plus" />
           {{ t('invitations.create') }}
         </Button>
-      </template>
-      <template
-        v-if="members.data.value"
-        #freshness
-      >
-        <LiveIndicator :status="members.status.value" />
       </template>
     </PageHeader>
 

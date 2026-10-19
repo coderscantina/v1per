@@ -188,7 +188,6 @@ test('the page renders from its injected JSON, with keyboard-reachable bars', as
   await expect(componentStatus(page, 'Support')).toHaveText('Operational')
   await expect(component(page, 'Worker')).toHaveCount(0)
   await expect(page.getByTestId('internal-detail')).toHaveCount(0)
-  await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
 
   // One tab stop per strip, today first; arrows move by day, and the label says it all.
   const strip = page.getByRole('group', { name: 'Last 90 days of API' })
@@ -259,7 +258,6 @@ test('a grant holder sees internal components, response times and probes', async
 
 test('a published incident and maintenance arrive on an open page', async ({ browser }) => {
   const page = await visit(browser, `/s/${publicSlug}`)
-  await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
 
   const opened = await command('incidents.create', {
     node: ids.root,
@@ -353,7 +351,6 @@ test('a restricted page opens with its password', async ({ browser }) => {
   await page.getByRole('button', { name: 'Open page' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Partner status' })).toBeVisible()
   await expect(component(page, 'Partner API')).toBeVisible()
-  await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
   // The page cookie keeps it open.
   await page.reload()
   await expect(page.getByRole('heading', { level: 1, name: 'Partner status' })).toBeVisible()

@@ -21,8 +21,6 @@ const en = {
   'banner.major_outage': 'Major outage',
   'banner.updated': 'Updated {time}',
 
-  'live.live': 'Live',
-  'live.reconnecting': 'Reconnecting',
 
   'state.investigating': 'Investigating',
   'state.identified': 'Identified',
@@ -127,8 +125,6 @@ const de: Record<MessageKey, string> = {
   'banner.major_outage': 'Größerer Ausfall',
   'banner.updated': 'Aktualisiert {time}',
 
-  'live.live': 'Live',
-  'live.reconnecting': 'Verbindet neu',
 
   'state.investigating': 'Wird untersucht',
   'state.identified': 'Ursache gefunden',

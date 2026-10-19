@@ -5,7 +5,6 @@ import { monitorsResource } from '~/api/resources/monitors'
 import DeliveryTable from '~/components/channels/DeliveryTable.vue'
 import ChoiceGroup from '~/components/ChoiceGroup.vue'
 import Icon from '~/components/Icon.vue'
-import LiveIndicator from '~/components/LiveIndicator.vue'
 import DayBars from '~/components/monitors/DayBars.vue'
 import HeartbeatTable from '~/components/monitors/HeartbeatTable.vue'
 import FilterSelect from '~/components/monitors/FilterSelect.vue'
@@ -239,12 +238,6 @@ const unsupportedType = computed(() => {
           <Icon name="lucide:trash-2" />
           {{ t('monitors.detail.delete') }}
         </Button>
-      </template>
-      <template
-        v-if="monitor"
-        #freshness
-      >
-        <LiveIndicator :status="live.status.value" />
       </template>
     </PageHeader>
 

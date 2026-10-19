@@ -5,7 +5,6 @@ import { channelsResource } from '~/api/resources/channels'
 import DeliveryTable from '~/components/channels/DeliveryTable.vue'
 import TestSend from '~/components/channels/TestSend.vue'
 import Icon from '~/components/Icon.vue'
-import LiveIndicator from '~/components/LiveIndicator.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import { Alert } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
@@ -107,12 +106,6 @@ const ask = async () => {
           <Icon name="lucide:trash-2" />
           {{ t('channels.delete') }}
         </Button>
-      </template>
-      <template
-        v-if="deliveries.data.value"
-        #freshness
-      >
-        <LiveIndicator :status="deliveries.status.value" />
       </template>
     </PageHeader>
 

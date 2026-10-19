@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import Icon from '~/components/Icon.vue'
-import LiveIndicator from '~/components/LiveIndicator.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import CreatePageDialog from '~/components/pages/CreatePageDialog.vue'
 import { Alert } from '~/components/ui/alert'
@@ -55,12 +54,6 @@ const columns = 5
           <Icon name="lucide:plus" />
           {{ t('pages.create') }}
         </Button>
-      </template>
-      <template
-        v-if="live.data.value"
-        #freshness
-      >
-        <LiveIndicator :status="live.status.value" />
       </template>
     </PageHeader>
 

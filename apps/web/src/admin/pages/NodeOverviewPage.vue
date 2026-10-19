@@ -4,7 +4,6 @@ import { useMediaQuery, useStorage } from '@vueuse/core'
 import ChoiceGroup from '~/components/ChoiceGroup.vue'
 import Icon from '~/components/Icon.vue'
 import OpenIncidentsPanel from '~/components/incidents/OpenIncidentsPanel.vue'
-import LiveIndicator from '~/components/LiveIndicator.vue'
 import MaintenancePanel from '~/components/maintenance/MaintenancePanel.vue'
 import AttentionPanel from '~/components/observe/AttentionPanel.vue'
 import NodeOrbit from '~/components/observe/NodeOrbit.vue'
@@ -126,7 +125,6 @@ const empty = computed(() => monitors.value.length === 0 && node.value !== null 
             :label="t('observe.view.label')"
             :options="views"
           />
-          <LiveIndicator :status="visible.status.value" />
         </div>
       </header>
 

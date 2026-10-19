@@ -37,7 +37,6 @@ test('home opens the root node and follows all its topics on one stream', async 
 
   await expect(page).toHaveURL(/\/n\/\d+$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Root' })).toBeVisible()
-  await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Where you are' })).toHaveText('Root')
   await expect(page.getByRole('navigation', { name: 'Mode' }).getByRole('link', { name: 'Observe' })).toHaveAttribute('aria-current', 'page')
   await expect
@@ -67,7 +66,6 @@ test('a screen with many live panels stays live and keeps answering', async ({ b
   // The dashboard follows the tree's monitors and the incidents and maintenance below the node.
   await page.goto(`/n/${node}`)
   await expect(page.getByRole('heading', { level: 1, name: 'Many panels' })).toBeVisible()
-  await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
   await expect(page.getByText('No open incidents')).toBeVisible()
   await expect.poll(() => streams.open.size, { message: 'one stream open' }).toBe(1)
 
@@ -86,7 +84,6 @@ test('a screen with many live panels stays live and keeps answering', async ({ b
   await expect.poll(() => streams.opened.at(-1)?.length ?? 0).toBeGreaterThan(6)
   await modes.getByRole('link', { name: 'Observe' }).click()
   await expect(page.getByRole('link', { name: /Below is slow/ })).toBeVisible()
-  await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
   await expect.poll(() => streams.open.size, { message: 'one stream open' }).toBe(1)
   await page.context().close()
 })
@@ -96,7 +93,7 @@ test('the shell at desktop and phone width in light and dark', async ({ browser 
     const page = await signedIn(browser, viewport)
     for (const scheme of schemes) {
       await page.emulateMedia({ colorScheme: scheme })
-      await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
+      await expect(page.getByRole('heading', { level: 1, name: 'Root' })).toBeVisible()
       await expectNoHorizontalOverflow(page)
       await expectAccessible(page)
       await shot(page, `root-${size}-${scheme}`)
