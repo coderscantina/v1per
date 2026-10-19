@@ -48,7 +48,7 @@ const submit = () => create.mutate({ parent: props.parent, name: name.value })
         @submit.prevent="submit"
       >
         <FormField
-          id="node-name"
+          id="create-node-name"
           v-model="name"
           autocomplete="off"
           :label="t('nodes.name')"
