@@ -1,0 +1,24 @@
+[package]
+name = "v1per-kuma-import"
+version = "0.1.0"
+description = "Reads an Uptime Kuma 2.5.0 SQLite database into a validated v1per import plan"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+chrono-tz = "0.10"
+rusqlite = { version = "0.39", features = ["bundled"] }
+serde.workspace = true
+serde_json.workspace = true
+thiserror = "2"
+url = "2.5"
+v1per-checks = { path = "../checks" }
+v1per-maintenance-schedule = { path = "../maintenance-schedule" }
+v1per-notify = { path = "../notify" }
+
+[dev-dependencies]
+tempfile = "3"
+v1per-kuma-fixture = { path = "../kuma-fixture" }
