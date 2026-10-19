@@ -1564,7 +1564,6 @@
       "down": "{count} monitor down | {count} monitors down",
       "pending": "{count} pending | {count} pending",
       "onlyPending": "Nothing is down. {count} monitor is waiting for a retry. | Nothing is down. {count} monitors are waiting for a retry.",
-      "healthy": "The monitor here is healthy. | All {count} monitors are healthy.",
       "paused": "Every monitor here is paused.",
       "empty": "No monitors here yet."
     },
@@ -1599,7 +1598,6 @@
       "title": "Needs attention",
       "empty": "Nothing needs you here."
     },
-    "legendHint": "Click a ring to step in, the path above to step out",
     "instance": "Instance"
   }
 }

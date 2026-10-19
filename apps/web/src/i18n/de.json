@@ -1564,7 +1564,6 @@
       "down": "{count} Monitor ausgefallen | {count} Monitore ausgefallen",
       "pending": "{count} ausstehend | {count} ausstehend",
       "onlyPending": "Nichts ist ausgefallen. {count} Monitor wartet auf einen neuen Versuch. | Nichts ist ausgefallen. {count} Monitore warten auf einen neuen Versuch.",
-      "healthy": "Der Monitor hier ist in Ordnung. | Alle {count} Monitore sind in Ordnung.",
       "paused": "Alle Monitore hier sind pausiert.",
       "empty": "Hier gibt es noch keine Monitore."
     },
@@ -1599,7 +1598,6 @@
       "title": "Braucht Aufmerksamkeit",
       "empty": "Hier braucht dich gerade nichts."
     },
-    "legendHint": "Klick auf einen Ring geht hinein, der Pfad oben wieder hinaus",
     "instance": "Instanz"
   }
 }

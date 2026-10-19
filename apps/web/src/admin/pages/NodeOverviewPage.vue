@@ -53,7 +53,7 @@ const views = computed(() => [
   { value: 'orbit' as const, label: t('observe.view.orbit'), icon: 'lucide:orbit' as const },
   { value: 'wall' as const, label: t('observe.view.wall'), icon: 'lucide:layout-grid' as const },
 ])
-const LEGEND = ['up', 'pending', 'down', 'maintenance'] as const satisfies readonly Presence[]
+const LEGEND = ['up', 'pending', 'down', 'maintenance', 'paused'] as const satisfies readonly Presence[]
 /** Where the node sits, as the small line above its name. */
 const trail = computed(() =>
   node.value ? path.value.slice(0, -1).map((entry) => entry.name ?? '…').join(' / ') || t('observe.instance') : ''
@@ -113,9 +113,8 @@ const empty = computed(() => monitors.value.length === 0 && node.value !== null 
               <template v-if="counts.pending > 0">, {{ t('observe.summary.pending', { count: counts.pending }, counts.pending) }}</template>
             </template>
             <template v-else-if="counts.pending > 0">{{ t('observe.summary.onlyPending', { count: counts.pending }, counts.pending) }}</template>
-            <template v-else-if="active > 0">{{ t('observe.summary.healthy', { count: active }, active) }}</template>
-            <template v-else-if="monitors.length > 0">{{ t('observe.summary.paused') }}</template>
-            <template v-else>{{ t('observe.summary.empty') }}</template>
+            <template v-else-if="monitors.length === 0">{{ t('observe.summary.empty') }}</template>
+            <template v-else-if="active === 0">{{ t('observe.summary.paused') }}</template>
           </p>
         </div>
         <div class="flex items-center gap-3">
@@ -177,7 +176,6 @@ const empty = computed(() => monitors.value.length === 0 && node.value !== null 
           />
           {{ t(presenceLabels[presence]) }}
         </span>
-        <span class="ml-auto max-md:hidden">{{ t('observe.legendHint') }}</span>
       </footer>
     </section>
 
