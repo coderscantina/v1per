@@ -16,6 +16,7 @@ mod outbox;
 pub(crate) use certificates::check as check_certificates;
 pub use outbox::run;
 pub(crate) use outbox::{Beat, ProbePayload, queue_beat, queue_probe_offline, queue_test};
+use outbox::{queue_sample_test, sample_payload};
 
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
@@ -511,16 +512,44 @@ impl ChannelsHandlers for AppState {
         let name = validate_name("name", &args.name)?;
         let kuma = config::to_kuma(&name, &args.settings, stored.as_ref())?;
         let now = ctx.now();
-        let delivery = outbox::queue_test(
-            ctx.conn(),
-            &self.secrets,
-            args.node,
-            args.channel,
-            &kuma,
-            name,
-            now,
-        )
-        .await?;
+        let delivery = match args.sample {
+            None if args.monitor.is_some() => {
+                return Err(FieldErrors::one(
+                    "monitor",
+                    FieldErrorCode::InvalidValue,
+                    None,
+                ));
+            }
+            None => {
+                outbox::queue_test(
+                    ctx.conn(),
+                    &self.secrets,
+                    args.node,
+                    args.channel,
+                    &kuma,
+                    name,
+                    now,
+                )
+                .await?
+            }
+            Some(sample) => {
+                let payload = sample_payload(ctx.conn(), sample, args.node, args.monitor, now)
+                    .await?
+                    .ok_or_else(|| {
+                        FieldErrors::one("monitor", FieldErrorCode::InvalidValue, None)
+                    })?;
+                queue_sample_test(
+                    ctx.conn(),
+                    &self.secrets,
+                    args.node,
+                    args.channel,
+                    &kuma,
+                    &payload,
+                    now,
+                )
+                .await?
+            }
+        };
         ctx.record(
             &Topic::channels(args.node),
             "channel.delivery",

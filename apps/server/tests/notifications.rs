@@ -465,6 +465,53 @@ async fn channels_are_scoped_sealed_and_testable() {
     background.stop().await;
 }
 
+/// A test can send a down alert filled from a monitor on the node or below. It stays a test
+/// row, and a monitor elsewhere is refused.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_test_can_send_a_monitor_alert() {
+    let harness = Harness::manual().await;
+    let background = harness.start();
+    let admin = harness.session(&harness.admin).await;
+    let root = harness.root().await;
+    let team = harness.node(&admin, &root, "team").await;
+    let other = harness.node(&admin, &root, "other").await;
+    let hook = Discord::start().await;
+    let inside = monitor(&harness, &admin, &team, "http://127.0.0.1:9/", json!({})).await;
+    let outside = monitor(&harness, &admin, &other, "http://127.0.0.1:9/", json!({})).await;
+    let form = |monitor: &str| {
+        json!({
+            "node": team, "name": "Ops chat", "sample": "monitor_down", "monitor": monitor,
+            "settings": { "type": "discord", "webhook_url": { "value": hook.url } },
+        })
+    };
+
+    let refused = harness
+        .run(Some(&admin), "channels.test", form(&outside))
+        .await;
+    assert_eq!(
+        refused.json()["errors"]["monitor"][0]["code"],
+        "invalid_value"
+    );
+
+    let queued = harness.ok(&admin, "channels.test", form(&inside)).await;
+    let delivery = queued["delivery"].as_str().unwrap().to_owned();
+    eventually("the sample alert", || async { hook.posts().len() == 1 }).await;
+    assert_eq!(
+        hook.posts()[0]["embeds"][0]["title"],
+        "❌ Your service site went down. ❌"
+    );
+    let (event, monitor_id, summary): (String, Option<i64>, String) =
+        sqlx::query_as("SELECT event, monitor_id, summary FROM notification_outbox WHERE id = ?")
+            .bind(delivery.parse::<i64>().unwrap())
+            .fetch_one(&harness.state.db.reader)
+            .await
+            .unwrap();
+    assert_eq!(event, "test");
+    assert_eq!(monitor_id, None);
+    assert!(summary.starts_with("[site] [🔴 Down]"), "{summary}");
+    background.stop().await;
+}
+
 /// `channels.get` and a monitor's deliveries across the channels its reader may see. Anyone
 /// who reads the monitor sees its alerts; the provider's answers need `channels.manage`.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

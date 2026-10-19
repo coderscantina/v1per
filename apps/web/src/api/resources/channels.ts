@@ -11,6 +11,9 @@ import type {
 
 import { api } from '..'
 
+/** What a channel test sends instead of Kuma's test message. */
+export type TestOptions = Pick<ChannelsTestArgs, 'sample' | 'monitor'>
+
 /**
  * Notification channels on a node. `list` (the node's own, with settings) and `available` (the
  * node's and its ancestors', for the monitor editor) follow `channels:<id>`, which also carries a
@@ -30,6 +33,6 @@ export const channelsResource = {
   create: (args: ChannelsCreateArgs) => api.command('channels.create', args),
   update: (args: ChannelsUpdateArgs) => api.command('channels.update', args),
   delete: (channel: ChannelId) => api.command('channels.delete', { channel }),
-  /** Queues one test message; read its outcome with `delivery`. */
-  test: (args: ChannelsTestArgs) => api.command('channels.test', args),
+  /** Queues one test, Kuma's message or a monitor alert; read its outcome with `delivery`. */
+  test: (args: ChannelsTestArgs, options: TestOptions = {}) => api.command('channels.test', { ...args, ...options }),
 }

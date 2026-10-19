@@ -22,6 +22,7 @@ use tokio::task::JoinSet;
 use v1per_notify::{self as notify, ChannelConfig, SendContext};
 use v1per_protocol::envelope::Topic;
 use v1per_protocol::ids::{ChannelId, DeliveryId, MonitorId, NodeId};
+use v1per_protocol::operations::channels::TestSample;
 use v1per_protocol::operations::monitors::MonitorSettings;
 use v1per_storage::Status;
 
@@ -368,7 +369,78 @@ pub(crate) async fn queue_test(
     now: i64,
 ) -> sqlx::Result<DeliveryId> {
     let payload = Payload::Test { channel_name };
-    let summary = payload.to_event(Tz::UTC, None).message();
+    queue_sample_test(conn, key, node, channel, config, &payload, now).await
+}
+
+/// A monitor alert for a test, rendered like a real one. With `monitor` its details fill the
+/// alert; `None` when that monitor is missing or not on `node` or below. Without `monitor` an
+/// example monitor on `node` stands in.
+pub(crate) async fn sample_payload(
+    conn: &mut SqliteConnection,
+    sample: TestSample,
+    node: NodeId,
+    monitor: Option<MonitorId>,
+    now: i64,
+) -> sqlx::Result<Option<Payload>> {
+    let monitor = match monitor {
+        None => MonitorPayload {
+            // Id 0 never names a stored monitor, so the alert's link only resolves for a real one.
+            id: MonitorId::new(0),
+            node,
+            name: "Example API".to_owned(),
+            kind: "http".to_owned(),
+            url: Some("https://example.com/health".to_owned()),
+            hostname: None,
+            port: None,
+            groups: Vec::new(),
+            tags: Vec::new(),
+        },
+        Some(monitor) => {
+            let Some(monitor) = snapshot(conn, monitor).await? else {
+                return Ok(None);
+            };
+            if !crate::incidents::subtree_contains(conn, node, monitor.node).await? {
+                return Ok(None);
+            }
+            monitor
+        }
+    };
+    let up = sample == TestSample::MonitorUp;
+    let beat = BeatPayload {
+        monitor,
+        time: now,
+        msg: if up {
+            "200 - OK"
+        } else {
+            "Request failed with status code 503"
+        }
+        .to_owned(),
+        ping: up.then_some(142),
+        important: true,
+        duration: 60,
+        retries: 0,
+        last_down_time: up.then_some(now - 5 * 60_000),
+    };
+    Ok(Some(if up {
+        Payload::MonitorUp(beat)
+    } else {
+        Payload::MonitorDown(beat)
+    }))
+}
+
+/// Queues `payload` as a test. The row stays `event = 'test'`, with no monitor, so it is sent
+/// once and maintenance never holds it back.
+pub(crate) async fn queue_sample_test(
+    conn: &mut SqliteConnection,
+    key: &crate::identity::secrets::SecretKey,
+    node: NodeId,
+    channel: Option<ChannelId>,
+    config: &config::Kuma,
+    payload: &Payload,
+    now: i64,
+) -> sqlx::Result<DeliveryId> {
+    let timezone = instance::timezone(conn).await?;
+    let summary = payload.to_event(timezone, None).message();
     let id: i64 = sqlx::query_scalar(
         "INSERT INTO notification_outbox (node_id, channel_id, event, payload, summary, config,
              state, next_attempt_at, created_at)
@@ -376,7 +448,7 @@ pub(crate) async fn queue_test(
     )
     .bind(node.get())
     .bind(channel.map(ChannelId::get))
-    .bind(serde_json::to_string(&payload).expect("payloads serialize"))
+    .bind(serde_json::to_string(payload).expect("payloads serialize"))
     .bind(summary)
     .bind(now)
     .bind(now)
@@ -535,6 +607,7 @@ struct Pending {
     node_id: i64,
     channel_id: Option<i64>,
     monitor_id: Option<i64>,
+    event: String,
     payload: String,
     config: Option<Vec<u8>>,
     attempts: i64,
@@ -552,7 +625,7 @@ enum Outcome {
 async fn deliver(state: &AppState, ctx: &SendContext, id: i64) -> anyhow::Result<()> {
     let mut conn = state.db.reader.acquire().await?;
     let row: Option<Pending> = sqlx::query_as(
-        "SELECT node_id, channel_id, monitor_id, payload, config, attempts, created_at
+        "SELECT node_id, channel_id, monitor_id, event, payload, config, attempts, created_at
          FROM notification_outbox WHERE id = ? AND state = 'pending'",
     )
     .bind(id)
@@ -562,7 +635,7 @@ async fn deliver(state: &AppState, ctx: &SendContext, id: i64) -> anyhow::Result
         return Ok(());
     };
     let payload: Payload = serde_json::from_str(&row.payload)?;
-    let test = matches!(payload, Payload::Test { .. });
+    let test = row.event == "test";
     let maintenance = match (row.monitor_id, &payload) {
         (Some(monitor), Payload::MonitorDown(_) | Payload::MonitorUp(_)) => {
             sqlx::query_scalar::<_, i64>("SELECT 1 FROM maintenance_state WHERE monitor_id = ?")

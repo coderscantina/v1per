@@ -319,6 +319,7 @@ const backTo = computed(() =>
           :description="t('channels.test.hint')"
         >
           <TestSend
+            :node="routeId"
             :args="testArgs"
             :send="channelsResource.test"
           />

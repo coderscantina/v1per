@@ -202,6 +202,7 @@ const ask = async () => {
         >
           <p class="mb-3 text-sm text-muted">{{ t('channels.test.storedHint') }}</p>
           <TestSend
+            :node="channel.node"
             :args="testArgs"
             :send="channelsResource.test"
           />

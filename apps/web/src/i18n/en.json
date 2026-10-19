@@ -1084,6 +1084,14 @@
       "sending": "Sending…",
       "delivered": "Test message sent.",
       "failed": "The test message was not delivered.",
+      "kind": "What to send",
+      "kinds": {
+        "message": "Test message",
+        "down": "Down alert",
+        "up": "Up alert"
+      },
+      "monitor": "Monitor",
+      "exampleMonitor": "Example monitor",
       "invalid": "Fill in the required fields first."
     },
     "deliveries": {

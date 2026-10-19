@@ -28,8 +28,9 @@ crate::domain! {
         "channels.update" => channels_update (Person): ChannelsUpdateArgs => ChannelResult;
         /// Deletes a channel with its monitor links and delivery log. Needs `channels.manage`.
         "channels.delete" => channels_delete (Person): ChannelArgs => ChannelDeleted;
-        /// Queues a test message, Kuma's "Test" button, through the outbox with a single
-        /// attempt. `settings` is the form as it stands; secret fields without `value` come
+        /// Queues a test, Kuma's "Test" button, through the outbox with a single attempt. It
+        /// sends Kuma's test message, or with `sample` a monitor down or up alert rendered like
+        /// a real one, for checking templates. `settings` is the form as it stands; secret fields without `value` come
         /// from `channel`, which must be on `node`. Follow `channel.delivery` on the node's
         /// `channels:<id>` topic and read the outcome with `channels.delivery`. Needs
         /// `channels.manage`.
@@ -483,6 +484,23 @@ pub struct ChannelsTestArgs {
     /// Used in the test message, `<name> Testing`.
     pub name: String,
     pub settings: ChannelSettings,
+    /// Send a monitor alert instead of Kuma's test message.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub sample: Option<TestSample>,
+    /// With `sample`: the monitor whose details fill the alert. Must be on `node` or below.
+    /// Without it a made-up example monitor is used.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub monitor: Option<MonitorId>,
+}
+
+/// The alert a channel test sends in place of Kuma's test message.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum TestSample {
+    MonitorDown,
+    MonitorUp,
 }
 
 /// A channel as stored. Secrets show only whether they are set.

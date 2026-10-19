@@ -1084,6 +1084,14 @@
       "sending": "Wird gesendet…",
       "delivered": "Testnachricht gesendet.",
       "failed": "Die Testnachricht wurde nicht zugestellt.",
+      "kind": "Was gesendet wird",
+      "kinds": {
+        "message": "Testnachricht",
+        "down": "Ausfall-Alarm",
+        "up": "Wieder-erreichbar-Alarm"
+      },
+      "monitor": "Monitor",
+      "exampleMonitor": "Beispiel-Monitor",
       "invalid": "Fülle zuerst die Pflichtfelder aus."
     },
     "deliveries": {
