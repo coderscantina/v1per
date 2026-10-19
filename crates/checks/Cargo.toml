@@ -1,0 +1,29 @@
+[package]
+name = "v1per-checks"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+base64 = "0.23"
+chrono = { version = "0.4", default-features = false, features = ["std", "clock", "serde"] }
+hickory-resolver = { version = "0.26", default-features = false, features = ["tokio"] }
+jsonata-core = { version = "2.2", default-features = false }
+rand = "0.10"
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "gzip", "deflate", "brotli"] }
+ring = "0.17"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+serde.workspace = true
+serde_json.workspace = true
+surge-ping = "0.9"
+tokio = { workspace = true, features = ["net"] }
+url = { version = "2.5", features = ["serde"] }
+webpki-roots = "1"
+x509-parser = "0.18"
+
+[dev-dependencies]
+rcgen = { version = "0.14", default-features = false, features = ["crypto", "ring"] }
+tokio = { workspace = true, features = ["io-util"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring"] }
