@@ -48,7 +48,9 @@ test('a static component is added, and a manual monitor going down opens an auto
   await page.getByRole('radiogroup', { name: 'Set status' }).getByRole('radio', { name: 'Down' }).click()
   await expect(statusPanel(page).locator('[data-status="down"]')).toBeVisible(STATUS_WAIT)
 
-  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Incidents' }).click()
+  // Incidents are reacted to in observe mode: from the node's dashboard.
+  await page.getByRole('navigation', { name: 'Where you are' }).getByRole('link').last().click()
+  await page.getByRole('link', { name: 'All incidents' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Incidents' })).toBeVisible()
   const auto = page.locator('[data-incident="Checkout is down"]')
   await expect(auto).toBeVisible(STATUS_WAIT)

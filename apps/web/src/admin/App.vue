@@ -24,7 +24,7 @@ const inShell = computed(() => ready.value && !bare.value)
     <RouterView v-slot="{ Component }">
       <div
         :key="route.matched[0]?.path"
-        class="page-enter"
+        class="page-enter flex min-h-full flex-col"
       >
         <component :is="Component" />
       </div>

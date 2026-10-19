@@ -1,264 +1,200 @@
 <script setup lang="ts">
-import { useMutation } from '@tanstack/vue-query'
+import { useMediaQuery, useStorage } from '@vueuse/core'
 
-import { nodesResource } from '~/api/resources/nodes'
+import ChoiceGroup from '~/components/ChoiceGroup.vue'
 import Icon from '~/components/Icon.vue'
 import OpenIncidentsPanel from '~/components/incidents/OpenIncidentsPanel.vue'
 import LiveIndicator from '~/components/LiveIndicator.vue'
 import MaintenancePanel from '~/components/maintenance/MaintenancePanel.vue'
-import MonitorSummaryPanel from '~/components/monitors/MonitorSummaryPanel.vue'
-import CreateNodeDialog from '~/components/nodes/CreateNodeDialog.vue'
-import NodePath from '~/components/nodes/NodePath.vue'
-import PageHeader from '~/components/PageHeader.vue'
-import { Alert } from '~/components/ui/alert'
+import AttentionPanel from '~/components/observe/AttentionPanel.vue'
+import NodeOrbit from '~/components/observe/NodeOrbit.vue'
+import NodeWall from '~/components/observe/NodeWall.vue'
+import ScopeStats from '~/components/observe/ScopeStats.vue'
 import { Button } from '~/components/ui/button'
 import { EmptyState } from '~/components/ui/empty-state'
-import { Panel } from '~/components/ui/panel'
 import { Skeleton } from '~/components/ui/skeleton'
 import { useErrorMessage } from '~/composables/useErrorMessage'
-import { useCurrentNode, useNodeDetail, useNodeMembers } from '~/composables/useNodes'
+import { useCurrentNode } from '~/composables/useNodes'
 import { usePageMeta } from '~/composables/usePageMeta'
-import { usePageCount } from '~/composables/usePages'
-import type { NodesReorderArgs } from '~/generated'
-import { NODE_DEPTH_MAX } from '~/generated/limits'
+import { useVisibleMonitors } from '~/composables/useVisibleMonitors'
 import { can } from '~/lib/access'
-import { roleLabels } from '~/lib/roles'
+import { countPresences, presenceFill, presenceLabels, type Presence } from '~/lib/monitor-status'
+import { itemsOf } from '~/lib/monitor-tree'
 import { useI18n } from '~/plugins/i18n'
 
 /**
- * One node: its monitors by status, open incidents and maintenance on it and below, where it
- * sits, who has access, its status pages, and its children, which admins add and order here.
+ * A node's dashboard in observe mode, for the node and everything below it: the orbit or the
+ * wall, the status in numbers, what needs attention, open incidents and maintenance. It reads
+ * the shell's live monitor lists, so it changes the moment a status does. The view is kept in
+ * this browser; until one is picked, a node with more than the orbit holds opens as the wall.
+ * The canvas runs edge to edge under a dot grid; on a wide screen it fits the window, the orbit or
+ * wall takes the height left under the title, and the summary column scrolls on its own.
  */
 const { t } = useI18n()
 const { message } = useErrorMessage()
-const { routeId, path, tree } = useCurrentNode()
-const detail = useNodeDetail(routeId)
-const members = useNodeMembers(routeId)
-const pageCount = usePageCount(routeId)
-
-const node = computed(() => detail.data.value?.node ?? null)
+const { node, path, tree: nodes } = useCurrentNode()
+const visible = useVisibleMonitors()
 usePageMeta(() => node.value?.name ?? t('nodes.overview'))
 
-const ancestors = computed(() => path.value.slice(0, -1))
-/** A path of placeholders only says nothing, so it is left out. */
-const showPath = computed(() => ancestors.value.length === 0 || ancestors.value.some((entry) => entry.name !== undefined))
-const children = computed(() => (routeId.value ? (tree.index.value.children.get(routeId.value) ?? []) : []))
-const writable = computed(() => can(node.value, 'node.write'))
-const tooDeep = computed(() => (node.value?.depth ?? 0) >= NODE_DEPTH_MAX)
-const creating = ref(false)
-
-const reorder = useMutation({ mutationFn: (args: NodesReorderArgs) => nodesResource.reorder(args) })
-const move = (child: string, position: number) => reorder.mutate({ node: child, position })
-
-const twoFactor = computed(() => {
-  if (!node.value) return ''
-  if (node.value.two_factor_required) return t('nodes.twoFactor.here')
-  if (node.value.two_factor_inherited) return t('nodes.twoFactor.inherited')
-  return t('nodes.twoFactor.off')
+type View = 'orbit' | 'wall'
+/** Items a node may hold before it opens as the wall: the orbit grows, but a phone runs out of room. */
+const ORBIT_ITEMS = { wide: 24, narrow: 12 }
+const wide = useMediaQuery('(min-width: 768px)')
+const chosen = useStorage<string>('v1per:observe-view', '')
+const view = computed<View>({
+  get: () => {
+    if (chosen.value === 'orbit' || chosen.value === 'wall') return chosen.value
+    return node.value && itemsOf(visible.tree.value, node.value.id).length > ORBIT_ITEMS[wide.value ? 'wide' : 'narrow'] ? 'wall' : 'orbit'
+  },
+  set: (next) => {
+    chosen.value = next
+  },
 })
+const views = computed(() => [
+  { value: 'orbit' as const, label: t('observe.view.orbit'), icon: 'lucide:orbit' as const },
+  { value: 'wall' as const, label: t('observe.view.wall'), icon: 'lucide:layout-grid' as const },
+])
+const LEGEND = ['up', 'pending', 'down', 'maintenance'] as const satisfies readonly Presence[]
+/** Where the node sits, as the small line above its name. */
+const trail = computed(() =>
+  node.value ? path.value.slice(0, -1).map((entry) => entry.name ?? '…').join(' / ') || t('observe.instance') : ''
+)
+
+const monitors = computed(() => (node.value ? visible.tree.value.below(node.value.id) : []))
+const counts = computed(() => countPresences(monitors.value))
+/** Paused monitors are neither healthy nor a problem. */
+const active = computed(() => monitors.value.length - counts.value.paused)
+const empty = computed(() => monitors.value.length === 0 && node.value !== null && visible.tree.value.children(node.value.id).length === 0)
 </script>
 
 <template>
-  <div>
-    <PageHeader
-      :title="node?.name ?? t('nodes.overview')"
-      :description="node ? t(roleLabels[node.role]) : undefined"
+  <EmptyState
+    v-if="!node && (nodes.data.value || nodes.error.value)"
+    icon="lucide:folder-x"
+    tone="error"
+    :title="t('nodes.unavailable')"
+    :description="nodes.error.value ? message(nodes.error.value) : undefined"
+    class="mx-auto mt-12 max-w-lg"
+  >
+    <Button
+      as-child
+      variant="outline"
     >
-      <template
-        v-if="node"
-        #freshness
+      <RouterLink :to="{ name: 'home' }">{{ t('notFound.home') }}</RouterLink>
+    </Button>
+  </EmptyState>
+
+  <div
+    v-else-if="!node"
+    class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]"
+  >
+    <Skeleton class="h-96 w-full rounded-panel" />
+    <Skeleton class="h-64 w-full rounded-panel" />
+  </div>
+
+  <div
+    v-else
+    class="-mx-shell-page-x -mt-shell-gutter flex flex-col xl:-mb-shell-gutter xl:min-h-0 xl:flex-[1_1_0px] xl:flex-row"
+  >
+    <section
+      :aria-label="t('observe.scope', { name: node.name ?? '' })"
+      class="flex min-w-0 flex-1 flex-col bg-[radial-gradient(color-mix(in_oklch,var(--color-primary)_7%,transparent)_1px,transparent_1px)] bg-size-[18px_18px] px-shell-page-x pt-5 pb-4 xl:min-h-0"
+    >
+      <header class="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div class="min-w-0">
+          <p class="truncate text-xs text-muted">{{ trail }}</p>
+          <h1 class="truncate text-[1.375rem]/[1.875rem] font-[650] text-primary">{{ node.name }}</h1>
+          <p
+            class="mt-1 text-[0.8125rem] text-foreground"
+            aria-live="polite"
+          >
+            <template v-if="visible.loading.value && monitors.length === 0">{{ t('observe.summary.loading') }}</template>
+            <template v-else-if="counts.down > 0">
+              <strong class="font-semibold text-status-down">{{ t('observe.summary.down', { count: counts.down }, counts.down) }}</strong>
+              <template v-if="counts.pending > 0">, {{ t('observe.summary.pending', { count: counts.pending }, counts.pending) }}</template>
+            </template>
+            <template v-else-if="counts.pending > 0">{{ t('observe.summary.onlyPending', { count: counts.pending }, counts.pending) }}</template>
+            <template v-else-if="active > 0">{{ t('observe.summary.healthy', { count: active }, active) }}</template>
+            <template v-else-if="monitors.length > 0">{{ t('observe.summary.paused') }}</template>
+            <template v-else>{{ t('observe.summary.empty') }}</template>
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <ChoiceGroup
+            v-if="!empty"
+            v-model="view"
+            :label="t('observe.view.label')"
+            :options="views"
+          />
+          <LiveIndicator :status="visible.status.value" />
+        </div>
+      </header>
+
+      <EmptyState
+        v-if="empty && !visible.loading.value"
+        icon="lucide:activity"
+        :title="t('observe.empty.title')"
+        :description="t('observe.empty.description')"
+        class="my-auto"
       >
-        <LiveIndicator :status="detail.status.value" />
-      </template>
-    </PageHeader>
+        <Button
+          v-if="can(node, 'monitors.manage')"
+          as-child
+          variant="accent"
+        >
+          <RouterLink :to="{ name: 'node-monitor-new', params: { nodeId: node.id } }">
+            <Icon name="lucide:plus" />
+            {{ t('monitors.create') }}
+          </RouterLink>
+        </Button>
+      </EmptyState>
+      <NodeOrbit
+        v-else-if="view === 'orbit'"
+        :key="node.id"
+        :tree="visible.tree.value"
+        :node="node"
+        class="my-2 h-[min(36rem,70svh)] xl:h-auto xl:min-h-[22rem] xl:flex-1"
+      />
+      <NodeWall
+        v-else
+        :key="node.id"
+        :tree="visible.tree.value"
+        :node="node"
+        class="-mx-1 mt-4 px-1 pb-1 xl:min-h-0 xl:flex-1 xl:overflow-y-auto"
+      />
 
-    <EmptyState
-      v-if="detail.error.value && !node"
-      icon="lucide:folder-x"
-      tone="error"
-      :title="t('nodes.unavailable')"
-      :description="message(detail.error.value)"
-      class="mx-auto max-w-lg"
-    >
-      <Button
-        as-child
-        variant="outline"
+      <footer
+        v-if="!empty"
+        class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted"
       >
-        <RouterLink :to="{ name: 'home' }">{{ t('notFound.home') }}</RouterLink>
-      </Button>
-    </EmptyState>
+        <span
+          v-for="presence in LEGEND"
+          :key="presence"
+          class="flex items-center gap-1.5"
+        >
+          <span
+            class="size-2 rounded-full"
+            :class="presenceFill[presence]"
+            aria-hidden="true"
+          />
+          {{ t(presenceLabels[presence]) }}
+        </span>
+        <span class="ml-auto max-md:hidden">{{ t('observe.legendHint') }}</span>
+      </footer>
+    </section>
 
-    <div
-      v-else-if="!node"
-      class="grid max-w-4xl gap-6"
+    <aside
+      :aria-label="t('observe.rail')"
+      class="grid content-start gap-[22px] border-divider px-shell-page-x py-[18px] xl:w-84 xl:shrink-0 xl:overflow-y-auto xl:border-l xl:bg-[color-mix(in_oklch,var(--color-card)_30%,var(--color-surface))] xl:px-[18px] max-xl:border-t"
     >
-      <Skeleton class="h-40 w-full rounded-panel" />
-      <Skeleton class="h-56 w-full rounded-panel" />
-    </div>
-
-    <div
-      v-else
-      class="grid max-w-4xl gap-6"
-    >
-      <MonitorSummaryPanel :node="node.id" />
+      <ScopeStats :monitors="monitors" />
+      <AttentionPanel
+        :scope="node"
+        :index="nodes.index.value"
+        :monitors="monitors"
+      />
       <OpenIncidentsPanel :node="node.id" />
       <MaintenancePanel :node="node.id" />
-
-      <Panel
-        id="node-about"
-        :title="t('nodes.about')"
-      >
-        <dl class="grid gap-3 text-sm">
-          <div
-            v-if="showPath"
-            class="grid gap-0.5 sm:grid-cols-[10rem_1fr] sm:gap-6"
-          >
-            <dt class="text-muted">{{ t('nodes.path') }}</dt>
-            <dd class="min-w-0">
-              <NodePath
-                v-if="ancestors.length > 0"
-                :path="ancestors"
-              />
-              <span
-                v-else
-                class="text-primary"
-              >{{ t('nodes.root') }}</span>
-            </dd>
-          </div>
-          <div class="grid gap-0.5 sm:grid-cols-[10rem_1fr] sm:gap-6">
-            <dt class="text-muted">{{ t('nodes.yourRole') }}</dt>
-            <dd class="text-primary">{{ t(roleLabels[node.role]) }}</dd>
-          </div>
-          <div class="grid gap-0.5 sm:grid-cols-[10rem_1fr] sm:gap-6">
-            <dt class="text-muted">{{ t('nodes.members') }}</dt>
-            <dd>
-              <RouterLink
-                :to="{ name: 'node-members', params: { nodeId: node.id } }"
-                class="rounded-sm text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                {{
-                  members.data.value
-                    ? t('nodes.memberCount', { count: members.data.value.members.length }, members.data.value.members.length)
-                    : t('nodes.membersLink')
-                }}
-              </RouterLink>
-            </dd>
-          </div>
-          <div class="grid gap-0.5 sm:grid-cols-[10rem_1fr] sm:gap-6">
-            <dt class="text-muted">{{ t('nodes.statusPages') }}</dt>
-            <dd>
-              <RouterLink
-                :to="{ name: 'node-pages', params: { nodeId: node.id } }"
-                class="rounded-sm text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                {{ pageCount !== null ? t('nodes.pageCount', { count: pageCount }, pageCount) : t('nodes.pagesLink') }}
-              </RouterLink>
-            </dd>
-          </div>
-          <div class="grid gap-0.5 sm:grid-cols-[10rem_1fr] sm:gap-6">
-            <dt class="text-muted">{{ t('nodes.twoFactor.label') }}</dt>
-            <dd class="text-primary">{{ twoFactor }}</dd>
-          </div>
-        </dl>
-      </Panel>
-
-      <Panel
-        id="node-children"
-        :title="t('nodes.children')"
-        :meta="String(children.length)"
-        flush
-      >
-        <template
-          v-if="writable"
-          #actions
-        >
-          <Button
-            variant="fill"
-            size="sm"
-            :disabled="tooDeep"
-            @click="creating = true"
-          >
-            <Icon name="lucide:plus" />
-            {{ t('nodes.create.title') }}
-          </Button>
-        </template>
-        <p
-          v-if="writable && tooDeep"
-          class="px-4.5 pb-3 text-xs text-muted"
-        >
-          {{ t('nodes.create.tooDeep', { max: NODE_DEPTH_MAX }) }}
-        </p>
-        <ul
-          v-if="children.length > 0"
-          class="divide-y divide-divider border-t border-hairline"
-          :aria-labelledby="'node-children'"
-        >
-          <li
-            v-for="(child, at) in children"
-            :key="child.id"
-            class="flex min-h-12 items-center gap-3 px-4.5 py-2"
-          >
-            <Icon
-              name="lucide:folder"
-              size="16"
-              class="shrink-0 text-muted"
-              aria-hidden="true"
-            />
-            <RouterLink
-              :to="{ name: 'node', params: { nodeId: child.id } }"
-              class="min-w-0 flex-1 truncate rounded-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            >
-              {{ child.name }}
-            </RouterLink>
-            <span class="shrink-0 text-xs text-muted tabular-nums max-sm:hidden">
-              {{ t('nodes.childCount', { count: tree.index.value.children.get(child.id)?.length ?? 0 }, tree.index.value.children.get(child.id)?.length ?? 0) }}
-            </span>
-            <div
-              v-if="writable && children.length > 1"
-              class="flex shrink-0 gap-1"
-            >
-              <Button
-                variant="ghost"
-                size="icon"
-                :disabled="at === 0 || reorder.isPending.value"
-                :aria-label="t('nodes.moveUp', { name: child.name ?? '' })"
-                @click="move(child.id, at - 1)"
-              >
-                <Icon name="lucide:arrow-up" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                :disabled="at === children.length - 1 || reorder.isPending.value"
-                :aria-label="t('nodes.moveDown', { name: child.name ?? '' })"
-                @click="move(child.id, at + 1)"
-              >
-                <Icon name="lucide:arrow-down" />
-              </Button>
-            </div>
-          </li>
-        </ul>
-        <p
-          v-else
-          class="border-t border-hairline px-4.5 py-8 text-center text-sm text-muted"
-        >
-          {{ writable ? t('nodes.noChildrenWritable') : t('nodes.noChildren') }}
-        </p>
-        <Alert
-          v-if="reorder.error.value"
-          color="destructive"
-          class="m-3 w-auto"
-        >
-          <p class="text-sm">{{ message(reorder.error.value) }}</p>
-        </Alert>
-      </Panel>
-    </div>
-
-    <CreateNodeDialog
-      v-if="node"
-      v-model:open="creating"
-      :parent="node.id"
-      :parent-name="node.name"
-    />
+    </aside>
   </div>
 </template>

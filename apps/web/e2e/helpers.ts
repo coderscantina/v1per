@@ -91,6 +91,12 @@ export async function ownNode(page: Page, name: string): Promise<{ root: string;
   return { root, node: node.id }
 }
 
+/** Opens a section of the current node's configuration through the mode switch and its tabs. */
+export async function configure(page: Page, section: string) {
+  await page.getByRole('navigation', { name: 'Mode' }).getByRole('link', { name: 'Configure' }).click()
+  await page.getByRole('navigation', { name: 'Node configuration' }).getByRole('link', { name: section, exact: true }).click()
+}
+
 /** The current RFC 6238 code for a base32 key (SHA1, 6 digits, 30 s), as an authenticator app shows it. */
 export function totp(key: string, at = Date.now()): { code: string; step: number } {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'

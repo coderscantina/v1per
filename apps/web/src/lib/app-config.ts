@@ -9,8 +9,6 @@ export interface AppConfig {
     /** Expanded width bounds and default, in pixels. */
     width: { default: number; min: number; max: number }
   }
-  /** Nav items the phone tab bar shows before its trailing Menu tab. */
-  tabBarItems: number
   /** Row heights and shell padding. `compact` trims roughly 20%. */
   density: 'comfortable' | 'compact'
 }
@@ -20,8 +18,7 @@ export const appConfig: AppConfig = {
     collapsible: true,
     defaultCollapsed: false,
     resizable: true,
-    width: { default: 248, min: 208, max: 360 },
+    width: { default: 280, min: 220, max: 440 },
   },
-  tabBarItems: 3,
   density: 'compact',
 }

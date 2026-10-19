@@ -7,6 +7,7 @@ import SettingsSection from '~/components/account/SettingsSection.vue'
 import CommandAlert from '~/components/CommandAlert.vue'
 import FormField from '~/components/FormField.vue'
 import Icon from '~/components/Icon.vue'
+import ChildNodes from '~/components/nodes/ChildNodes.vue'
 import DeleteNodeDialog from '~/components/nodes/DeleteNodeDialog.vue'
 import MoveNodeDialog from '~/components/nodes/MoveNodeDialog.vue'
 import NodePath from '~/components/nodes/NodePath.vue'
@@ -27,8 +28,8 @@ import { isReadable } from '~/lib/node-tree'
 import { useI18n } from '~/plugins/i18n'
 
 /**
- * A node's name, its 2FA requirement, its place in the tree and its deletion. Each section says
- * which role it needs when the caller's role does not reach.
+ * A node's name, its children, its 2FA requirement, its place in the tree and its deletion. Each
+ * section says which role it needs when the caller's role does not reach.
  */
 const { t } = useI18n()
 const { message, fieldMessage } = useErrorMessage()
@@ -161,6 +162,14 @@ const onDeleted = (result: NodeDeleted) => {
               class="text-sm text-muted"
             >{{ t('actions.saved') }}</span>
           </template>
+        </SettingsSection>
+
+        <SettingsSection
+          id="node-children"
+          :title="t('nodes.children')"
+          :description="t('nodes.settings.childrenDescription')"
+        >
+          <ChildNodes :node="node" />
         </SettingsSection>
 
         <SettingsSection

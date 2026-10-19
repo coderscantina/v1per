@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import Icon from '~/components/Icon.vue'
-import { Panel } from '~/components/ui/panel'
+import RailSection from '~/components/observe/RailSection.vue'
 import { Skeleton } from '~/components/ui/skeleton'
 import { useMaintenanceSummary } from '~/composables/useMaintenance'
 import { localTimezone } from '~/composables/useMonitors'
@@ -28,55 +27,43 @@ const relevant = computed(() => {
 </script>
 
 <template>
-  <Panel
+  <RailSection
     id="node-maintenance"
     :title="t('maintenance.title')"
     :meta="relevant ? t('maintenance.activeCount', { count: relevant.active }) : undefined"
-    flush
+    :to="{ name: 'node-maintenance', params: { nodeId: node } }"
+    :link-label="t('maintenance.all')"
   >
-    <template #actions>
-      <RouterLink
-        :to="{ name: 'node-maintenance', params: { nodeId: node } }"
-        class="inline-flex items-center gap-1 rounded-sm text-sm text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    <Skeleton
+      v-if="!relevant"
+      class="h-12 rounded-xl"
+    />
+    <p
+      v-else-if="relevant.list.length === 0"
+      class="rounded-xl border border-hairline bg-card px-3 py-2.5 text-[0.8125rem] text-muted"
+    >
+      {{ t('maintenance.noneUpcoming') }}
+    </p>
+    <ul
+      v-else
+      class="grid gap-2"
+    >
+      <li
+        v-for="maintenance in relevant.list"
+        :key="maintenance.id"
+        class="grid gap-1.5 rounded-xl border border-hairline bg-card px-3 py-2.5"
       >
-        {{ t('maintenance.all') }}
-        <Icon
-          name="lucide:arrow-right"
-          size="14"
-          aria-hidden="true"
-        />
-      </RouterLink>
-    </template>
-    <div class="border-t border-hairline">
-      <Skeleton
-        v-if="!relevant"
-        class="m-4 h-10"
-      />
-      <p
-        v-else-if="relevant.list.length === 0"
-        class="px-4.5 py-6 text-sm text-muted"
-      >
-        {{ t('maintenance.noneUpcoming') }}
-      </p>
-      <ul
-        v-else
-        class="divide-y divide-divider"
-      >
-        <li
-          v-for="maintenance in relevant.list"
-          :key="maintenance.id"
-          class="grid gap-1 px-4.5 py-2.5 sm:grid-cols-[9rem_minmax(0,1fr)_auto] sm:items-center sm:gap-3"
-        >
+        <span class="truncate text-[0.8125rem] font-semibold text-primary">{{ maintenance.title }}</span>
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
           <MaintenanceStatusLabel :status="maintenance.status" />
-          <span class="truncate text-sm font-medium text-primary">{{ maintenance.title }}</span>
           <WindowList
             v-if="maintenance.windows.length > 0"
             :windows="maintenance.windows"
             :timezone="maintenance.schedule.timezone ?? localTimezone()"
             :limit="1"
           />
-        </li>
-      </ul>
-    </div>
-  </Panel>
+        </div>
+      </li>
+    </ul>
+  </RailSection>
 </template>

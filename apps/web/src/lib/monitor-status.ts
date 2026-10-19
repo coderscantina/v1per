@@ -33,6 +33,16 @@ export const presenceFill: Record<Presence, string> = {
   paused: 'bg-status-none',
 }
 
+/** The same colours as values, for SVG strokes and gradient stops. */
+export const presenceColor: Record<Presence, string> = {
+  down: 'var(--status-down)',
+  pending: 'var(--status-pending)',
+  maintenance: 'var(--status-maintenance)',
+  up: 'var(--status-up)',
+  unknown: 'var(--status-none)',
+  paused: 'var(--status-none)',
+}
+
 export const presenceRank = (presence: Presence): number => presences.indexOf(presence)
 
 /** Counts per presence, for the node overview's summary. */

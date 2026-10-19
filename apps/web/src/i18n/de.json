@@ -118,7 +118,26 @@
     "mobileNavigation": "Telefon-Navigation",
     "userMenu": "{initials}. Kontomenü",
     "language": "Sprache",
-    "version": "Version {version}"
+    "version": "Version {version}",
+    "versionShort": "v{version}",
+    "breadcrumb": "Wo du bist",
+    "configure": "Knoten einrichten",
+    "modes": {
+      "label": "Modus",
+      "observe": "Beobachten",
+      "configure": "Einrichten",
+      "shortcut": "Zu {mode} wechseln"
+    },
+    "tree": {
+      "label": "Knoten und Monitore",
+      "filter": "Filtern",
+      "problems": "Nur Probleme",
+      "expand": "{name} aufklappen",
+      "collapse": "{name} zuklappen",
+      "down": "{count} aus",
+      "noMatch": "Nichts gefunden.",
+      "empty": "Noch keine Knoten."
+    }
   },
   "shortcuts": {
     "title": "Tastenkürzel",
@@ -164,13 +183,7 @@
     "hidden": "Verborgener Knoten",
     "overview": "Knoten",
     "unavailable": "Dieser Knoten ist nicht verfügbar",
-    "about": "Über diesen Knoten",
-    "path": "Pfad",
     "root": "Oberster Knoten",
-    "yourRole": "Deine Rolle",
-    "members": "Mitglieder",
-    "memberCount": "{count} Person | {count} Personen",
-    "membersLink": "Mitglieder anzeigen",
     "children": "Unterknoten",
     "childCount": "{count} darunter | {count} darunter",
     "noChildren": "Keine Unterknoten.",
@@ -187,12 +200,6 @@
       "loading": "Knoten werden geladen",
       "label": "Knoten",
       "current": "Knoten:"
-    },
-    "twoFactor": {
-      "label": "Zwei-Faktor",
-      "here": "Auf diesem Knoten Pflicht",
-      "inherited": "Von einem Knoten darüber verlangt",
-      "off": "Nicht verlangt"
     },
     "create": {
       "title": "Unterknoten anlegen",
@@ -213,7 +220,8 @@
       "twoFactorHint": "Fragt zuerst nach deinem Passwort.",
       "place": "Platz im Baum",
       "placeDescription": "Verschieben ändert, wer den Knoten sieht: Zugriff kommt von Rollen auf den Knoten darüber.",
-      "under": "Unter"
+      "under": "Unter",
+      "childrenDescription": "Knoten unter diesem, in der Reihenfolge des Baums."
     },
     "move": {
       "open": "Knoten verschieben",
@@ -245,10 +253,7 @@
       "warning": "Alles darunter wird mitgelöscht, auch Rollen und API-Schlüssel dort.",
       "typeName": "Tippe {name} zur Bestätigung",
       "submit": "Löschen"
-    },
-    "statusPages": "Statusseiten",
-    "pageCount": "{count} Seite hier und darunter | {count} Seiten hier und darunter",
-    "pagesLink": "Statusseiten anzeigen"
+    }
   },
   "members": {
     "title": "Mitglieder",
@@ -584,11 +589,6 @@
       "group": "Gruppe",
       "manual": "Manuell",
       "unsupported": "Nicht unterstützt"
-    },
-    "summary": {
-      "title": "Monitore",
-      "empty": "Noch keine Monitore in diesem Knoten.",
-      "all": "Alle Monitore zeigen"
     },
     "detail": {
       "status": "Aktueller Status",
@@ -1557,5 +1557,56 @@
       "noStatus": "Kein Status",
       "withDetail": "Antwortzeiten"
     }
+  },
+  "observe": {
+    "scope": "Status von {name}",
+    "rail": "Zusammenfassung",
+    "view": {
+      "label": "Ansicht",
+      "orbit": "Orbit",
+      "wall": "Wand"
+    },
+    "summary": {
+      "loading": "Monitore werden gelesen…",
+      "down": "{count} Monitor ausgefallen | {count} Monitore ausgefallen",
+      "pending": "{count} ausstehend | {count} ausstehend",
+      "onlyPending": "Nichts ist ausgefallen. {count} Monitor wartet auf einen neuen Versuch. | Nichts ist ausgefallen. {count} Monitore warten auf einen neuen Versuch.",
+      "healthy": "Der Monitor hier ist in Ordnung. | Alle {count} Monitore sind in Ordnung.",
+      "paused": "Alle Monitore hier sind pausiert.",
+      "empty": "Hier gibt es noch keine Monitore."
+    },
+    "empty": {
+      "title": "Noch nichts zu beobachten",
+      "description": "Lege hier oder in einem Knoten darunter einen Monitor an, dann zeigt dieses Dashboard seinen Status."
+    },
+    "orbit": {
+      "label": "Karte von {name}",
+      "center": "{healthy} von {total} Monitoren in Ordnung",
+      "healthy": "in Ordnung",
+      "down": "{count} aus",
+      "pending": "{count} ausstehend",
+      "up": "{count} erreichbar",
+      "more": "+{count}",
+      "hidden": "{count} weitere hier; die Wand zeigt alle"
+    },
+    "wall": {
+      "direct": "Direkt in {name}",
+      "up": "{up}/{total} erreichbar"
+    },
+    "stats": {
+      "label": "Status in Zahlen",
+      "healthy": "In Ordnung",
+      "down": "Ausgefallen",
+      "uptime": "Mittlere Verfügbarkeit 24 h",
+      "p95": "Antwortzeit p95",
+      "pending": "Ausstehend",
+      "maintenance": "In Wartung"
+    },
+    "attention": {
+      "title": "Braucht Aufmerksamkeit",
+      "empty": "Hier braucht dich gerade nichts."
+    },
+    "legendHint": "Klick auf einen Ring geht hinein, der Pfad oben wieder hinaus",
+    "instance": "Instanz"
   }
 }

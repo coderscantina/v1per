@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import Icon from '~/components/Icon.vue'
-import { Panel } from '~/components/ui/panel'
+import RailSection from '~/components/observe/RailSection.vue'
 import { Skeleton } from '~/components/ui/skeleton'
 import { useOpenIncidents } from '~/composables/useIncidents'
 import type { NodeId } from '~/generated'
@@ -23,58 +22,46 @@ const count = computed(() => {
 </script>
 
 <template>
-  <Panel
+  <RailSection
     id="node-incidents"
     :title="t('incidents.open')"
     :meta="list ? count : undefined"
-    flush
+    :to="{ name: 'node-incidents', params: { nodeId: node } }"
+    :link-label="t('incidents.all')"
   >
-    <template #actions>
-      <RouterLink
-        :to="{ name: 'node-incidents', params: { nodeId: node } }"
-        class="inline-flex items-center gap-1 rounded-sm text-sm text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    <Skeleton
+      v-if="!list"
+      class="h-12 rounded-xl"
+    />
+    <p
+      v-else-if="list.length === 0"
+      class="rounded-xl border border-hairline bg-card px-3 py-2.5 text-[0.8125rem] text-muted"
+    >
+      {{ t('incidents.noneOpen') }}
+    </p>
+    <ul
+      v-else
+      class="grid gap-2"
+    >
+      <li
+        v-for="incident in list"
+        :key="incident.id"
+        class="grid gap-1.5 rounded-xl border border-hairline bg-card px-3 py-2.5"
       >
-        {{ t('incidents.all') }}
-        <Icon
-          name="lucide:arrow-right"
-          size="14"
-          aria-hidden="true"
-        />
-      </RouterLink>
-    </template>
-    <div class="border-t border-hairline">
-      <Skeleton
-        v-if="!list"
-        class="m-4 h-10"
-      />
-      <p
-        v-else-if="list.length === 0"
-        class="px-4.5 py-6 text-sm text-muted"
-      >
-        {{ t('incidents.noneOpen') }}
-      </p>
-      <ul
-        v-else
-        class="divide-y divide-divider"
-      >
-        <li
-          v-for="incident in list"
-          :key="incident.id"
-          class="flex flex-wrap items-center gap-x-3 gap-y-1 px-4.5 py-2.5"
+        <RouterLink
+          :to="{ name: 'node-incident', params: { nodeId: incident.node, incidentId: incident.id } }"
+          class="truncate rounded-sm text-[0.8125rem] font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
+          {{ incident.title }}
+        </RouterLink>
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
           <IncidentStateBadge :state="incident.state" />
-          <RouterLink
-            :to="{ name: 'node-incident', params: { nodeId: incident.node, incidentId: incident.id } }"
-            class="min-w-0 flex-1 truncate rounded-sm text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          >
-            {{ incident.title }}
-          </RouterLink>
           <ImpactLabel
             v-if="incident.impact"
             :impact="incident.impact"
           />
-        </li>
-      </ul>
-    </div>
-  </Panel>
+        </div>
+      </li>
+    </ul>
+  </RailSection>
 </template>

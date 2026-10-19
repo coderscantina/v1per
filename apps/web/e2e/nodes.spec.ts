@@ -23,6 +23,7 @@ async function asAdmin(browser: Browser, viewport: { width: number; height: numb
   return context.newPage()
 }
 
+/** Adds a child in the open node's settings, where its children are listed. */
 async function addChild(page: Page, name: string) {
   await page.getByRole('button', { name: 'Add child node' }).click()
   const dialog = page.getByRole('dialog', { name: 'Add child node' })
@@ -36,7 +37,7 @@ async function addChild(page: Page, name: string) {
 
 async function open(page: Page, name: string) {
   await page.getByRole('region', { name: 'Child nodes' }).getByRole('link', { name }).click()
-  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Where you are' }).locator('[aria-current="page"]')).toHaveText(name)
   ids[name] = nodeId(page)
 }
 
@@ -46,6 +47,8 @@ test('an admin builds the tree and invites a client contact, who sees only their
   await expect(page.getByRole('heading', { level: 1, name: 'Root' })).toBeVisible()
   await expect(page).toHaveURL(/\/n\/\d+$/)
   ids.Root = nodeId(page)
+  await page.getByRole('navigation', { name: 'Mode' }).getByRole('link', { name: 'Configure' }).click()
+  await page.getByRole('navigation', { name: 'Node configuration' }).getByRole('link', { name: 'Settings' }).click()
 
   await addChild(page, 'Client services')
   await addChild(page, 'Operations')
@@ -56,9 +59,9 @@ test('an admin builds the tree and invites a client contact, who sees only their
   await open(page, 'Autohaus')
   await addChild(page, 'Schmidt')
   await addChild(page, 'Motormobile')
-  await shot(page, 'overview-desktop-light')
+  await shot(page, 'children-desktop-light')
 
-  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Members' }).click()
+  await page.getByRole('navigation', { name: 'Node configuration' }).getByRole('link', { name: 'Members' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Members' })).toBeVisible()
   await page.getByRole('button', { name: 'Invite' }).click()
   const dialog = page.getByRole('dialog', { name: 'Invite' })
@@ -89,15 +92,15 @@ test('an admin builds the tree and invites a client contact, who sees only their
   await expect(page.getByRole('table', { name: 'People with access' }).getByText(invitee.name)).toBeVisible()
   await expect(pending.getByText('Used')).toBeVisible()
 
-  // The picker shows the invitee's subtree, hidden ancestors as placeholders, and nothing else.
-  await guest.getByRole('button', { name: /^Node: Hidden node \/ Hidden node \/ Autohaus/ }).click()
-  const options = guest.getByRole('listbox', { name: 'Nodes' }).getByRole('option')
-  await expect(options).toHaveText(['Hidden node', 'Hidden node', 'Autohaus', 'Schmidt', 'Motormobile'])
-  await expect(options.filter({ hasText: 'Hidden node' }).first()).toHaveAttribute('aria-disabled', 'true')
-  await guest.keyboard.type('motor')
-  await expect(options).toHaveText([/Motormobile/])
-  await shot(guest, 'picker-search-desktop-light')
-  await guest.keyboard.press('Enter')
+  // The tree starts at the invitee's grant and shows nothing above or beside it; the path names
+  // the hidden ancestors.
+  const tree = guest.getByRole('navigation', { name: 'Nodes and monitors' })
+  await expect(tree.getByRole('link')).toHaveText([/^Autohaus/, /^Schmidt/, /^Motormobile/])
+  await expect(guest.getByRole('navigation', { name: 'Where you are' })).toContainText('Hidden node')
+  await guest.getByRole('searchbox', { name: 'Filter' }).fill('motor')
+  await expect(tree.getByRole('link')).toHaveText([/^Autohaus/, /^Motormobile/])
+  await shot(guest, 'tree-filter-desktop-light')
+  await tree.getByRole('link', { name: /^Motormobile/ }).click()
   await expect(guest.getByRole('heading', { level: 1, name: 'Motormobile' })).toBeVisible()
 
   // Nodes outside the grant answer like nodes that do not exist.
@@ -234,11 +237,13 @@ test('node screens at desktop and phone width in light and dark', async ({ brows
       await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
       await check('overview')
 
-      await page.getByRole('button', { name: /^Node: / }).click()
-      await expect(page.getByRole('listbox', { name: 'Nodes' })).toBeVisible()
+      // On a phone the tree lives in the drawer.
+      if (size === 'phone') await page.getByRole('navigation', { name: 'Phone navigation' }).getByRole('button', { name: 'Menu' }).click()
+      await expect(page.getByRole('navigation', { name: 'Nodes and monitors' }).getByRole('link', { name: /^Schmidt/ })).toBeVisible()
+      await settle(page)
       await expectAccessible(page)
-      await shot(page, `picker-${size}-${scheme}`)
-      await page.keyboard.press('Escape')
+      await shot(page, `tree-${size}-${scheme}`)
+      if (size === 'phone') await page.keyboard.press('Escape')
 
       await page.goto(`/n/${ids.Autohaus}/members`)
       await expect(page.getByRole('table', { name: 'People with access' }).getByText(invitee.name)).toBeVisible()

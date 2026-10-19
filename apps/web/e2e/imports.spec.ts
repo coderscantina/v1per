@@ -11,7 +11,7 @@ test.use({ storageState: sessionFile })
 
 test('an instance admin finds the imports page, empty on a fresh server', async ({ page }) => {
   await page.goto('/instance')
-  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Imports' }).click()
+  await page.getByRole('navigation', { name: 'Instance' }).getByRole('link', { name: 'Imports' }).click()
   await expect(page).toHaveURL(/\/instance\/imports$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Imports' })).toBeVisible()
   await expect(page.getByText('No imports yet')).toBeVisible()

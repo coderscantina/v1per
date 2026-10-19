@@ -3,3 +3,45 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import './tokens.css';
+
+/* The observe dashboard's orbit: links flow outward, problems pulse, the tick ring turns. Each
+   is applied with `motion-safe:`, so reduced motion keeps a still picture. */
+@theme {
+  --animate-orbit-flow: orbit-flow 1.2s linear infinite;
+  --animate-orbit-flow-fast: orbit-flow 0.55s linear infinite;
+  --animate-orbit-pulse: orbit-pulse 1.6s ease-out infinite;
+  --animate-orbit-pulse-slow: orbit-pulse 2.6s ease-out infinite;
+  --animate-orbit-halo: orbit-halo 1.6s ease-out infinite;
+  --animate-orbit-spin: orbit-spin 160s linear infinite;
+
+  @keyframes orbit-flow {
+    to {
+      stroke-dashoffset: -16;
+    }
+  }
+  @keyframes orbit-pulse {
+    from {
+      transform: scale(1);
+      opacity: 0.8;
+    }
+    to {
+      transform: scale(2.4);
+      opacity: 0;
+    }
+  }
+  @keyframes orbit-halo {
+    from {
+      transform: scale(1);
+      opacity: 0.8;
+    }
+    to {
+      transform: scale(1.45);
+      opacity: 0;
+    }
+  }
+  @keyframes orbit-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}

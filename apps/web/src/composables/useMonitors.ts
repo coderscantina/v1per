@@ -8,10 +8,13 @@ import { monitorsResource } from '~/api/resources/monitors'
 import type { MonitorId, NodeId, ProbeId, Resolution } from '~/generated'
 import { DAY_BARS_MAX, HEARTBEATS_PAGE_DEFAULT } from '~/generated/limits'
 
-import { useLiveSnapshot } from './useLive'
+import { useLiveSnapshot, type LiveStatus } from './useLive'
 
 /** History is not pushed, so it is read again this often while on screen. */
 export const HISTORY_REFRESH_MS = 60_000
+
+/** Live states from the furthest behind to current. */
+const liveStatuses: readonly LiveStatus[] = ['disconnected', 'resyncing', 'connecting', 'stale', 'current']
 
 const isMonitorEvent = (event: { kind: string }) => event.kind.startsWith('monitor.')
 
@@ -35,8 +38,11 @@ export function useMonitorTree(id: MaybeRefOrGetter<NodeId | null>) {
   return useNodeMonitors(id, true)
 }
 
-/** Monitors of several other nodes, live, such as the group choices on the nodes above. */
-export function useMonitorsOf(nodes: MaybeRefOrGetter<NodeId[]>) {
+/**
+ * Monitors of several nodes, live, such as the group choices on the nodes above. With `subtree`,
+ * each node's list includes the monitors of every node below it.
+ */
+export function useMonitorsOf(nodes: MaybeRefOrGetter<NodeId[]>, subtree = false) {
   type Followed = { scope: EffectScope; live: ReturnType<typeof useNodeMonitors> }
   const followed = shallowRef(new Map<NodeId, Followed>())
   watch(
@@ -50,7 +56,7 @@ export function useMonitorsOf(nodes: MaybeRefOrGetter<NodeId[]>) {
         else {
           // Detached, so each node's snapshot ends exactly when it leaves the list or this scope ends.
           const scope = effectScope(true)
-          const live = scope.run(() => useNodeMonitors(node))
+          const live = scope.run(() => useNodeMonitors(node, subtree))
           if (live) current.set(node, { scope, live })
         }
       }
@@ -64,10 +70,13 @@ export function useMonitorsOf(nodes: MaybeRefOrGetter<NodeId[]>) {
   })
   return computed(() => {
     const entries = toValue(nodes).map((node) => followed.value.get(node)?.live)
+    const statuses = entries.map((entry) => entry?.status.value ?? 'connecting')
     return {
       lists: entries.map((entry) => entry?.data.value?.monitors ?? null),
       loading: entries.some((entry) => entry?.loading.value),
       error: entries.find((entry) => entry?.error.value)?.error.value ?? null,
+      /** The furthest behind of the lists, so one dropped stream shows. */
+      status: liveStatuses.find((status) => statuses.includes(status)) ?? 'current',
     }
   })
 }

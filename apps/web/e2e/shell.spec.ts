@@ -38,10 +38,11 @@ test('home opens the root node and follows all its topics on one stream', async 
   await expect(page).toHaveURL(/\/n\/\d+$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Root' })).toBeVisible()
   await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Node: Root', exact: true })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Where you are' })).toHaveText('Root')
+  await expect(page.getByRole('navigation', { name: 'Mode' }).getByRole('link', { name: 'Observe' })).toHaveAttribute('aria-current', 'page')
   await expect
     .poll(() => streams.opened.at(-1)?.toSorted(), { message: 'the latest stream carries every topic' })
-    .toEqual(expect.arrayContaining(['members:1', 'monitors:1', 'node:1', expect.stringMatching(/^user:/)]))
+    .toEqual(expect.arrayContaining(['incidents:1', 'maintenance:1', 'monitor-tree:1', expect.stringMatching(/^user:/)]))
   await expect.poll(() => streams.open.size, { message: 'one stream open' }).toBe(1)
   await expect(page).toHaveTitle(`Root · ${instanceName}`)
   await page.context().close()
@@ -63,27 +64,27 @@ test('a screen with many live panels stays live and keeps answering', async ({ b
   const child = await command('nodes.create', { parent: node, name: 'Below' })
   const streams = watchStreams(page)
 
-  // The overview follows the node, its members, monitors, incidents, maintenance and pages below,
-  // more than the six connections a browser opens per host.
+  // The dashboard follows the tree's monitors and the incidents and maintenance below the node.
   await page.goto(`/n/${node}`)
   await expect(page.getByRole('heading', { level: 1, name: 'Many panels' })).toBeVisible()
   await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
   await expect(page.getByText('No open incidents')).toBeVisible()
-  await expect.poll(() => streams.opened.at(-1)?.length ?? 0).toBeGreaterThan(6)
   await expect.poll(() => streams.open.size, { message: 'one stream open' }).toBe(1)
 
   await command('incidents.create', { node: child.node?.id, title: 'Below is slow', impacts: [] })
   await expect(page.getByRole('link', { name: /Below is slow/ })).toBeVisible()
 
-  // Pickers on the editors are live too, and the app still answers while they are.
-  const nav = page.getByRole('navigation', { name: 'Main navigation' })
-  await nav.getByRole('link', { name: 'Incidents', exact: true }).click()
+  // Pickers on the editors are live too, and the app still answers while they are. The monitor
+  // editor follows more topics than the six connections a browser opens per host.
+  const modes = page.getByRole('navigation', { name: 'Mode' })
+  await page.getByRole('link', { name: 'All incidents' }).click()
   await page.getByRole('link', { name: 'Open incident' }).first().click()
   await expect(page).toHaveURL(/\/incidents\/new$/)
-  await nav.getByRole('link', { name: 'Monitors', exact: true }).click()
+  await modes.getByRole('link', { name: 'Configure' }).click()
   await page.getByRole('link', { name: 'Add monitor' }).first().click()
   await expect(page).toHaveURL(/\/monitors\/new$/)
-  await nav.getByRole('link', { name: 'Overview', exact: true }).click()
+  await expect.poll(() => streams.opened.at(-1)?.length ?? 0).toBeGreaterThan(6)
+  await modes.getByRole('link', { name: 'Observe' }).click()
   await expect(page.getByRole('link', { name: /Below is slow/ })).toBeVisible()
   await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible()
   await expect.poll(() => streams.open.size, { message: 'one stream open' }).toBe(1)
@@ -145,7 +146,8 @@ test('the phone drawer opens from the tab bar and closes on navigation', async (
   const drawer = page.getByRole('dialog', { name: 'Main navigation' })
   await expect(drawer).toBeVisible()
   await shot(page, 'drawer-phone-light')
-  await drawer.getByRole('link', { name: 'Members' }).click()
+  await expect(drawer.getByRole('navigation', { name: 'Nodes and monitors' }).getByRole('link', { name: /^Root/ })).toBeVisible()
+  await drawer.getByRole('link', { name: 'Instance', exact: true }).click()
   await expect(drawer).toBeHidden()
   await page.context().close()
 })

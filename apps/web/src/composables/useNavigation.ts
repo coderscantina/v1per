@@ -1,7 +1,6 @@
 import { computed } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 
-import { appConfig } from '~/lib/app-config'
 import type { IconName } from '~/lib/icons'
 import type { MessageKey } from '~/plugins/i18n'
 
@@ -24,9 +23,8 @@ export interface NavigationSection {
 }
 
 /**
- * The admin app's navigation, shared by the sidebar, the phone drawer and tab bar, and the
- * command palette. Node pages are scoped to the node in the top bar's picker. Context
- * selection and the account live in the top bar, never here.
+ * Every page of the admin app, for the command palette. Node pages are scoped to the current
+ * node; in the shell the tree, the mode switch and the configure tabs reach them.
  */
 export function useNavigation() {
   const { node } = useCurrentNode()
@@ -104,7 +102,6 @@ export function useNavigation() {
   })
 
   const items = computed(() => sections.value.flatMap((section) => section.items))
-  const tabs = computed(() => items.value.slice(0, appConfig.tabBarItems))
 
-  return { sections, items, tabs }
+  return { sections, items }
 }

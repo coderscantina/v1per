@@ -3,7 +3,7 @@ import type { AddressInfo } from 'node:net'
 
 import { expect, test, type Browser, type Page } from '@playwright/test'
 
-import { expectAccessible, expectNoHorizontalOverflow, schemes, shot, viewports } from './helpers'
+import { configure, expectAccessible, expectNoHorizontalOverflow, schemes, shot, viewports } from './helpers'
 import { sessionFile } from './session'
 
 /**
@@ -60,7 +60,7 @@ test('an http monitor goes up, and down when its target stops', async ({ browser
   await expect(page).toHaveURL(/\/n\/\d+$/)
   ids.root = new URL(page.url()).pathname.split('/')[2] ?? ''
 
-  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Monitors' }).click()
+  await configure(page, 'Monitors')
   await expect(page.getByRole('heading', { level: 1, name: 'Monitors' })).toBeVisible()
   await expect(page.getByText('No monitors on this node yet')).toBeVisible()
   await shot(page, 'list-empty-desktop-light')
@@ -118,14 +118,14 @@ test('a push monitor records the pushes a job sends', async ({ browser }) => {
   await page.context().close()
 })
 
-test('the list filters by status and the overview counts link to it', async ({ browser }) => {
+test('the dashboard lists what needs attention, and the list filters by status', async ({ browser }) => {
   const page = await asAdmin(browser)
   await page.goto(`/n/${ids.root}`)
-  const summary = page.getByRole('region', { name: 'Monitors' })
-  await expect(summary.getByRole('link', { name: "2 Down" })).toBeVisible()
-  await summary.getByRole('link', { name: /Down/ }).click()
+  const attention = page.getByRole('region', { name: 'Needs attention' })
+  await expect(attention.getByRole('link', { name: 'Web shop' })).toBeVisible()
+  await expect(attention.getByRole('link', { name: 'Nightly backup' })).toBeVisible()
 
-  await expect(page).toHaveURL(/\/monitors\?status=down$/)
+  await page.goto(`/n/${ids.root}/monitors?status=down`)
   const table = page.getByRole('table', { name: 'Monitors' })
   await expect(table.getByRole('link', { name: 'Web shop' })).toBeVisible()
   await expect(table.getByRole('link', { name: 'Nightly backup' })).toBeVisible()

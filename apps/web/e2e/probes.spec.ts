@@ -7,7 +7,7 @@ import { join } from 'node:path'
 
 import { expect, test, type Browser, type Page } from '@playwright/test'
 
-import { expectAccessible, expectNoHorizontalOverflow, schemes, shot, viewports } from './helpers'
+import { configure, expectAccessible, expectNoHorizontalOverflow, schemes, shot, viewports } from './helpers'
 import { sessionFile } from './session'
 
 /**
@@ -89,7 +89,7 @@ test('a registered probe runs a monitor next to the built-in one', async ({ brow
   await expect(page).toHaveURL(/\/n\/\d+$/)
   ids.root = new URL(page.url()).pathname.split('/')[2] ?? ''
 
-  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Probes' }).click()
+  await configure(page, 'Probes')
   await expect(page.getByRole('heading', { level: 1, name: 'Probes' })).toBeVisible()
   await expect(probeRow(page, 'Built-in').locator('[data-probe-status="online"]')).toBeVisible()
 

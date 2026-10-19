@@ -55,7 +55,7 @@ export function heightOf(index: TreeIndex, id: NodeId): number {
 /** Where the app opens: the first readable node, which is the highest the caller holds. */
 export const firstReadable = (index: TreeIndex): TreeNode | null => index.order.find(isReadable) ?? null
 
-const fold = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+export const fold = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
 
 export interface PickerRow {
   node: TreeNode

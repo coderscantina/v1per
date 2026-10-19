@@ -1,7 +1,7 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
 
 import type { PageBoot } from '../src/generated/PageBoot'
-import { expectAccessible, expectNoHorizontalOverflow, ownNode, schemes, shot, viewports } from './helpers'
+import { configure, expectAccessible, expectNoHorizontalOverflow, ownNode, schemes, shot, viewports } from './helpers'
 import { sessionFile } from './session'
 
 /**
@@ -52,7 +52,7 @@ test('a page is created with a monitor and a static component', async ({ browser
   await expect(page.getByRole('heading', { level: 1, name: 'Checkout' })).toBeVisible()
   ids.monitor = new URL(page.url()).pathname.split('/')[4] ?? ''
 
-  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Status pages' }).click()
+  await configure(page, 'Status pages')
   await expect(page.getByRole('heading', { level: 1, name: 'Status pages' })).toBeVisible()
   await page.getByRole('button', { name: 'Create page' }).first().click()
   const dialog = page.getByRole('dialog')

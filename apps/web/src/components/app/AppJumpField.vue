@@ -3,14 +3,15 @@ import Icon from '~/components/Icon.vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip'
 import { useCommandPalette } from '~/composables/useCommandPalette'
 import { IS_MAC } from '~/lib/shortcuts'
+import { cn } from '~/lib/utils'
 import { useI18n } from '~/plugins/i18n'
 
 /**
- * The sidebar's trigger for the command palette: a filled field with the shortcut hint, or in
- * the collapsed rail an icon button. The palette hands focus back to whatever held it when it
+ * The trigger for the command palette: a filled field with the shortcut hint, `bar` for the
+ * slimmer outlined one in the top bar, or in the collapsed rail an icon button. The palette hands focus back to whatever held it when it
  * opened, so the trigger takes focus first; Safari does not focus a button on click.
  */
-defineProps<{ compact?: boolean }>()
+defineProps<{ compact?: boolean; bar?: boolean }>()
 
 const emit = defineEmits<{ open: [] }>()
 
@@ -30,8 +31,13 @@ const open = (event: MouseEvent) => {
       <TooltipTrigger as-child>
         <button
           type="button"
-          class="flex h-shell-nav w-full cursor-pointer items-center gap-3 rounded-control bg-fill pr-2 pl-3 text-sm text-muted transition-colors duration-150 ease-butter hover:bg-fill-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          :class="compact && 'justify-center px-0'"
+          :class="
+            cn(
+              'flex h-shell-nav w-full cursor-pointer items-center gap-3 rounded-control bg-fill pr-2 pl-3 text-sm text-muted transition-colors duration-150 ease-butter hover:bg-fill-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+              compact && 'justify-center px-0',
+              bar && 'h-8 gap-2 rounded-[9px] border border-hairline bg-surface pr-1.5 pl-2.5 text-[0.8125rem] hover:bg-fill'
+            )
+          "
           :aria-label="compact ? t('commandPalette.open') : undefined"
           :aria-keyshortcuts="IS_MAC ? 'Meta+K' : 'Control+K'"
           @click="open"

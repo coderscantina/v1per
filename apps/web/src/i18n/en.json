@@ -118,7 +118,26 @@
     "mobileNavigation": "Phone navigation",
     "userMenu": "{initials}. Account menu",
     "language": "Language",
-    "version": "Version {version}"
+    "version": "Version {version}",
+    "versionShort": "v{version}",
+    "breadcrumb": "Where you are",
+    "configure": "Node configuration",
+    "modes": {
+      "label": "Mode",
+      "observe": "Observe",
+      "configure": "Configure",
+      "shortcut": "Switch to {mode}"
+    },
+    "tree": {
+      "label": "Nodes and monitors",
+      "filter": "Filter",
+      "problems": "Only problems",
+      "expand": "Expand {name}",
+      "collapse": "Collapse {name}",
+      "down": "{count} down",
+      "noMatch": "Nothing matches.",
+      "empty": "No nodes yet."
+    }
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
@@ -164,13 +183,7 @@
     "hidden": "Hidden node",
     "overview": "Node",
     "unavailable": "This node is not available",
-    "about": "About this node",
-    "path": "Path",
     "root": "Top of the tree",
-    "yourRole": "Your role",
-    "members": "Members",
-    "memberCount": "{count} person | {count} people",
-    "membersLink": "Show members",
     "children": "Child nodes",
     "childCount": "{count} below | {count} below",
     "noChildren": "No child nodes.",
@@ -187,12 +200,6 @@
       "loading": "Loading nodes",
       "label": "Nodes",
       "current": "Node:"
-    },
-    "twoFactor": {
-      "label": "Two-factor",
-      "here": "Required on this node",
-      "inherited": "Required by a node above",
-      "off": "Not required"
     },
     "create": {
       "title": "Add child node",
@@ -213,7 +220,8 @@
       "twoFactorHint": "Asks for your password first.",
       "place": "Place in the tree",
       "placeDescription": "Moving changes who sees the node: access comes from roles on the nodes above.",
-      "under": "Under"
+      "under": "Under",
+      "childrenDescription": "Nodes below this one, in the order the tree shows them."
     },
     "move": {
       "open": "Move node",
@@ -245,10 +253,7 @@
       "warning": "Everything below is deleted with it, including roles and API keys there.",
       "typeName": "Type {name} to confirm",
       "submit": "Delete"
-    },
-    "statusPages": "Status pages",
-    "pageCount": "{count} page here and below | {count} pages here and below",
-    "pagesLink": "Show status pages"
+    }
   },
   "members": {
     "title": "Members",
@@ -584,11 +589,6 @@
       "group": "Group",
       "manual": "Manual",
       "unsupported": "Not supported"
-    },
-    "summary": {
-      "title": "Monitors",
-      "empty": "No monitors on this node yet.",
-      "all": "Show all monitors"
     },
     "detail": {
       "status": "Current status",
@@ -1557,5 +1557,56 @@
       "noStatus": "No status",
       "withDetail": "Response times"
     }
+  },
+  "observe": {
+    "scope": "Status of {name}",
+    "rail": "Summary",
+    "view": {
+      "label": "View",
+      "orbit": "Orbit",
+      "wall": "Wall"
+    },
+    "summary": {
+      "loading": "Reading monitors…",
+      "down": "{count} monitor down | {count} monitors down",
+      "pending": "{count} pending | {count} pending",
+      "onlyPending": "Nothing is down. {count} monitor is waiting for a retry. | Nothing is down. {count} monitors are waiting for a retry.",
+      "healthy": "The monitor here is healthy. | All {count} monitors are healthy.",
+      "paused": "Every monitor here is paused.",
+      "empty": "No monitors here yet."
+    },
+    "empty": {
+      "title": "Nothing to observe yet",
+      "description": "Add a monitor here or in a node below, and its status shows on this dashboard."
+    },
+    "orbit": {
+      "label": "Map of {name}",
+      "center": "{healthy} of {total} monitors healthy",
+      "healthy": "healthy",
+      "down": "{count} down",
+      "pending": "{count} pending",
+      "up": "{count} up",
+      "more": "+{count}",
+      "hidden": "{count} more here; the wall shows them all"
+    },
+    "wall": {
+      "direct": "Directly in {name}",
+      "up": "{up}/{total} up"
+    },
+    "stats": {
+      "label": "Status in numbers",
+      "healthy": "Healthy",
+      "down": "Down",
+      "uptime": "Mean uptime 24 h",
+      "p95": "Response p95",
+      "pending": "Pending",
+      "maintenance": "In maintenance"
+    },
+    "attention": {
+      "title": "Needs attention",
+      "empty": "Nothing needs you here."
+    },
+    "legendHint": "Click a ring to step in, the path above to step out",
+    "instance": "Instance"
   }
 }

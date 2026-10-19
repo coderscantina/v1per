@@ -2,13 +2,13 @@
 // Adapted from Kit (f447e797, MIT): resources/js/components/app/AppSidebar.vue.
 import AppBrand from '~/components/app/AppBrand.vue'
 import AppJumpField from '~/components/app/AppJumpField.vue'
-import AppSidebarNav from '~/components/app/AppSidebarNav.vue'
+import AppSidebarFooter from '~/components/app/AppSidebarFooter.vue'
 import AppSidebarResizer from '~/components/app/AppSidebarResizer.vue'
+import AppTree from '~/components/app/AppTree.vue'
 import Icon from '~/components/Icon.vue'
 import { Button } from '~/components/ui/button'
 import { useSidebar } from '~/composables/useSidebar'
 import { useI18n } from '~/plugins/i18n'
-import { runtimeConfig } from '~/services/runtime-config'
 
 const { t } = useI18n()
 const sidebar = useSidebar()
@@ -24,7 +24,7 @@ const dragging = ref(false)
     :style="{ width: `${sidebar.currentWidth.value}px` }"
   >
     <div
-      class="flex shrink-0 items-center gap-1"
+      class="group/brand flex shrink-0 items-center gap-1"
       :class="sidebar.collapsed.value ? 'flex-col px-3 py-2' : 'h-shell-header px-4'"
     >
       <AppBrand :compact="sidebar.collapsed.value" />
@@ -33,7 +33,7 @@ const dragging = ref(false)
         variant="ghost"
         size="icon"
         class="text-muted"
-        :class="!sidebar.collapsed.value && 'ml-auto'"
+        :class="!sidebar.collapsed.value && 'ml-auto opacity-0 group-hover/brand:opacity-100 focus-visible:opacity-100'"
         :aria-label="t('shell.toggleSidebar')"
         :aria-expanded="!sidebar.collapsed.value"
         aria-controls="app-sidebar"
@@ -44,20 +44,20 @@ const dragging = ref(false)
     </div>
 
     <div
-      class="shrink-0 pb-2"
-      :class="sidebar.collapsed.value ? 'px-3' : 'px-4 pt-2'"
+      v-if="sidebar.collapsed.value"
+      class="flex-1 px-3 pb-2"
     >
-      <AppJumpField :compact="sidebar.collapsed.value" />
+      <AppJumpField compact />
     </div>
-
-    <AppSidebarNav :compact="sidebar.collapsed.value" />
-
-    <p
-      v-if="runtimeConfig.version && !sidebar.collapsed.value"
-      class="shrink-0 truncate px-5 pb-3 text-2xs text-sidebar-muted"
+    <div
+      v-else
+      class="flex min-h-0 flex-1 flex-col px-3 pt-2"
     >
-      {{ t('shell.version', { version: runtimeConfig.version }) }}
-    </p>
+      <AppTree />
+    </div>
+    <div class="px-3">
+      <AppSidebarFooter :compact="sidebar.collapsed.value" />
+    </div>
 
     <AppSidebarResizer
       v-if="sidebar.resizable && !sidebar.collapsed.value"

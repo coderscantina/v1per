@@ -1,9 +1,11 @@
 <script setup lang="ts">
 // Adapted from Kit (f447e797, MIT): resources/js/components/app/AppMobileSidebar.vue. The account
-// block is gone: identity and account links live in the header's user menu on every width.
+// block is gone: identity and account links live in the header's user menu on every width. The
+// node and monitor tree replaces the navigation list.
 import AppBrand from '~/components/app/AppBrand.vue'
 import AppJumpField from '~/components/app/AppJumpField.vue'
-import AppSidebarNav from '~/components/app/AppSidebarNav.vue'
+import AppSidebarFooter from '~/components/app/AppSidebarFooter.vue'
+import AppTree from '~/components/app/AppTree.vue'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '~/components/ui/sheet'
 import { useSidebar } from '~/composables/useSidebar'
 import { useI18n } from '~/plugins/i18n'
@@ -40,7 +42,12 @@ const close = () => {
       <div class="shrink-0 px-3 pb-2">
         <AppJumpField @open="close" />
       </div>
-      <AppSidebarNav @navigate="close" />
+      <div class="flex min-h-0 flex-1 flex-col px-3">
+        <AppTree @navigate="close" />
+      </div>
+      <div class="px-3">
+        <AppSidebarFooter @navigate="close" />
+      </div>
     </SheetContent>
   </Sheet>
 </template>
