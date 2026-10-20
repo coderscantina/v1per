@@ -53,8 +53,10 @@ Capabilities without an operation yet are the contract for the milestones named 
 | `monitors.list`, `monitors.get`, `monitors.heartbeats`, `monitors.uptime`, `monitors.latency`, `monitors.dayBars` | `node.read` on the monitor's node; `monitors.get` shows the push token only with `monitors.manage` | viewer and up |
 | `monitors.trend`, `monitors.hourly` | `node.read` on the node; cover every monitor on it and below | viewer and up |
 | `monitors.create`, `monitors.update`, `monitors.pause`, `monitors.resume`, `monitors.setManualStatus`, `monitors.delete` | `monitors.manage` on the monitor's node; a `group` must sit on that node or an ancestor the caller reads; `probes` must be registered on that node or an ancestor, readable or not | member and up |
+| `monitors.move` | `monitors.manage` on the monitor's node and on the target node; a `group` must sit on the target node or an ancestor the caller reads | member and up on both nodes |
 | `probes.list`, `probes.available`      | `node.read`; `probes.available` also names probes on ancestors the caller cannot read, without their node | viewer and up |
 | `probes.create`                        | `probes.manage` on the node; instance-wide probes go on the root                          | admin and up                   |
+| `probes.update`                        | `probes.manage` on the probe's node; name and location, the built-in probe included    | admin and up                   |
 | `probes.revoke`                        | `probes.manage` on the probe's node; the built-in probe cannot be revoked                 | admin and up                   |
 | `channels.list`, `channels.get`, `channels.deliveries`, `channels.delivery` | `channels.manage` on the channel's node                    | admin and up                   |
 | `channels.monitorDeliveries`           | `node.read` on the monitor's node; lists deliveries through channels on that node and on ancestors the caller can read, with the provider's `error` and `detail` only where the caller has `channels.manage` | viewer and up |

@@ -8,8 +8,8 @@ use v1per_protocol::errors::FieldErrorCode;
 use v1per_protocol::ids::{MonitorId, NodeId, ProbeId};
 use v1per_protocol::operations::nodes::NodeArgs;
 use v1per_protocol::operations::probes::{
-    Probe, ProbeArgs, ProbeChoice, ProbeChoiceList, ProbeCreated, ProbeList, ProbeResult,
-    ProbeStatus, ProbesCreateArgs, ProbesHandlers,
+    Probe, ProbeArgs, ProbeChoice, ProbeChoiceList, ProbeCreated, ProbeList, ProbeLocation,
+    ProbeResult, ProbeStatus, ProbesCreateArgs, ProbesHandlers, ProbesUpdateArgs,
 };
 use v1per_protocol::registry::Snapshot;
 
@@ -18,6 +18,7 @@ use crate::error::{ApiError, FieldErrors};
 use crate::identity::{new_session_token, validate_name};
 use crate::monitors;
 use crate::state::AppState;
+use v1per_protocol::limits::NAME_MAX_CHARS;
 
 /// Larger differences between the server's and an agent's clock are flagged.
 const SKEW_FLAG_MS: i64 = 5_000;
@@ -27,7 +28,7 @@ macro_rules! select_row {
     () => {
         "SELECT p.id, p.node_id, p.name, p.builtin, p.created_at, p.revoked_at, p.last_seen_at,
                 p.offline_since, p.version, p.clock_skew_ms, p.checks_started, p.checks_late,
-                p.buffered_results, p.dropped_results,
+                p.buffered_results, p.dropped_results, p.country, p.city, p.provider, p.platform,
                 (SELECT COUNT(*) FROM monitor_probes mp WHERE mp.probe_id = p.id) AS monitors
          FROM probes p"
     };
@@ -49,12 +50,24 @@ struct Row {
     checks_late: i64,
     buffered_results: i64,
     dropped_results: i64,
+    country: Option<String>,
+    city: Option<String>,
+    provider: Option<String>,
+    platform: Option<String>,
     monitors: i64,
 }
 
 impl Row {
     fn node(&self) -> NodeId {
         NodeId::new(self.node_id)
+    }
+
+    fn location(&self) -> ProbeLocation {
+        ProbeLocation {
+            country: self.country.clone(),
+            city: self.city.clone(),
+            provider: self.provider.clone(),
+        }
     }
 
     fn status(&self) -> ProbeStatus {
@@ -74,6 +87,40 @@ impl Row {
             _ => ProbeStatus::Online,
         }
     }
+}
+
+/// `location` with blanks dropped, or a field error. A country is two ASCII letters, stored in
+/// upper case.
+fn validate_location(location: &ProbeLocation) -> Result<ProbeLocation, ApiError> {
+    let text = |field: &str, value: &Option<String>| -> Result<Option<String>, ApiError> {
+        let Some(value) = value.as_deref().map(str::trim).filter(|v| !v.is_empty()) else {
+            return Ok(None);
+        };
+        if value.chars().count() > NAME_MAX_CHARS {
+            return Err(FieldErrors::one(
+                field,
+                FieldErrorCode::TooLong,
+                Some(NAME_MAX_CHARS as u32),
+            ));
+        }
+        Ok(Some(value.to_owned()))
+    };
+    let country = text("location.country", &location.country)?;
+    if country
+        .as_deref()
+        .is_some_and(|code| code.len() != 2 || !code.bytes().all(|b| b.is_ascii_alphabetic()))
+    {
+        return Err(FieldErrors::one(
+            "location.country",
+            FieldErrorCode::InvalidFormat,
+            None,
+        ));
+    }
+    Ok(ProbeLocation {
+        country: country.map(|code| code.to_ascii_uppercase()),
+        city: text("location.city", &location.city)?,
+        provider: text("location.provider", &location.provider)?,
+    })
 }
 
 async fn load(conn: &mut SqliteConnection, probe: ProbeId) -> Result<Row, ApiError> {
@@ -99,12 +146,19 @@ impl AppState {
     /// The probe as the API shows it; the built-in probe reports the server's own figures.
     fn present(&self, row: Row) -> Probe {
         let status = row.status();
-        let (version, checks_started, checks_late) = if row.builtin {
+        let location = row.location();
+        let (version, platform, checks_started, checks_late) = if row.builtin {
             let (started, late) = self.builtin_lag.read();
-            (Some(env!("CARGO_PKG_VERSION").to_owned()), started, late)
+            (
+                Some(env!("CARGO_PKG_VERSION").to_owned()),
+                Some(v1per_probe_core::wire::platform()),
+                started,
+                late,
+            )
         } else {
             (
                 row.version,
+                row.platform,
                 row.checks_started as u64,
                 row.checks_late as u64,
             )
@@ -115,6 +169,8 @@ impl AppState {
             name: row.name,
             builtin: row.builtin,
             status,
+            location,
+            platform,
             created_at: row.created_at,
             revoked_at: row.revoked_at,
             last_seen_at: row.last_seen_at,
@@ -140,15 +196,20 @@ impl ProbesHandlers for AppState {
     ) -> Result<ProbeCreated, ApiError> {
         ctx.node_scope(args.node, Capability::ProbesManage).await?;
         let name = validate_name("name", &args.name)?;
+        let location = validate_location(&args.location)?;
         let (token, digest) = new_session_token();
         let id: i64 = sqlx::query_scalar(
-            "INSERT INTO probes (node_id, name, builtin, created_at, token_hash)
-             VALUES (?, ?, 0, ?, ?) RETURNING id",
+            "INSERT INTO probes (node_id, name, builtin, created_at, token_hash,
+                                 country, city, provider)
+             VALUES (?, ?, 0, ?, ?, ?, ?, ?) RETURNING id",
         )
         .bind(args.node.get())
         .bind(&name)
         .bind(ctx.now())
         .bind(digest)
+        .bind(&location.country)
+        .bind(&location.city)
+        .bind(&location.provider)
         .fetch_one(ctx.conn())
         .await?;
         let probe = ProbeId::new(id);
@@ -163,6 +224,42 @@ impl ProbesHandlers for AppState {
             probe: self.present(row),
             secret: Some(token),
             secret_withheld: false,
+        })
+    }
+
+    async fn probes_update(
+        &self,
+        ctx: &mut CommandCtx,
+        args: ProbesUpdateArgs,
+    ) -> Result<ProbeResult, ApiError> {
+        let row = load(ctx.conn(), args.probe).await?;
+        ctx.node_scope(row.node(), Capability::ProbesManage).await?;
+        if row.revoked_at.is_some() {
+            return Err(FieldErrors::one(
+                "probe",
+                FieldErrorCode::InvalidValue,
+                None,
+            ));
+        }
+        let name = validate_name("name", &args.name)?;
+        let location = validate_location(&args.location)?;
+        sqlx::query("UPDATE probes SET name = ?, country = ?, city = ?, provider = ? WHERE id = ?")
+            .bind(&name)
+            .bind(&location.country)
+            .bind(&location.city)
+            .bind(&location.provider)
+            .bind(args.probe.get())
+            .execute(ctx.conn())
+            .await?;
+        ctx.record(
+            &Topic::probes(row.node()),
+            "probe.updated",
+            json!({ "probe": args.probe }),
+        )
+        .await?;
+        let row = load(ctx.conn(), args.probe).await?;
+        Ok(ProbeResult {
+            probe: self.present(row),
         })
     }
 
@@ -275,6 +372,7 @@ impl ProbesHandlers for AppState {
                     .map(|row| ProbeChoice {
                         id: ProbeId::new(row.id),
                         status: row.status(),
+                        location: row.location(),
                         own: row.node() == scope.node(),
                         node: readable.contains(&row.node()).then(|| row.node()),
                         last_seen_at: row.last_seen_at,

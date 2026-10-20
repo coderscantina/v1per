@@ -23,6 +23,7 @@ function refreshWhileVisible(live: { data: { value: unknown }; loading: { value:
 export function useNodeProbes(id: MaybeRefOrGetter<NodeId | null>) {
   const live = useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'probes.list',
     load: (node, signal) => probesResource.list(node, signal),
     affects: isProbeEvent,
   })
@@ -37,6 +38,7 @@ export function useNodeProbes(id: MaybeRefOrGetter<NodeId | null>) {
 export function useAvailableProbes(id: MaybeRefOrGetter<NodeId | null>) {
   const live = useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'probes.available',
     load: (node, signal) => probesResource.available(node, signal),
     affects: isProbeEvent,
   })

@@ -20,6 +20,10 @@ crate::domain! {
         /// Registers a remote probe on `node` and discloses its token once. Needs
         /// `probes.manage`. Run the agent with `v1per-probe --server <url> --token <secret>`.
         "probes.create" => probes_create (Person, secret): ProbesCreateArgs => ProbeCreated;
+        /// Renames a probe and replaces where it runs. Needs `probes.manage` on the probe's
+        /// node. The built-in probe takes a name and location too. A revoked probe is
+        /// `invalid_value` on `probe`.
+        "probes.update" => probes_update (Person): ProbesUpdateArgs => ProbeResult;
         /// Revokes a probe's token at once: the agent's next request is refused and the probe
         /// leaves every monitor it served. Needs `probes.manage` on the probe's node. The
         /// built-in probe cannot be revoked (`invalid_value` on `probe`). Revoking a revoked
@@ -43,6 +47,38 @@ pub struct ProbesCreateArgs {
     pub node: NodeId,
     /// 1 to 100 characters after trimming.
     pub name: String,
+    #[serde(default)]
+    #[ts(optional, as = "Option<ProbeLocation>")]
+    pub location: ProbeLocation,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct ProbesUpdateArgs {
+    pub probe: ProbeId,
+    /// 1 to 100 characters after trimming.
+    pub name: String,
+    /// Replaces the stored location; absent fields are cleared.
+    #[serde(default)]
+    #[ts(optional, as = "Option<ProbeLocation>")]
+    pub location: ProbeLocation,
+}
+
+/// Where a probe runs, as its admins describe it. Every field is optional; blank ones are
+/// stored as absent.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+pub struct ProbeLocation {
+    /// ISO 3166-1 alpha-2 code in upper case, such as `AT`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub country: Option<String>,
+    /// Up to 100 characters.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub city: Option<String>,
+    /// The hosting provider or data center, such as `Scaleway`. Up to 100 characters.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub provider: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
@@ -70,6 +106,11 @@ pub struct Probe {
     /// The server's own probe, on the root.
     pub builtin: bool,
     pub status: ProbeStatus,
+    pub location: ProbeLocation,
+    /// Operating system and CPU architecture the agent reported, such as `linux/x86_64`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub platform: Option<String>,
     pub created_at: i64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -126,6 +167,7 @@ pub struct ProbeChoice {
     pub name: String,
     pub builtin: bool,
     pub status: ProbeStatus,
+    pub location: ProbeLocation,
     /// Registered on the node itself rather than on an ancestor.
     pub own: bool,
     /// The node it is registered on; absent when the caller cannot read that node.

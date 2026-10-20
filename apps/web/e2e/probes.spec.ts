@@ -65,7 +65,7 @@ async function asAdmin(browser: Browser, viewport: { width: number; height: numb
 
 const ownProbes = (page: Page) => page.getByRole('table', { name: 'Probes on this node' })
 const probeRow = (page: Page, name: string) => ownProbes(page).locator(`tr[data-probe="${name}"]`)
-const probeStates = (page: Page) => page.getByRole('table', { name: 'Probes', exact: true })
+const probeStates = (page: Page) => page.getByRole('list', { name: 'Probes', exact: true })
 
 /** Opens the add dialog, names the probe and returns the command it shows. */
 async function addProbe(page: Page, name: string): Promise<string> {
@@ -112,7 +112,7 @@ test('a registered probe runs a monitor next to the built-in one', async ({ brow
   await page.goto(`/n/${ids.root}/monitors/new`)
   await page.getByLabel('Name', { exact: true }).fill('Edge check')
   await page.getByLabel('URL', { exact: true }).fill(targetUrl)
-  await page.getByLabel('Interval in seconds', { exact: true }).fill('20')
+  await page.getByLabel('Interval', { exact: true }).fill('20')
   const picker = page.getByRole('group', { name: 'Probes' })
   await expect(picker.getByRole('checkbox', { name: 'Built-in' })).toBeChecked()
   await expect(page.getByRole('combobox', { name: 'Probe quorum' })).toBeHidden()
@@ -123,9 +123,9 @@ test('a registered probe runs a monitor next to the built-in one', async ({ brow
   await expect(page).toHaveURL(/\/monitors\/\d+$/)
   ids.monitor = new URL(page.url()).pathname.split('/')[4] ?? ''
   const states = probeStates(page)
-  await expect(states.locator('tr[data-probe="Frankfurt"] [data-status="up"]')).toBeVisible(STATUS_WAIT)
-  await expect(states.locator('tr[data-probe="Built-in"] [data-status="up"]')).toBeVisible(STATUS_WAIT)
-  await expect(states.locator('tr[data-probe="Frankfurt"] [data-live="true"]')).toBeVisible()
+  await expect(states.locator('[data-probe="Frankfurt"] [data-status="up"]')).toBeVisible(STATUS_WAIT)
+  await expect(states.locator('[data-probe="Built-in"] [data-status="up"]')).toBeVisible(STATUS_WAIT)
+  await expect(states.locator('[data-probe="Frankfurt"][data-live="true"]')).toBeVisible()
 
   // One probe's own checks.
   await page.getByRole('combobox', { name: 'Probe', exact: true }).click()
@@ -161,7 +161,7 @@ test('probe screens hold up at desktop and phone sizes, light and dark', async (
       await check('editor-probes')
 
       await page.goto(`/n/${ids.root}/monitors/${ids.monitor}`)
-      await expect(probeStates(page).locator('tr[data-probe="Frankfurt"] [data-status="up"]')).toBeVisible()
+      await expect(probeStates(page).locator('[data-probe="Frankfurt"] [data-status="up"]')).toBeVisible()
       await probeStates(page).evaluate((element) => element.scrollIntoView({ block: 'center' }))
       await check('detail-probes')
     }
@@ -187,7 +187,7 @@ test('a revoked probe is refused, its agent stops and it leaves the monitor', as
   agent = null
 
   await page.goto(`/n/${ids.root}/monitors/${ids.monitor}`)
-  await expect(probeStates(page).locator('tr[data-probe="Built-in"]')).toBeVisible()
-  await expect(probeStates(page).locator('tr[data-probe="Frankfurt"]')).toHaveCount(0)
+  await expect(probeStates(page).locator('[data-probe="Built-in"]')).toBeVisible()
+  await expect(probeStates(page).locator('[data-probe="Frankfurt"]')).toHaveCount(0)
   await page.context().close()
 })

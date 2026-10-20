@@ -6,6 +6,8 @@ import { probesResource } from '~/api/resources/probes'
 import Icon from '~/components/Icon.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import CreateProbeDialog from '~/components/probes/CreateProbeDialog.vue'
+import EditProbeDialog from '~/components/probes/EditProbeDialog.vue'
+import ProbePlace from '~/components/probes/ProbePlace.vue'
 import ProbeStatusLabel from '~/components/probes/ProbeStatusLabel.vue'
 import { Alert } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
@@ -20,7 +22,9 @@ import { useErrorMessage } from '~/composables/useErrorMessage'
 import { useCurrentNode, useNodeDetail } from '~/composables/useNodes'
 import { usePageMeta } from '~/composables/usePageMeta'
 import { useAvailableProbes, useNodeProbes } from '~/composables/useProbes'
+import { useFormats } from '~/composables/usePreferences'
 import type { Probe } from '~/generated'
+import { formatNumber } from '~/lib/formats'
 import { can } from '~/lib/access'
 import { probeLag, type ProbeLag } from '~/lib/probes'
 import { useI18n } from '~/plugins/i18n'
@@ -30,6 +34,7 @@ import { useI18n } from '~/plugins/i18n'
  * nodes above, which are managed there. Admins add a probe (its token shows once) and revoke one.
  */
 const { t, locale } = useI18n()
+const { numberLocale } = useFormats()
 const { message } = useErrorMessage()
 const { confirm } = useConfirm()
 const { date, dateTime, relative } = useDateFormat()
@@ -46,6 +51,12 @@ const probes = computed(() => own.data.value?.probes ?? [])
 const inherited = computed(() => (available.data.value?.probes ?? []).filter((probe) => !probe.own))
 
 const creating = ref(false)
+const editing = ref(false)
+const edited = ref<Probe | null>(null)
+const startEdit = (probe: Probe) => {
+  edited.value = probe
+  editing.value = true
+}
 const notice = ref<string | null>(null)
 const revoke = useMutation({
   mutationFn: (probe: Probe) => probesResource.revoke(probe.id),
@@ -63,7 +74,7 @@ const ask = async (probe: Probe) => {
   if (ok) revoke.mutate(probe)
 }
 
-const number = (value: number) => new Intl.NumberFormat(locale.value).format(value)
+const number = (value: number) => formatNumber(numberLocale.value, value)
 const lagText = (lag: ProbeLag) => {
   switch (lag.kind) {
     case 'dropped':
@@ -216,6 +227,10 @@ const columns = 7
                     class="truncate"
                     :class="probe.revoked_at ? 'text-muted' : undefined"
                   >{{ probe.name }}</span>
+                  <ProbePlace
+                    :location="probe.location"
+                    class="text-sm font-normal text-muted"
+                  />
                   <span
                     class="truncate text-xs font-normal text-muted sm:hidden"
                     :title="probe.last_seen_at ? dateTime(probe.last_seen_at) : undefined"
@@ -246,7 +261,16 @@ const columns = 7
                 kind="secondary"
                 class="whitespace-nowrap max-md:hidden"
               >
-                <template v-if="probe.version">{{ probe.version }}</template>
+                <div
+                  v-if="probe.version"
+                  class="grid gap-0.5"
+                >
+                  <span>{{ probe.version }}</span>
+                  <span
+                    v-if="probe.platform"
+                    class="text-muted"
+                  >{{ probe.platform }}</span>
+                </div>
                 <TableNone v-else />
               </TableCell>
               <TableCell
@@ -285,7 +309,16 @@ const columns = 7
               >
                 {{ number(probe.monitors) }}
               </TableCell>
-              <TableCell class="text-right">
+              <TableCell class="text-right whitespace-nowrap">
+                <Button
+                  v-if="manage && !probe.revoked_at"
+                  variant="ghost"
+                  size="icon"
+                  :aria-label="t('probes.editNamed', { name: probe.name })"
+                  @click="startEdit(probe)"
+                >
+                  <Icon name="lucide:pencil" />
+                </Button>
                 <Button
                   v-if="manage && !probe.builtin && !probe.revoked_at"
                   variant="ghost"
@@ -334,7 +367,13 @@ const columns = 7
                 <ProbeStatusLabel :status="probe.status" />
               </TableCell>
               <TableCell kind="subject">
-{{ probe.name }}
+                <div class="grid min-w-0 gap-1">
+                  <span class="truncate">{{ probe.name }}</span>
+                  <ProbePlace
+                    :location="probe.location"
+                    class="text-sm font-normal text-muted"
+                  />
+                </div>
               </TableCell>
             </TableRow>
           </TableBody>
@@ -346,6 +385,11 @@ const columns = 7
       v-if="routeId"
       v-model:open="creating"
       :node="routeId"
+    />
+    <EditProbeDialog
+      v-model:open="editing"
+      :probe="edited"
+      @saved="(probe) => (notice = t('probes.saved', { name: probe.name }))"
     />
   </div>
 </template>

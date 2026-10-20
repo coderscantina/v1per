@@ -192,6 +192,7 @@ async fn poll(
             sent_at: now_ms(),
             health: Health {
                 version: env!("CARGO_PKG_VERSION").to_owned(),
+                platform: Some(v1per_probe_core::wire::platform()),
                 checks_started,
                 checks_late,
                 buffered_results: buffer.buffered(),

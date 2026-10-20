@@ -23,6 +23,7 @@ import {
 const stored = (settings: MonitorSettings): Monitor => ({
   id: '7',
   node: '1',
+  position: 0,
   name: 'Shop',
   description: '',
   settings,
@@ -169,9 +170,9 @@ describe('monitor form', () => {
 
   describe('probes', () => {
     const choices: ProbeChoice[] = [
-      { id: '5', name: 'Frankfurt', builtin: false, status: 'online', own: true },
-      { id: '1', name: 'Built-in', builtin: true, status: 'online', own: false },
-      { id: '3', name: 'Vienna', builtin: false, status: 'offline', own: false },
+      { id: '5', name: 'Frankfurt', builtin: false, status: 'online', own: true, location: {} },
+      { id: '1', name: 'Built-in', builtin: true, status: 'online', own: false, location: {} },
+      { id: '3', name: 'Vienna', builtin: false, status: 'offline', own: false, location: {} },
     ]
 
     it('shows the built-in probe as chosen while none is stored', () => {

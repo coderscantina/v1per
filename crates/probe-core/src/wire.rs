@@ -37,11 +37,20 @@ pub struct Assignment {
     pub definition: CheckDefinition,
 }
 
+/// This build's operating system and CPU architecture, as agents report it.
+pub fn platform() -> String {
+    format!("{}/{}", std::env::consts::OS, std::env::consts::ARCH)
+}
+
 /// What a probe reports with every assignment poll.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Health {
     /// The agent's v1per version.
     pub version: String,
+    /// Operating system and CPU architecture, such as `linux/x86_64`. Absent from agents
+    /// before 26.10.20.
+    #[serde(default)]
+    pub platform: Option<String>,
     pub checks_started: u64,
     pub checks_late: u64,
     pub buffered_results: u64,

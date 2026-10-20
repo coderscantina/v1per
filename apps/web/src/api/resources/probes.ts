@@ -1,4 +1,4 @@
-import type { NodeId, ProbeId, ProbesCreateArgs } from '~/generated'
+import type { NodeId, ProbeId, ProbesCreateArgs, ProbesUpdateArgs } from '~/generated'
 
 import { api } from '..'
 
@@ -12,5 +12,6 @@ export const probesResource = {
   available: (node: NodeId, signal?: AbortSignal) => api.query('probes.available', { node }, { signal }),
   /** The answer carries the agent's token, once. */
   create: (args: ProbesCreateArgs) => api.command('probes.create', args),
+  update: (args: ProbesUpdateArgs) => api.command('probes.update', args),
   revoke: (probe: ProbeId) => api.command('probes.revoke', { probe }),
 }

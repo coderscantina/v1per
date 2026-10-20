@@ -12,10 +12,12 @@ import { Label } from '~/components/ui/label'
 import { Textarea } from '~/components/ui/textarea'
 import { useErrorMessage } from '~/composables/useErrorMessage'
 import { usePublicOrigin } from '~/composables/useMonitors'
-import type { NodeId, ProbeCreated, ProbesCreateArgs } from '~/generated'
+import type { NodeId, ProbeCreated, ProbeLocation, ProbesCreateArgs } from '~/generated'
 import { NAME_MAX_CHARS } from '~/generated/limits'
 import { probeCommand } from '~/lib/probes'
 import { useI18n } from '~/plugins/i18n'
+
+import ProbeLocationFields from './ProbeLocationFields.vue'
 
 /**
  * Registers a probe on a node in two steps: name it, then copy the command that starts its
@@ -29,6 +31,7 @@ const { t } = useI18n()
 const { fieldMessage } = useErrorMessage()
 const origin = usePublicOrigin()
 const name = ref('')
+const location = ref<ProbeLocation>({})
 const created = ref<ProbeCreated | null>(null)
 
 const create = useMutation({
@@ -39,12 +42,13 @@ const create = useMutation({
 watch(open, (value) => {
   if (value) return
   name.value = ''
+  location.value = {}
   created.value = null
   create.reset()
 })
 
 const command = computed(() => (created.value?.secret ? probeCommand(origin.value, created.value.secret) : null))
-const submit = () => create.mutate({ node: props.node, name: name.value })
+const submit = () => create.mutate({ node: props.node, name: name.value, location: location.value })
 
 const select = (event: FocusEvent) => {
   if (event.target instanceof HTMLTextAreaElement) event.target.select()
@@ -78,7 +82,7 @@ const select = (event: FocusEvent) => {
               :model-value="command"
               readonly
               rows="2"
-              class="min-h-0 min-w-0 resize-none font-mono text-xs break-all max-sm:min-h-24"
+              class="min-h-0 min-w-0 resize-none font-mono text-sm break-all max-sm:min-h-24"
               aria-describedby="probe-command-hint"
               @focus="select"
             />
@@ -86,7 +90,7 @@ const select = (event: FocusEvent) => {
           </div>
           <p
             id="probe-command-hint"
-            class="text-xs text-muted"
+            class="text-sm text-muted"
           >
             {{ t('probes.commandHint') }}
           </p>
@@ -115,13 +119,19 @@ const select = (event: FocusEvent) => {
             v-model="name"
             autocomplete="off"
             :label="t('probes.name')"
-            :description="t('probes.nameHint', { max: NAME_MAX_CHARS })"
+            :description="t('probes.nameHint')"
+            :maxlength="NAME_MAX_CHARS"
             :error="fieldMessage(create.error.value, 'name')"
             required
           />
+          <ProbeLocationFields
+            id="probe"
+            v-model="location"
+            :error="(field) => fieldMessage(create.error.value, `location.${field}`)"
+          />
           <CommandAlert
             :error="create.error.value"
-            :shown="['name']"
+            :shown="['name', 'location.country', 'location.city', 'location.provider']"
           />
           <div class="flex justify-end gap-2">
             <Button

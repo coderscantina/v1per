@@ -174,11 +174,12 @@ pub(crate) async fn touch(
     .await?;
     if let Some(health) = health {
         sqlx::query(
-            "UPDATE probes SET version = ?, checks_started = ?, checks_late = ?,
+            "UPDATE probes SET version = ?, platform = ?, checks_started = ?, checks_late = ?,
                                buffered_results = ?, dropped_results = ?
              WHERE id = ?",
         )
         .bind(&health.version)
+        .bind(&health.platform)
         .bind(health.checks_started as i64)
         .bind(health.checks_late as i64)
         .bind(health.buffered_results as i64)
