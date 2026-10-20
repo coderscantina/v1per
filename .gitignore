@@ -29,3 +29,6 @@ node_modules
 
 # Local Uptime Kuma data for import tests (never commit)
 /kuma/
+
+.claude/worktrees/
+.demo/
