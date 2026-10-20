@@ -9,6 +9,9 @@ export type ColorMode = (typeof colorModes)[number]
 /** Shared with the inline script in index.html, which applies the class before first paint. */
 const STORAGE_KEY = 'v1per:color-mode'
 
+/** The frame color behind the status bar of an installed app, `--sidebar` as hex. */
+const THEME_COLORS = { light: '#e7e8ee', dark: '#0b0b0d' } as const
+
 const isColorMode = (value: unknown): value is ColorMode => colorModes.some((mode) => mode === value)
 
 const readStoredMode = (): ColorMode => {
@@ -38,6 +41,7 @@ const useColorModeBase = () => {
     root.classList.toggle('dark', isDark.value)
     // Native widgets (scrollbars, form controls) read this, not the class.
     root.style.colorScheme = resolved.value
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLORS[resolved.value])
   })
 
   const setMode = (next: ColorMode): void => {

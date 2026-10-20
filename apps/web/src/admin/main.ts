@@ -21,3 +21,8 @@ installVueQuery(app)
 installAuthHandler(router)
 app.use(router)
 app.mount('#app')
+
+// Built into `dist/sw.js` only; the dev server has none.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  void navigator.serviceWorker.register('/sw.js')
+}

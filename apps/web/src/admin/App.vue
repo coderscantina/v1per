@@ -1,13 +1,20 @@
 <script setup lang="ts">
+import { useOnline } from '@vueuse/core'
+
 import CommandPalette from '~/components/CommandPalette.vue'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import KeyboardShortcutsDialog from '~/components/KeyboardShortcutsDialog.vue'
 import ReauthDialog from '~/components/ReauthDialog.vue'
+import { useI18n } from '~/plugins/i18n'
 
 import AppLayout from './layouts/AppLayout.vue'
 import GuestLayout from './layouts/GuestLayout.vue'
 
+const { t } = useI18n()
 const route = useRoute()
+
+/** Offline, the first navigation waits on the session, so the installed app says why it waits. */
+const online = useOnline()
 
 /** Nothing renders before the first navigation resolves, so no shell query runs signed out. */
 const ready = computed(() => route.matched.length > 0)
@@ -37,6 +44,12 @@ const pageKey = computed(() => `${route.matched[0]?.path ?? ''}?${JSON.stringify
       </div>
     </RouterView>
   </component>
+  <GuestLayout v-else-if="!online">
+    <div class="grid gap-3">
+      <h1 class="text-4xl font-semibold tracking-tight text-primary">{{ t('shell.offline.title') }}</h1>
+      <p class="text-muted">{{ t('shell.offline.body') }}</p>
+    </div>
+  </GuestLayout>
   <template v-if="inShell">
     <CommandPalette />
     <KeyboardShortcutsDialog />

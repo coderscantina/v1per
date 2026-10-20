@@ -4,11 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#e7e8ee" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <title>V1Per</title>
     <script>
       // Before first paint, so a dark-mode visitor never sees a light flash or the wrong accent.
-      // Shares its keys and values with src/composables/useColorMode.ts and useAccentColor.ts.
+      // Shares its keys, values and theme colors with src/composables/useColorMode.ts and useAccentColor.ts.
       try {
         var mode = localStorage.getItem('v1per:color-mode')
         var dark =
@@ -16,6 +19,7 @@
           ((mode === null || mode === 'system') && matchMedia('(prefers-color-scheme: dark)').matches)
         document.documentElement.classList.toggle('dark', dark)
         document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+        document.querySelector('meta[name="theme-color"]').content = dark ? '#0b0b0d' : '#e7e8ee'
         var accent = localStorage.getItem('v1per:accent')
         if (accent) document.documentElement.dataset.accent = accent
       } catch (_) {}

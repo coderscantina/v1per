@@ -40,6 +40,13 @@ Settled on 2026-10-20 after a review of perceived speed.
 - A loading block has the height of what it stands for, and the labels of a panel's figures show while their values load.
 - Live snapshots that views reopen pass a `cache` name to `useLiveSnapshot`, so the last data shows at once while the fresh read runs. Sign-out clears them.
 
+## Brand
+
+Settled on 2026-10-20 with the installable app.
+
+- The V1P logo leads the brand link in the accent color, with the instance name beside it. Compact mode shows the logo alone.
+- App icons and the favicon are the cream V1P mark on black, from `apps/web/public/favicon.svg`. The maskable icon shrinks the mark to 80% so it stays inside the safe zone.
+
 ## Status page
 
 Settled on 2026-10-20 from three variants, loosely after status.betterstack.com.

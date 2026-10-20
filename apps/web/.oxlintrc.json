@@ -28,7 +28,7 @@
   "ignorePatterns": ["**/node_modules", "dist", "src/generated/**", "src/auto-imports.d.ts"],
   "overrides": [
     {
-      "files": ["src/api/client.ts", "src/status/client.ts", "src/services/runtime-config.ts", "src/**/*.test.ts", "e2e/**"],
+      "files": ["src/api/client.ts", "src/status/client.ts", "src/services/runtime-config.ts", "service-worker.js", "src/**/*.test.ts", "e2e/**"],
       "rules": {
         "no-restricted-globals": "off"
       }

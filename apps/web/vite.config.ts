@@ -1,12 +1,37 @@
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'
+import type { Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
 
 /** The Rust server during development: `v1per serve` on its default address. */
 const apiTarget = process.env.V1PER_DEV_API ?? 'http://127.0.0.1:8080'
+
+/**
+ * Emits `sw.js` from `service-worker.js` with the built shell and assets to precache. Its cache
+ * name hashes that list, so every deploy that changes a file installs a fresh cache.
+ */
+function serviceWorker(): Plugin {
+  return {
+    name: 'v1per-service-worker',
+    apply: 'build',
+    generateBundle(_, bundle) {
+      const files = Object.keys(bundle)
+        .filter((file) => file.startsWith('assets/'))
+        .sort()
+      const precache = ['/index.html', '/favicon.svg', ...files.map((file) => `/${file}`)]
+      const version = createHash('sha256').update(precache.join('\n')).digest('hex').slice(0, 12)
+      const source = readFileSync(new URL('./service-worker.js', import.meta.url), 'utf8')
+        .replace('__VERSION__', version)
+        .replace('__PRECACHE__', JSON.stringify(precache))
+      this.emitFile({ type: 'asset', fileName: 'sw.js', source })
+    },
+  }
+}
 
 export default defineConfig({
   plugins: [
@@ -18,6 +43,7 @@ export default defineConfig({
     }),
     vue(),
     tailwindcss(),
+    serviceWorker(),
   ],
   resolve: {
     alias: { '~': fileURLToPath(new URL('./src', import.meta.url)) },

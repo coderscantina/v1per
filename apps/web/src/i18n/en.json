@@ -115,6 +115,10 @@
     "home": "Go home"
   },
   "shell": {
+    "offline": {
+      "title": "You're offline",
+      "body": "V1Per opens as soon as the connection is back."
+    },
     "skipToContent": "Skip to content",
     "toggleSidebar": "Toggle sidebar",
     "resizeSidebar": "Resize sidebar",

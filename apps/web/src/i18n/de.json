@@ -115,6 +115,10 @@
     "home": "Zur Startseite"
   },
   "shell": {
+    "offline": {
+      "title": "Du bist offline",
+      "body": "V1Per öffnet sich, sobald die Verbindung wieder da ist."
+    },
     "skipToContent": "Zum Inhalt springen",
     "toggleSidebar": "Seitenleiste ein- oder ausblenden",
     "resizeSidebar": "Breite der Seitenleiste ändern",
