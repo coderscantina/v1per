@@ -12,7 +12,7 @@ Requires 05, 07, 08 and 09; inspection and the fixture start in 01. Storage and 
 
 1. Implement inspection per [0007](../decisions/0007-kuma-import.md): open read-only, check the `knex_migrations` signature and columns, refuse other versions with guidance.
 2. Implement `--dry-run`: counts per table, monitors by type with support status, notifications by provider, secrets to seal, heartbeats inside and outside retention, inventory preview.
-3. Map config: users, monitors, group nesting into child nodes, tags, notifications and their links, maintenance, status pages with groups, domains and passwords, incidents, settings that have a v1per equivalent. Seal secrets, hash page passwords, keep push tokens.
+3. Map config: users, monitors, group nesting into child nodes, tags, notifications and their links, maintenance, status pages with groups, domains and passwords, incidents, settings that have a V1Per equivalent. Seal secrets, hash page passwords, keep push tokens.
 4. Import raw heartbeats inside the retention window and all `stat_*` rows through the storage interface in resumable chunks.
 5. Inventory everything not mapped with a reason: unsupported types (imported paused), unsupported providers (imported inactive), docker hosts, remote browsers, API keys, custom CSS, analytics settings.
 6. Reconcile counts and uptime numbers per monitor against the source and write a manifest. Refuse a second import into the same node.

@@ -1,4 +1,4 @@
-//! `instance.*` operations: what this v1per instance is, and the settings its admin changes.
+//! `instance.*` operations: what this V1Per instance is, and the settings its admin changes.
 //!
 //! `V1PER_INSTANCE_NAME` and `V1PER_PUBLIC_URL` win over the stored settings while set, so a
 //! deployment that configures them keeps them. Only `V1PER_PUBLIC_URL` also guards commands
@@ -34,7 +34,7 @@ use crate::notifications::queue_test;
 use crate::state::AppState;
 
 /// The name an instance has before anyone names it.
-const DEFAULT_NAME: &str = "v1per";
+const DEFAULT_NAME: &str = "V1Per";
 const SMTP_PASSWORD: &str = "instance:smtp:password";
 /// Kuma's default `tlsExpiryNotifyDays`, used when the stored list does not parse.
 const DEFAULT_TLS_DAYS: [u32; 3] = [7, 14, 21];

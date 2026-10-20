@@ -108,7 +108,7 @@ pub async fn run(args: KumaArgs, secrets_key: Option<&str>) -> Result<Outcome, F
                 Exit::Refused,
                 "server_running",
                 format!(
-                    "{}: another v1per process, `serve` or an import, uses this data directory; stop it and run the import again",
+                    "{}: another V1Per process, `serve` or an import, uses this data directory; stop it and run the import again",
                     dir.display()
                 ),
             )
@@ -413,7 +413,7 @@ pub fn summary(manifest: &ImportManifest, path: &Path) -> String {
     for table in manifest.tables.iter().filter(|t| !t.reconciled) {
         let _ = writeln!(
             text,
-            "    {}: source {}, mapped {}, inventoried {}, in v1per {}",
+            "    {}: source {}, mapped {}, inventoried {}, in V1Per {}",
             table.table,
             table.source,
             table.mapped,

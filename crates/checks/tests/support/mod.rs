@@ -137,7 +137,7 @@ impl Pki {
         ca_params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
         ca_params
             .distinguished_name
-            .push(DnType::CommonName, "v1per test CA");
+            .push(DnType::CommonName, "V1Per test CA");
         let ca = CertifiedIssuer::self_signed(ca_params, KeyPair::generate().unwrap()).unwrap();
 
         let leaf = |configure: &dyn Fn(&mut CertificateParams)| {

@@ -4,7 +4,7 @@ Status: Adopted by Mike on 2026-10-18, except the proxy item, which is open in t
 
 ## Problem
 
-Mike runs Uptime Kuma 2.5.0 on SQLite. v1per must take over its monitors, alerts, pages and history in one cutover, with push clients and uptime numbers unchanged.
+Mike runs Uptime Kuma 2.5.0 on SQLite. V1Per must take over its monitors, alerts, pages and history in one cutover, with push clients and uptime numbers unchanged.
 
 ## Constraints
 
@@ -30,7 +30,7 @@ From read-only inspection of Kuma 2.5.0 (`sources/manifest.json`):
 - Kuma group monitors become child nodes holding their members. A group monitor is also created on that node, keeping the group's own alerting.
 - Monitors of supported types run after import; other types are imported paused with a reason. Push tokens are kept. Each monitor's current state, its probes' state and the last push time are seeded from Kuma's newest heartbeat, so a monitor already down at cutover does not alert again and push deadlines carry over.
 - Notifications map to channels on the target node with their monitor links and default flags. Unsupported providers are imported inactive.
-- Maintenance, tags, status pages (groups, components, domains, theme, locale) and Kuma incidents map to their v1per counterparts. A Kuma incident becomes an incident with one update, resolved unless the banner is still shown. Page passwords are hashed; custom CSS and analytics settings are inventoried.
+- Maintenance, tags, status pages (groups, components, domains, theme, locale) and Kuma incidents map to their V1Per counterparts. A Kuma incident becomes an incident with one update, resolved unless the banner is still shown. Page passwords are hashed; custom CSS and analytics settings are inventoried.
 - Kuma users become accounts with grants on the target node; the first admin also becomes instance admin. bcrypt hashes are verified at login and replaced with argon2. TOTP secrets are sealed. Sessions and API keys are not imported; keys are inventoried for reissue.
 - Raw heartbeats inside the retention window and all `stat_*` rows go to DuckDB with the pseudo probe `kuma-import`. Imported rollups stay as they are so uptime matches Kuma.
 - Docker hosts, remote browsers and other unmapped objects are inventoried with their source representation and a reason.

@@ -296,7 +296,7 @@ pub(crate) fn read_manifest(path: &Path, entries: &mut Entries) -> Result<Manife
         Failure::new(
             Exit::Refused,
             "backup_invalid",
-            format!("{}: {reason}; this is not a v1per backup", path.display()),
+            format!("{}: {reason}; this is not a V1Per backup", path.display()),
         )
     };
     let mut entry = entries

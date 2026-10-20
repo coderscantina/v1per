@@ -11,7 +11,7 @@ import type { RuntimeConfig } from '~/generated'
 export const runtimeConfig = reactive<RuntimeConfig>({
   api_base: '/api',
   version: '',
-  instance_name: 'v1per',
+  instance_name: 'V1Per',
 })
 
 function parse(value: unknown): Partial<RuntimeConfig> {

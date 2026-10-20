@@ -82,8 +82,8 @@ async fn admit(state: &AppState, parts: &Parts) -> Result<ProbeId, Refused> {
             StatusCode::UPGRADE_REQUIRED,
             "protocol_unsupported",
             format!(
-                "This server (v1per {}) speaks probe protocol {PROTOCOL}, the agent speaks {agent}. \
-                 Run the agent from the same v1per release as the server.",
+                "This server (V1Per {}) speaks probe protocol {PROTOCOL}, the agent speaks {agent}. \
+                 Run the agent from the same V1Per release as the server.",
                 env!("CARGO_PKG_VERSION")
             ),
         ));

@@ -93,7 +93,7 @@ The instance mail server has its own **Send test email** button.
 - **Body**: JSON, form data or a custom template.
 - **Extra headers**: a JSON object, such as `{"Authorization": "Bearer ..."}`. A header here replaces a computed header of the same name.
 
-With POST and JSON, v1per sends `Content-Type: application/json` and `User-Agent: v1per/<version>`:
+With POST and JSON, V1Per sends `Content-Type: application/json` and `User-Agent: v1per/<version>`:
 
 ```json
 {
@@ -166,4 +166,4 @@ Alerts for one channel go out in order, so an up never arrives before the down i
 
 ## Channels imported from Uptime Kuma
 
-Imported channels of providers v1per supports work as before. Channels of other providers are imported inactive with the reason, such as "provider not supported yet". They cannot send, and you can delete them.
+Imported channels of providers V1Per supports work as before. Channels of other providers are imported inactive with the reason, such as "provider not supported yet". They cannot send, and you can delete them.

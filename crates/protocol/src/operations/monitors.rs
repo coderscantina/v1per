@@ -128,7 +128,7 @@ pub enum MonitorType {
     Push,
     Group,
     Manual,
-    /// An imported Kuma type v1per does not run. Always paused.
+    /// An imported Kuma type V1Per does not run. Always paused.
     Unsupported,
 }
 
@@ -411,7 +411,7 @@ pub struct PushSettings {
     pub push_token: Option<String>,
 }
 
-/// An imported Kuma monitor of a type v1per does not run.
+/// An imported Kuma monitor of a type V1Per does not run.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
 pub struct UnsupportedSettings {
     /// Kuma's `type` value, such as `docker`.

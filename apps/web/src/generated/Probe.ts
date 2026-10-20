@@ -21,7 +21,7 @@ platform?: string, created_at: number, revoked_at?: number,
  */
 last_seen_at?: number, 
 /**
- * The agent's v1per version.
+ * The agent's V1Per version.
  */
 version?: string, 
 /**

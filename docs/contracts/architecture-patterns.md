@@ -1,6 +1,6 @@
 # Architecture patterns
 
-v1per follows several patterns proven in holocron, the analytics app it is adapted from. This page describes each pattern in prose so it can be built from scratch without access to holocron. Type sketches are illustrative, not copied code, and names are v1per's to choose.
+V1Per follows several patterns proven in holocron, the analytics app it is adapted from. This page describes each pattern in prose so it can be built from scratch without access to holocron. Type sketches are illustrative, not copied code, and names are V1Per's to choose.
 
 Other docs link to the sections below.
 
@@ -117,7 +117,7 @@ Rules for the scope type:
 - Capabilities form a small closed set. Some are human-only and never granted to automated principals.
 - The scope is also what audit logging reads, so authorization and audit see the same value.
 
-For v1per the scope is an opaque `NodeScope`, the node in the tree plus the capabilities the caller holds there through direct or inherited grants. Monitor reads, heartbeat history, incident and status page writes, and exports all take one as a parameter. Code that has no scope cannot call them, and the compiler says so.
+For V1Per the scope is an opaque `NodeScope`, the node in the tree plus the capabilities the caller holds there through direct or inherited grants. Monitor reads, heartbeat history, incident and status page writes, and exports all take one as a parameter. Code that has no scope cannot call them, and the compiler says so.
 
 ```rust
 pub struct NodeScope { /* private fields */ }

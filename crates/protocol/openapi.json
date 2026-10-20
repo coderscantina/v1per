@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "v1per admin API",
+    "title": "V1Per admin API",
     "version": "26.10.19",
     "description": "Generated from the operation registry in crates/protocol. Commands need the request marker header and a same-origin Origin."
   },
@@ -8095,7 +8095,7 @@
             "required": [
               "type"
             ],
-            "description": "An imported Kuma provider v1per does not send to yet. Its settings stay sealed. Never\naccepted by `channels.create` or `update`."
+            "description": "An imported Kuma provider V1Per does not send to yet. Its settings stay sealed. Never\naccepted by `channels.create` or `update`."
           }
         ],
         "description": "A provider's settings, with Kuma's field meanings under snake_case names. Tagged by Kuma's\n`type`."
@@ -9595,7 +9595,7 @@
             "type": "integer",
             "format": "uint64",
             "minimum": 0,
-            "description": "Rows that became v1per records."
+            "description": "Rows that became V1Per records."
           },
           "inventoried": {
             "type": "integer",
@@ -9610,7 +9610,7 @@
             ],
             "format": "uint64",
             "minimum": 0,
-            "description": "v1per rows of the counterpart, where there is one table to count."
+            "description": "V1Per rows of the counterpart, where there is one table to count."
           },
           "reconciled": {
             "type": "boolean"
@@ -10823,7 +10823,7 @@
               "string",
               "null"
             ],
-            "description": "The agent's v1per version."
+            "description": "The agent's V1Per version."
           },
           "clock_skew_ms": {
             "type": [
@@ -12949,7 +12949,7 @@
           "kuma_type",
           "reason"
         ],
-        "description": "An imported Kuma monitor of a type v1per does not run."
+        "description": "An imported Kuma monitor of a type V1Per does not run."
       },
       "Quorum": {
         "type": "string",
@@ -13853,7 +13853,7 @@
           {
             "type": "string",
             "const": "unsupported",
-            "description": "An imported Kuma type v1per does not run. Always paused."
+            "description": "An imported Kuma type V1Per does not run. Always paused."
           }
         ]
       },

@@ -45,7 +45,7 @@ Synthetic Kuma 2.5.0 fixture (`fixtures/kuma-2.5.0`), 27 MB, imported into the r
 
 | Check | Result |
 | --- | --- |
-| Configuration and inventory tables | 22 of 22 reconciled: every source row mapped or inventoried, and v1per's counterpart table holds the mapped count |
+| Configuration and inventory tables | 22 of 22 reconciled: every source row mapped or inventoried, and V1Per's counterpart table holds the mapped count |
 | Nodes from group monitors | 6 of 6 |
 | `stat_minutely`, `stat_hourly`, `stat_daily` | 10,423, 2,467 and 1,246 rows, all imported |
 | Heartbeats | 193,943 in the source: 30,663 inside the 60-day window imported, 163,280 older left to the rollups |

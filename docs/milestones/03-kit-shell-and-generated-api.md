@@ -2,7 +2,7 @@
 
 ## Outcome
 
-A signed-in instance admin sees the v1per admin shell, served by the Rust binary, talking to the server only through generated command and query resources, with live updates over SSE.
+A signed-in instance admin sees the V1Per admin shell, served by the Rust binary, talking to the server only through generated command and query resources, with live updates over SSE.
 
 ## Dependencies and ownership
 

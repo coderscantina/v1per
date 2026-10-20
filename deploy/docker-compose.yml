@@ -1,4 +1,4 @@
-# v1per with an optional remote probe.
+# V1Per with an optional remote probe.
 #
 #   export V1PER_PUBLIC_URL=https://status.example.com
 #   docker compose run --rm v1per init --admin-email you@example.com   # once, prints the password

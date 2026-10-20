@@ -1,6 +1,6 @@
 # Kuma notifications
 
-This contract owns three things: the list of Kuma notification providers and how v1per imports each one, the behaviour Kuma shares across providers (events, message text, template variables), and the exact output of the eight core providers. The email (`smtp`) and Discord senders must produce the same strings and payloads as Kuma for the same configuration and event. [Decision 0005](../decisions/0005-notifications.md) sets the scope, [decision 0007](../decisions/0007-kuma-import.md) the import.
+This contract owns three things: the list of Kuma notification providers and how V1Per imports each one, the behaviour Kuma shares across providers (events, message text, template variables), and the exact output of the eight core providers. The email (`smtp`) and Discord senders must produce the same strings and payloads as Kuma for the same configuration and event. [Decision 0005](../decisions/0005-notifications.md) sets the scope, [decision 0007](../decisions/0007-kuma-import.md) the import.
 
 Source: Uptime Kuma 2.5.0, commit `d9a60dfc73140d15111752e4e8910ed4b54bd9a3` (see `sources/manifest.json`). Every `path:line` below is relative to the Kuma source root.
 
@@ -14,7 +14,7 @@ Source: Uptime Kuma 2.5.0, commit `d9a60dfc73140d15111752e4e8910ed4b54bd9a3` (se
 - [Discord](#discord)
 - [Other core providers](#other-core-providers)
 - [Import mapping](#import-mapping)
-- [v1per obligations](#v1per-obligations)
+- [V1Per obligations](#v1per-obligations)
 - [Not verified](#not-verified)
 
 ## Storage
@@ -42,9 +42,9 @@ Dispatch is `providerList[config.type].send(...)`; an unknown type throws `Notif
 
 `Notification.init` registers 98 providers (`server/notification.js:117-216`); names must be unique (`:222-224`). The frontend lists the same 98 keys (`src/components/notifications/index.js:104-202`). The count matches decision 0005. Type strings are case sensitive and mixed in style (`smtp`, `SMSEagle`, `rocket.chat`).
 
-Status for v1per's first release: "core" providers send. "Imported inactive" providers keep their sealed `config` and are marked inactive with a reason (decision 0005).
+Status for V1Per's first release: "core" providers send. "Imported inactive" providers keep their sealed `config` and are marked inactive with a reason (decision 0005).
 
-| `config.type` | Provider file (`name =` line) | v1per first release |
+| `config.type` | Provider file (`name =` line) | V1Per first release |
 | --- | --- | --- |
 | `alerta` | `server/notification-providers/alerta.js:6` | imported inactive |
 | `AlertNow` | `server/notification-providers/alertnow.js:7` | imported inactive |
@@ -190,7 +190,7 @@ Details:
 
 ### Domain expiry
 
-New in the 2.x line and present in 2.5.0. Decision 0005 does not list it as a v1per event.
+New in the 2.x line and present in 2.5.0. Decision 0005 does not list it as a V1Per event.
 
 - Runs on each non-maintenance beat when the monitor has `domainExpiryNotification` on (`server/model/monitor.js:1005-1013`).
 - Thresholds come from setting `domainExpiryNotifyDays`, default `[7, 14, 21]`, sorted ascending (`server/model/domain_expiry.js:329-337`).
@@ -488,7 +488,7 @@ Payload (`:187-212`): `{type: "message", summary, attachments: [{contentType: "a
 
 Per `notification` row:
 
-| Kuma | v1per |
+| Kuma | V1Per |
 | --- | --- |
 | `config.type` in the core set | active channel of that provider on the target node |
 | any other registered type | channel kept with sealed `config`, inactive, reason "provider not supported yet" |
@@ -499,11 +499,11 @@ Per `notification` row:
 | `user_id` | resolved through the user mapping of decision 0007 |
 | `monitor_notification` rows | links from monitors to the channel |
 | `config.applyExisting`, `config.isDefault` | dropped from provider settings; `isDefault` is covered by the column |
-| `notification_sent_history` rows (`type = 'certificate'`) | per-monitor certificate thresholds already alerted, so v1per does not repeat them |
+| `notification_sent_history` rows (`type = 'certificate'`) | per-monitor certificate thresholds already alerted, so V1Per does not repeat them |
 
 Imported email channels carry their own SMTP settings, so they never use the instance transport. The whole `config`, including passwords, tokens and webhook URLs, is sealed (decision 0006).
 
-## v1per obligations
+## V1Per obligations
 
 Must match Kuma exactly for the same config and event:
 
@@ -515,11 +515,11 @@ Must match Kuma exactly for the same config and event:
 
 May differ:
 
-- Delivery: Kuma sends once inline and only logs failures; v1per uses a durable outbox with retries (decision 0005). The avatar check `GET` may be cached per webhook.
+- Delivery: Kuma sends once inline and only logs failures; V1Per uses a durable outbox with retries (decision 0005). The avatar check `GET` may be cached per webhook.
 - MIME framing, `Message-ID`, `Date` and other headers nodemailer adds, and JSON whitespace.
 - `monitorJSON` and `heartbeatJSON` field sets beyond the keys documented above. Templates and webhook bodies that read other Kuma monitor fields may render differently; the importer should flag templates that reference `monitorJSON.` keys outside that list.
 - Error message wording from `throwGeneralAxiosError`.
-- The `active` column: v1per may honour its own active flag, since Kuma never sets the column.
+- The `active` column: V1Per may honour its own active flag, since Kuma never sets the column.
 - Domain expiry: Kuma sends it, decision 0005 does not list it. Open for Mike.
 
 ## Not verified

@@ -172,7 +172,7 @@ pub fn render(ops: &InstanceOperations) -> String {
     let storage = &ops.storage;
     let _ = writeln!(
         out,
-        "v1per {} at {}, schema control {} inbox {} heartbeats {}",
+        "V1Per {} at {}, schema control {} inbox {} heartbeats {}",
         ops.version,
         time(ops.generated_at),
         schema.control,

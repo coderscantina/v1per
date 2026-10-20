@@ -250,7 +250,7 @@ async fn serve(args: ServeArgs) -> Result<(), Failure> {
         .map_err(|e| Failure::new(Exit::Internal, "bind_failed", format!("{bind}: {e}")))?;
     let state = AppState::new(db.clone(), config, clock, secrets, storage.clone());
     let background = Background::start(&state);
-    tracing::info!(addr = %bind, version = env!("CARGO_PKG_VERSION"), "v1per listening");
+    tracing::info!(addr = %bind, version = env!("CARGO_PKG_VERSION"), "V1Per listening");
 
     let (stop, stopped) = watch::channel(false);
     let signalled = state.clone();

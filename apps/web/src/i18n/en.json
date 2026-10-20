@@ -671,7 +671,7 @@
       "manualSet": "Status set to {status}.",
       "push": "Push URL",
       "pushHint": "Call this URL from your job. No status or status=up counts as up, anything else as down.",
-      "unsupported": "Imported from Uptime Kuma as {type}. v1per does not run this type, so it stays paused.",
+      "unsupported": "Imported from Uptime Kuma as {type}. V1Per does not run this type, so it stays paused.",
       "probes": "Probes",
       "probe": "Probe",
       "probeFilter": "Probe",
@@ -822,7 +822,7 @@
         "sealed": "Stored encrypted. It is never shown again."
       },
       "invalid": "Check the marked fields.",
-      "unsupported": "This monitor was imported with a type v1per does not run, so it cannot be edited here.",
+      "unsupported": "This monitor was imported with a type V1Per does not run, so it cannot be edited here.",
       "saveCreate": "Add monitor",
       "saveEdit": "Save changes",
       "notifications": "Notifications",
@@ -974,7 +974,7 @@
       "isDefaultHint": "New monitors start with it.",
       "applyExisting": "Add to existing monitors",
       "active": "Active",
-      "unsupported": "This channel was imported from Uptime Kuma and cannot send from v1per: {reason} You can delete it.",
+      "unsupported": "This channel was imported from Uptime Kuma and cannot send from V1Per: {reason} You can delete it.",
       "invalid": "Some fields need attention.",
       "saveCreate": "Add channel",
       "saveEdit": "Save changes"
@@ -1243,7 +1243,7 @@
     },
     "timeline": {
       "title": "Timeline",
-      "automatic": "v1per",
+      "automatic": "V1Per",
       "removed": "Removed target"
     },
     "pages": {

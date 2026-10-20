@@ -161,11 +161,11 @@ pub struct TableCheck {
     pub table: String,
     /// Rows in the source.
     pub source: u64,
-    /// Rows that became v1per records.
+    /// Rows that became V1Per records.
     pub mapped: u64,
     /// Inventory entries for the table. A paused monitor is mapped and inventoried.
     pub inventoried: u64,
-    /// v1per rows of the counterpart, where there is one table to count.
+    /// V1Per rows of the counterpart, where there is one table to count.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub destination: Option<u64>,

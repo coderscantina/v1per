@@ -4,7 +4,7 @@ Status: Adopted by Mike on 2026-10-18, except the rollup retention item, which i
 
 ## Problem
 
-v1per writes about 4 million check results a day at the target size and must answer status page and uptime queries fast, while keeping configuration changes transactional and simple.
+V1Per writes about 4 million check results a day at the target size and must answer status page and uptime queries fast, while keeping configuration changes transactional and simple.
 
 ## Constraints
 

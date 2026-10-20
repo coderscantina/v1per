@@ -4,7 +4,7 @@ Status: Adopted by Mike on 2026-10-18.
 
 ## Problem
 
-Kuma stores every secret in plain text: monitor credentials, TLS keys, notification tokens, proxy passwords, status page passwords and TOTP secrets. v1per holds the same secrets for many clients.
+Kuma stores every secret in plain text: monitor credentials, TLS keys, notification tokens, proxy passwords, status page passwords and TOTP secrets. V1Per holds the same secrets for many clients.
 
 ## Constraints
 

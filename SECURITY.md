@@ -1,6 +1,6 @@
 # Security policy
 
-v1per is a self-hosted monitoring and status page server. One instance holds monitor targets, credentials for notification channels, and access rules for many teams and clients. We treat authentication, authorization, node isolation, probe trust, and release integrity as security-sensitive.
+V1Per is a self-hosted monitoring and status page server. One instance holds monitor targets, credentials for notification channels, and access rules for many teams and clients. We treat authentication, authorization, node isolation, probe trust, and release integrity as security-sensitive.
 
 The project is in beta. Releases use calendar versions, e.g. `v26.10.19-010a9a6`.
 
@@ -27,7 +27,7 @@ Report suspected security issues through one of these channels, in order of pref
 
 Please include as much of the following as possible:
 
-- v1per version (release tag or commit SHA)
+- V1Per version (release tag or commit SHA)
 - Environment: Docker or source build, OS, whether remote probes are in use
 - Affected component (API, auth, status page access, probe protocol, notifications, import, etc.)
 - Reproduction steps or proof of concept
@@ -73,7 +73,7 @@ Please contact us before any public disclosure.
 - Performance issues without a plausible security impact
 - Monitors that can reach internal addresses when an authorized administrator configured them to
 - Misconfiguration by an authorized administrator that matches documented behavior
-- Dependency version bumps, unless they introduce a new vulnerability surface in v1per
+- Dependency version bumps, unless they introduce a new vulnerability surface in V1Per
 - Unsupported environments
 
 If you are unsure whether something qualifies, report it privately first. We would rather triage a non-issue than miss a real one.

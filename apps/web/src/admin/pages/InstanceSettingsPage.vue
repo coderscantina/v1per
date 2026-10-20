@@ -441,7 +441,7 @@ const testArgs = (): InstanceTestSmtpArgs | null => {
               id="instance-smtp-from"
               v-model="smtp.from"
               autocomplete="off"
-              placeholder="v1per <alerts@example.com>"
+              placeholder="V1Per <alerts@example.com>"
               :label="t('channels.smtp.from')"
               :error="smtpError('smtp.from')"
               required

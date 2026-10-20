@@ -1,4 +1,4 @@
-//! v1per admin wire protocol.
+//! V1Per admin wire protocol.
 //!
 //! The operation registry in [`operations`] is the single source for dispatch, the generated
 //! TypeScript in `apps/web/src/generated` and the OpenAPI document. Run

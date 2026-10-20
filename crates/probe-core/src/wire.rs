@@ -45,7 +45,7 @@ pub fn platform() -> String {
 /// What a probe reports with every assignment poll.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Health {
-    /// The agent's v1per version.
+    /// The agent's V1Per version.
     pub version: String,
     /// Operating system and CPU architecture, such as `linux/x86_64`. Absent from agents
     /// before 26.10.20.

@@ -86,7 +86,7 @@ fn holds_credential(record: &Record, column: &str) -> bool {
     }
 }
 
-/// v1per's interval bounds, which are Kuma's form limits too.
+/// V1Per's interval bounds, which are Kuma's form limits too.
 const INTERVAL: std::ops::RangeInclusive<i64> = 20..=2_073_600;
 
 /// The timeout Kuma uses: the stored one, or 80 % of the interval when it is not positive,
@@ -178,7 +178,7 @@ pub(crate) fn kind(
             },
         }),
         "" => Err("the monitor has no type".to_owned()),
-        _ => Err("monitor type not supported by v1per".to_owned()),
+        _ => Err("monitor type not supported by V1Per".to_owned()),
     }
 }
 
@@ -214,7 +214,7 @@ pub(crate) fn hold_reason(
             .int("proxy_id")
             .is_some_and(|id| active_proxies.contains(&id))
         {
-            return Some("uses a Kuma proxy, which v1per does not support yet".to_owned());
+            return Some("uses a Kuma proxy, which V1Per does not support yet".to_owned());
         }
     }
     let conditions = record.filled("conditions");

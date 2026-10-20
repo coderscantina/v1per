@@ -9,7 +9,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: v1per version
+      label: V1Per version
       description: The release tag you are running (or commit SHA). Run `v1per --version`.
       placeholder: v0.1.0
     validations:

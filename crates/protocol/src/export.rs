@@ -340,7 +340,7 @@ fn openapi(ops: &[&OperationInfo]) -> String {
     let document = json!({
         "openapi": "3.1.0",
         "info": {
-            "title": "v1per admin API",
+            "title": "V1Per admin API",
             "version": env!("CARGO_PKG_VERSION"),
             "description": "Generated from the operation registry in crates/protocol. Commands need the request marker header and a same-origin Origin.",
         },

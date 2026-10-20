@@ -1,6 +1,6 @@
 # Configuration
 
-v1per is configured with command-line flags. Most flags have a `V1PER_*` environment variable, which is the easier way in Docker. A flag wins over its variable. `v1per <command> --help` prints the same list.
+V1Per is configured with command-line flags. Most flags have a `V1PER_*` environment variable, which is the easier way in Docker. A flag wins over its variable. `v1per <command> --help` prints the same list.
 
 Settings you change at runtime, such as the instance name, timezone, mail server and certificate warning days, live in the admin app under the instance settings.
 
@@ -35,7 +35,7 @@ The remote probe agent is a separate program, `v1per-probe`. See [Probes](probes
 | `V1PER_SECRETS_KEY` | none | all `v1per` commands | none | The secrets key itself, base64 of 32 bytes. Environment only, see [Secrets key](#secrets-key) |
 | `V1PER_SECRETS_KEY_FILE` | `--secrets-key-file` | all `v1per` commands | `secrets.key` in the data directory | A file holding the secrets key |
 | `V1PER_KUMA_DB` | `--source` | `import kuma` | none | Path of Kuma's `kuma.db` |
-| `V1PER_PROBE_SERVER` | `--server` | `v1per-probe` | none, required | The v1per server URL, for example `https://status.example.com` |
+| `V1PER_PROBE_SERVER` | `--server` | `v1per-probe` | none, required | The V1Per server URL, for example `https://status.example.com` |
 | `V1PER_PROBE_TOKEN` | `--token` | `v1per-probe` | none, required | The token shown when the probe was registered |
 | `V1PER_PROBE_DATA_DIR` | `--data-dir` | `v1per-probe` | `/probe-data` in the image, `probe-data` otherwise | Where the agent buffers results |
 | `V1PER_PROBE_BUFFER_MB` | `--buffer-mb` | `v1per-probe` | `64` | Largest result buffer on disk, in MiB |
@@ -63,7 +63,7 @@ The remote probe agent is a separate program, `v1per-probe`. See [Probes](probes
 
 ## Public URL
 
-Set `V1PER_PUBLIC_URL` whenever v1per runs behind a reverse proxy. It does three things:
+Set `V1PER_PUBLIC_URL` whenever V1Per runs behind a reverse proxy. It does three things:
 
 - Commands from the admin app must come from this origin. Without it they must come from the origin in the request's Host header.
 - An `https://` URL marks the session cookie `Secure`.
@@ -75,11 +75,11 @@ The instance settings in the admin app also have a public URL field. When `V1PER
 
 ## Secrets key
 
-v1per encrypts every stored secret with one key: monitor credentials and secret headers, TLS keys, notification channel settings, the SMTP password, proxy passwords and two-factor secrets. Each sealed value is bound to the record it belongs to, so a copied value does not open elsewhere.
+V1Per encrypts every stored secret with one key: monitor credentials and secret headers, TLS keys, notification channel settings, the SMTP password, proxy passwords and two-factor secrets. Each sealed value is bound to the record it belongs to, so a copied value does not open elsewhere.
 
 Some values are hashed rather than encrypted and never need the key: status page passwords, probe tokens, share tokens and API keys.
 
-The key is 32 random bytes. v1per looks for it in this order:
+The key is 32 random bytes. V1Per looks for it in this order:
 
 1. `V1PER_SECRETS_KEY`: base64 of the 32 bytes. Read from the environment only, so it never shows in the process list.
 2. `V1PER_SECRETS_KEY_FILE` or `--secrets-key-file`: a file holding the 32 raw bytes or their base64.
@@ -102,7 +102,7 @@ There is no command to change the key yet. The key you start with stays the key 
 
 ## Logs
 
-v1per logs to stderr. `V1PER_LOG` sets the filter with the usual `tracing` syntax: a level such as `debug`, or a list such as `info,v1per_server=debug`. The default is `info,sqlx=warn`. `v1per-probe` takes levels and `target=level` pairs only, for example `info,v1per_probe=debug`.
+V1Per logs to stderr. `V1PER_LOG` sets the filter with the usual `tracing` syntax: a level such as `debug`, or a list such as `info,v1per_server=debug`. The default is `info,sqlx=warn`. `v1per-probe` takes levels and `target=level` pairs only, for example `info,v1per_probe=debug`.
 
 ```sh
 docker run ... -e V1PER_LOG=debug ghcr.io/coderscantina/v1per:latest

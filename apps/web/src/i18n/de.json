@@ -671,7 +671,7 @@
       "manualSet": "Status auf {status} gesetzt.",
       "push": "Push-URL",
       "pushHint": "Rufe diese URL aus deinem Job auf. Ohne Status oder mit status=up gilt erreichbar, alles andere als ausgefallen.",
-      "unsupported": "Aus Uptime Kuma als {type} importiert. v1per führt diesen Typ nicht aus, daher bleibt er pausiert.",
+      "unsupported": "Aus Uptime Kuma als {type} importiert. V1Per führt diesen Typ nicht aus, daher bleibt er pausiert.",
       "probes": "Probes",
       "probe": "Probe",
       "probeFilter": "Probe",
@@ -822,7 +822,7 @@
         "sealed": "Verschlüsselt gespeichert. Wird nie wieder angezeigt."
       },
       "invalid": "Prüfe die markierten Felder.",
-      "unsupported": "Dieser Monitor wurde mit einem Typ importiert, den v1per nicht ausführt, und lässt sich hier nicht bearbeiten.",
+      "unsupported": "Dieser Monitor wurde mit einem Typ importiert, den V1Per nicht ausführt, und lässt sich hier nicht bearbeiten.",
       "saveCreate": "Monitor hinzufügen",
       "saveEdit": "Änderungen speichern",
       "notifications": "Benachrichtigungen",
@@ -974,7 +974,7 @@
       "isDefaultHint": "Neue Monitore starten damit.",
       "applyExisting": "Zu bestehenden Monitoren hinzufügen",
       "active": "Aktiv",
-      "unsupported": "Dieser Kanal wurde aus Uptime Kuma importiert und kann von v1per nicht senden: {reason} Du kannst ihn löschen.",
+      "unsupported": "Dieser Kanal wurde aus Uptime Kuma importiert und kann von V1Per nicht senden: {reason} Du kannst ihn löschen.",
       "invalid": "Einige Felder brauchen Aufmerksamkeit.",
       "saveCreate": "Kanal hinzufügen",
       "saveEdit": "Änderungen speichern"
@@ -1243,7 +1243,7 @@
     },
     "timeline": {
       "title": "Verlauf",
-      "automatic": "v1per",
+      "automatic": "V1Per",
       "removed": "Entferntes Ziel"
     },
     "pages": {

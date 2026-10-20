@@ -1,6 +1,6 @@
 //! The `reconcile` step: what the import wrote, compared with the source table by table, row
 //! count by row count and uptime window by uptime window (decision 0008: imported rollups
-//! are kept as they are, so v1per's 24 h, 30 d and 1 y counts must equal Kuma's).
+//! are kept as they are, so V1Per's 24 h, 30 d and 1 y counts must equal Kuma's).
 
 use std::collections::BTreeMap;
 
@@ -36,7 +36,7 @@ pub struct Inputs<'a> {
     pub source: ImportSource,
     pub started_at: i64,
     pub raw_since: i64,
-    /// Kuma monitor ID to v1per monitor ID.
+    /// Kuma monitor ID to V1Per monitor ID.
     pub monitors: &'a BTreeMap<i64, i64>,
 }
 
@@ -158,7 +158,7 @@ fn split<T>(
     (total, skipped)
 }
 
-/// The v1per rows a Kuma table became, counted in the target's subtree, where one v1per
+/// The V1Per rows a Kuma table became, counted in the target's subtree, where one V1Per
 /// table holds them.
 async fn destination(
     conn: &mut SqliteConnection,
@@ -239,7 +239,7 @@ async fn destination(
     Ok(Some(count as u64))
 }
 
-/// Kuma's and v1per's counts of every imported monitor over the 24 hour, 30 day and 1 year
+/// Kuma's and V1Per's counts of every imported monitor over the 24 hour, 30 day and 1 year
 /// windows, ending with the bucket that holds the newest bucket Kuma wrote.
 async fn uptime(
     storage: &Storage,

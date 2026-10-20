@@ -1,6 +1,6 @@
 # Install
 
-v1per ships as a Docker image, `ghcr.io/coderscantina/v1per`, for linux/amd64 and linux/arm64. It runs the server (`v1per serve`, the default). Remote probe agents have their own small image and binary, `v1per-probe`, see [Probes](probes.md#run-an-agent). It needs no database server, queue or Node runtime.
+V1Per ships as a Docker image, `ghcr.io/coderscantina/v1per`, for linux/amd64 and linux/arm64. It runs the server (`v1per serve`, the default). Remote probe agents have their own small image and binary, `v1per-probe`, see [Probes](probes.md#run-an-agent). It needs no database server, queue or Node runtime.
 
 ## Image tags
 
@@ -60,11 +60,11 @@ The probe service belongs on another host in practice. See [Probes](probes.md#ru
 4. Run `v1per init --admin-email you@example.com` once on the data volume before the first start, for example from the service's terminal or with a one-off container on the same volume.
 5. Deploy.
 
-Custom status page domains are added to the same service as extra domains. Coolify's Traefik passes the Host header through, which is all v1per needs.
+Custom status page domains are added to the same service as extra domains. Coolify's Traefik passes the Host header through, which is all V1Per needs.
 
 ## Reverse proxy and custom domains
 
-Run TLS at a reverse proxy. v1per serves plain HTTP and picks a status page by the `Host` header, so the proxy must pass the original Host through unchanged.
+Run TLS at a reverse proxy. V1Per serves plain HTTP and picks a status page by the `Host` header, so the proxy must pass the original Host through unchanged.
 
 [deploy/Caddyfile](../../deploy/Caddyfile) is an example. Caddy passes the Host header unchanged and gets a certificate for each listed domain:
 
@@ -103,7 +103,7 @@ The instance admin owns the root node. From there, create nodes for your clients
 
 ## Build from source
 
-Docker is the supported way to run v1per. To build the image yourself from a checkout:
+Docker is the supported way to run V1Per. To build the image yourself from a checkout:
 
 ```sh
 docker build --build-arg V1PER_GIT_SHA=$(git rev-parse --short HEAD) -t v1per .

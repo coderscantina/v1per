@@ -32,11 +32,11 @@ pub enum OpenError {
     #[error("{0} is not an Uptime Kuma database: it has no `monitor` table")]
     NotKuma(PathBuf),
     #[error(
-        "Kuma 1.x found (no knex migrations); v1per imports exactly Kuma 2.5.0. Upgrade Kuma to 2.5.0, start it once so it migrates the database, stop it, then import."
+        "Kuma 1.x found (no knex migrations); V1Per imports exactly Kuma 2.5.0. Upgrade Kuma to 2.5.0, start it once so it migrates the database, stop it, then import."
     )]
     Kuma1,
     #[error(
-        "Kuma older than 2.5.0 found: {missing} of {expected} migrations are not applied, the latest applied is `{latest}`. v1per imports exactly 2.5.0. Upgrade Kuma to 2.5.0, start it once, stop it, then import."
+        "Kuma older than 2.5.0 found: {missing} of {expected} migrations are not applied, the latest applied is `{latest}`. V1Per imports exactly 2.5.0. Upgrade Kuma to 2.5.0, start it once, stop it, then import."
     )]
     Older {
         missing: usize,
@@ -44,13 +44,13 @@ pub enum OpenError {
         latest: String,
     },
     #[error(
-        "Kuma newer than 2.5.0 found: {} migration(s) v1per does not know, the newest is `{}`. v1per imports exactly 2.5.0 and Kuma does not support downgrades; import with a v1per release that supports this Kuma version.",
+        "Kuma newer than 2.5.0 found: {} migration(s) V1Per does not know, the newest is `{}`. V1Per imports exactly 2.5.0 and Kuma does not support downgrades; import with a V1Per release that supports this Kuma version.",
         unknown.len(),
         unknown.last().map_or("", String::as_str)
     )]
     Newer { unknown: Vec<String> },
     #[error(
-        "the knex migrations differ from Kuma 2.5.0 (missing {missing:?}, unknown {unknown:?}). This looks like a fork or a hand-edited database; v1per imports only an unmodified Kuma 2.5.0."
+        "the knex migrations differ from Kuma 2.5.0 (missing {missing:?}, unknown {unknown:?}). This looks like a fork or a hand-edited database; V1Per imports only an unmodified Kuma 2.5.0."
     )]
     Migrations {
         missing: Vec<String>,

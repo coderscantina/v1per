@@ -30,7 +30,7 @@ export const providerIcons: Record<CoreProvider, IconName> = {
 export const providerOf = (settings: ChannelSettings): string =>
   settings.type === 'unsupported' ? settings.kuma_type : settings.type
 
-/** A provider's name: translated for the ones v1per sends to, Kuma's own type for the rest. */
+/** A provider's name: translated for the ones V1Per sends to, Kuma's own type for the rest. */
 export const providerName = (provider: string, t: (key: MessageKey) => string): string =>
   isCoreProvider(provider) ? t(providerLabels[provider]) : provider
 

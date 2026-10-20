@@ -1,4 +1,4 @@
-// Adapted from holocron (84fc54ec): apps/web/src/lib/reauth.ts, for v1per's sensitive commands.
+// Adapted from holocron (84fc54ec): apps/web/src/lib/reauth.ts, for V1Per's sensitive commands.
 import type { Commands } from '~/generated/commands'
 import { REAUTHENTICATION_WINDOW_MS } from '~/generated/limits'
 

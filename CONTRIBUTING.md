@@ -1,10 +1,10 @@
-# Contributing to v1per
+# Contributing to V1Per
 
 Thank you. Whether you're fixing a typo, squashing a bug, or building a feature, every contribution helps. We're glad you're here.
 
 This guide gets you from zero to merged PR.
 
-v1per is in beta. Bug reports from real setups are the most useful contribution right now.
+V1Per is in beta. Bug reports from real setups are the most useful contribution right now.
 
 ---
 
@@ -250,7 +250,7 @@ A PR is ready to merge when:
 
 A good bug report lets someone reproduce the problem without guessing. Please include:
 
-- **v1per version** (or commit SHA)
+- **V1Per version** (or commit SHA)
 - **Environment**: OS, architecture, browser if relevant, whether remote probes are involved
 - **Steps to reproduce**
 - **Expected behavior**

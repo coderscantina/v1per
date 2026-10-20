@@ -1,10 +1,10 @@
-# v1per development handoff
+# V1Per development handoff
 
-Build a Rust uptime monitoring and status page server for teams that run Uptime Kuma today. v1per imports an Uptime Kuma 2.5.0 SQLite database with its history, runs checks from a built-in probe and remote probe agents, and publishes status pages with incident management. One instance serves many teams and clients through a tree of nodes.
+Build a Rust uptime monitoring and status page server for teams that run Uptime Kuma today. V1Per imports an Uptime Kuma 2.5.0 SQLite database with its history, runs checks from a built-in probe and remote probe agents, and publishes status pages with incident management. One instance serves many teams and clients through a tree of nodes.
 
-The server, admin app, probe agent, Kuma import and operator commands are built, and v1per is heading for its first public beta. The architecture, UI and development flow are taken from holocron, Mike's Rust analytics app, and adapted here.
+The server, admin app, probe agent, Kuma import and operator commands are built, and V1Per is heading for its first public beta. The architecture, UI and development flow are taken from holocron, Mike's Rust analytics app, and adapted here.
 
-To install, run or use v1per, read the [user guide](guide/README.md). The rest of this index is for people who work on v1per.
+To install, run or use V1Per, read the [user guide](guide/README.md). The rest of this index is for people who work on V1Per.
 
 ## Read in this order
 
@@ -38,7 +38,7 @@ Begin with [milestone 01](milestones/01-contracts-fixtures-and-sources.md). Once
 
 Pinned in [sources/manifest.json](../sources/manifest.json):
 
-- **holocron** at `84fc54ec`: the architecture, UI and workflow template. It is Mike's private repository and not distributable. Agents on Mike's machine read its Kit and UI documents (`docs/kit-implementation.md`, `docs/ux-v2/design.md`) at `~/Development/products/holocron`. The architecture patterns are ported into [contracts/architecture-patterns.md](contracts/architecture-patterns.md). Code copied from it into v1per is relicensed by Mike under AGPL-3.0; keep the Kit notices that holocron keeps. Rules settled for v1per on top of them are in [design.md](design.md).
+- **holocron** at `84fc54ec`: the architecture, UI and workflow template. It is Mike's private repository and not distributable. Agents on Mike's machine read its Kit and UI documents (`docs/kit-implementation.md`, `docs/ux-v2/design.md`) at `~/Development/products/holocron`. The architecture patterns are ported into [contracts/architecture-patterns.md](contracts/architecture-patterns.md). Code copied from it into V1Per is relicensed by Mike under AGPL-3.0; keep the Kit notices that holocron keeps. Rules settled for V1Per on top of them are in [design.md](design.md).
 - **Uptime Kuma 2.5.0**: the import source and the push URL compatibility target (MIT).
 - **OpenStatus**: a model reference for status pages and incidents (AGPL-3.0). Borrow ideas, not code.
 

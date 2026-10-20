@@ -41,7 +41,7 @@ impl DataLock {
                 Exit::StorageUnavailable,
                 "storage_unavailable",
                 format!(
-                    "{}: another v1per process uses this data directory",
+                    "{}: another V1Per process uses this data directory",
                     dir.display()
                 ),
             )),

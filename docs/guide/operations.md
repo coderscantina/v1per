@@ -1,6 +1,6 @@
 # Operations
 
-How to back up, restore and upgrade v1per, what it cleans up by itself, and how to check its health. The examples use a data directory at `/var/lib/v1per`. In Docker the data directory is `/data`, so you can leave out `--data-dir` there.
+How to back up, restore and upgrade V1Per, what it cleans up by itself, and how to check its health. The examples use a data directory at `/var/lib/v1per`. In Docker the data directory is `/data`, so you can leave out `--data-dir` there.
 
 ## Data directory
 
@@ -78,7 +78,7 @@ v1per serve --data-dir /var/lib/v1per-restored
 | `secrets_key_required` | The backup does not hold its key. Pass it. The message names the fingerprint it needs |
 | `secrets_key_mismatch` | The given key is another one. Find the key with the fingerprint the message names |
 | `directory_not_empty`, `already_initialized` | Restore into a new, empty directory |
-| `backup_corrupt`, `backup_invalid` | The file is damaged or not a v1per backup. Use another one |
+| `backup_corrupt`, `backup_invalid` | The file is damaged or not a V1Per backup. Use another one |
 | `data_newer_than_binary` | Install the release that took the backup, or a newer one |
 | `restore_mismatch`, `restore_invalid` | Keep the directory for diagnosis and restore another backup |
 

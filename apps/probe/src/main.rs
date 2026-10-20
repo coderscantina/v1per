@@ -27,10 +27,10 @@ const EXIT_STORAGE: u8 = 4;
 #[command(
     name = "v1per-probe",
     version,
-    about = "v1per remote probe agent: checks the monitors the server assigns to this probe"
+    about = "V1Per remote probe agent: checks the monitors the server assigns to this probe"
 )]
 struct Args {
-    /// The v1per server, e.g. `https://status.example.com`.
+    /// The V1Per server, e.g. `https://status.example.com`.
     #[arg(long, env = "V1PER_PROBE_SERVER")]
     server: Url,
 

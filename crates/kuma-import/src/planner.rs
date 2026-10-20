@@ -192,7 +192,7 @@ pub(crate) fn plan(conn: &Connection) -> Result<ImportPlan, PlanError> {
         "api_key",
         InventoryKind::ApiKey,
         column("name"),
-        "Kuma API keys are not imported; issue a new v1per API key",
+        "Kuma API keys are not imported; issue a new V1Per API key",
         &mut ledger,
     )?;
     inventory_table(
@@ -218,7 +218,7 @@ pub(crate) fn plan(conn: &Connection) -> Result<ImportPlan, PlanError> {
         "domain_expiry",
         InventoryKind::DomainExpiry,
         column("domain"),
-        "domain expiry alerts are not a v1per event yet (open in the notifications contract)",
+        "domain expiry alerts are not a V1Per event yet (open in the notifications contract)",
         &mut ledger,
     )?;
     inventory_table(
@@ -537,7 +537,7 @@ fn settings(rows: &[Record], ledger: &mut Ledger) -> SettingsPlan {
                 let reason = if INTERNAL_SETTINGS.contains(&key.as_str()) {
                     "Kuma internal state"
                 } else {
-                    "no v1per equivalent"
+                    "no V1Per equivalent"
                 };
                 ledger.add(InventoryKind::Setting, &key, reason, row);
                 continue;

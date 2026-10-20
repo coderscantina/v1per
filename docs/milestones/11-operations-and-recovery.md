@@ -2,7 +2,7 @@
 
 ## Outcome
 
-An operator installs v1per with Docker or a binary, backs it up, restores it on a clean machine and sees its health, all with documented commands.
+An operator installs V1Per with Docker or a binary, backs it up, restores it on a clean machine and sees its health, all with documented commands.
 
 ## Dependencies and ownership
 

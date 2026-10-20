@@ -76,7 +76,7 @@ pub enum ChannelSettings {
     Telegram(TelegramChannel),
     Ntfy(NtfyChannel),
     Pushover(PushoverChannel),
-    /// An imported Kuma provider v1per does not send to yet. Its settings stay sealed. Never
+    /// An imported Kuma provider V1Per does not send to yet. Its settings stay sealed. Never
     /// accepted by `channels.create` or `update`.
     Unsupported(UnsupportedChannel),
 }

@@ -1,4 +1,4 @@
-# One-process v1per image: the release binary with the built web app beside it. Remote probe
+# One-process V1Per image: the release binary with the built web app beside it. Remote probe
 # agents have their own image, built from Dockerfile.probe.
 #
 #   docker build --build-arg V1PER_GIT_SHA=$(git rev-parse --short HEAD) -t v1per .

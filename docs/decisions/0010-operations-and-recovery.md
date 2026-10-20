@@ -1,6 +1,6 @@
 # 0010: Operations and recovery
 
-Status: Proposed (milestone 11, storage and operations owner). Ported from holocron's 0014 and cut down to what v1per has: one control database, the inbox and DuckDB, no erasure or compaction. Mike decides the open items at the end. Evidence: [m11 operations and recovery](../evidence/m11-operations-and-recovery.md).
+Status: Proposed (milestone 11, storage and operations owner). Ported from holocron's 0014 and cut down to what V1Per has: one control database, the inbox and DuckDB, no erasure or compaction. Mike decides the open items at the end. Evidence: [m11 operations and recovery](../evidence/m11-operations-and-recovery.md).
 
 ## Problem
 

@@ -20,7 +20,7 @@ import { newSecret, secretField, type SecretInput } from './monitor-form'
  * (`settings.webhook_url`), so client and server errors land on the same field.
  */
 
-/** Providers v1per sends to. Imported channels of other Kuma providers are kept read-only. */
+/** Providers V1Per sends to. Imported channels of other Kuma providers are kept read-only. */
 export const coreProviders = ['smtp', 'discord', 'webhook', 'slack', 'teams', 'telegram', 'ntfy', 'pushover'] as const
 export type CoreProvider = (typeof coreProviders)[number]
 
@@ -258,7 +258,7 @@ const stored = (field: SecretField): SecretInput => ({ set: field.set, mode: fie
 const text = (value: string | undefined) => value ?? ''
 const numberText = (value: number | undefined) => (value === undefined ? '' : String(value))
 
-/** The editor state of a stored channel; `null` for an imported provider v1per does not send to. */
+/** The editor state of a stored channel; `null` for an imported provider V1Per does not send to. */
 export function formFromChannel(channel: Channel): ChannelForm | null {
   const { settings } = channel
   if (settings.type === 'unsupported') return null

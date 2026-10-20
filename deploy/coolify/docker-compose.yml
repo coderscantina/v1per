@@ -1,4 +1,4 @@
-# v1per on a Coolify host. Set the domain of the `v1per` service in Coolify to the admin host
+# V1Per on a Coolify host. Set the domain of the `v1per` service in Coolify to the admin host
 # with the container port, e.g. https://status.example.com:8080. Custom status page domains
 # are added to the same service as extra domains; Coolify's Traefik passes the Host header on.
 #

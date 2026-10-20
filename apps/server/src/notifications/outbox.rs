@@ -133,7 +133,7 @@ impl Payload {
                     hostname: monitor.hostname.clone(),
                     port: monitor.port,
                     groups: monitor.groups.clone(),
-                    // v1per tags are plain labels; Kuma's carry a value and colour.
+                    // V1Per tags are plain labels; Kuma's carry a value and colour.
                     tags: (1..)
                         .zip(&monitor.tags)
                         .map(|(tag_id, name)| notify::MonitorTag {

@@ -1,4 +1,4 @@
-//! v1per server: admin API, live subscriptions, monitoring with the built-in probe and remote
+//! V1Per server: admin API, live subscriptions, monitoring with the built-in probe and remote
 //! probe agents, runtime configuration and the built web app in one process. Remote agents are
 //! the separate `v1per-probe` binary (`apps/probe`).
 

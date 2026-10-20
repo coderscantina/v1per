@@ -61,7 +61,7 @@ pub(crate) fn pages(
             ledger.add_source(
                 InventoryKind::CustomCss,
                 &slug,
-                "custom CSS is not applied to v1per pages",
+                "custom CSS is not applied to V1Per pages",
                 row.source_of(&["slug", "custom_css"]),
             );
         }
@@ -71,7 +71,7 @@ pub(crate) fn pages(
             ledger.add_source(
                 InventoryKind::Analytics,
                 &slug,
-                "analytics scripts are not added to v1per pages",
+                "analytics scripts are not added to V1Per pages",
                 row.source_of(&columns),
             );
         }

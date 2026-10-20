@@ -1,4 +1,4 @@
-# v1per technical briefing
+# V1Per technical briefing
 
 Revision 1. Initial briefing, agreed with Mike on October 18, 2026.
 
@@ -8,7 +8,7 @@ Build a self-hosted Rust server that monitors services, alerts teams and publish
 
 This is an implementation brief. Nothing described here is built or measured yet.
 
-**Product contract.** The audience is people who run Uptime Kuma today for their own services and for clients. v1per runs as one Rust process with a persistent data directory and ships the built Vue assets with the binary. Production needs no Node runtime, external database, queue or extra service. TLS for custom domains terminates at the operator's reverse proxy.
+**Product contract.** The audience is people who run Uptime Kuma today for their own services and for clients. V1Per runs as one Rust process with a persistent data directory and ships the built Vue assets with the binary. Production needs no Node runtime, external database, queue or extra service. TLS for custom domains terminates at the operator's reverse proxy.
 
 The first release includes:
 
@@ -24,7 +24,7 @@ Out of the first release: page subscribers (email, RSS, webhook), Kuma badge URL
 
 **Architecture references.** Copy and adapt holocron's implementation; do not depend on it. [contracts/architecture-patterns.md](contracts/architecture-patterns.md) describes the patterns in prose: [operation registry](contracts/architecture-patterns.md#operation-registry-and-generated-contracts), [schema export and drift check](contracts/architecture-patterns.md#schema-export-and-drift-check), [commands, revisions and idempotency](contracts/architecture-patterns.md#named-commands-transactions-revisions-and-idempotency), [snapshot queries](contracts/architecture-patterns.md#snapshot-queries), [authorized scope](contracts/architecture-patterns.md#explicit-authorized-scope), [control database boundary](contracts/architecture-patterns.md#control-database-boundary), [topics and subscriptions](contracts/architecture-patterns.md#topics-cursors-and-subscriptions), [typed client](contracts/architecture-patterns.md#typed-client) and [live snapshot adapter](contracts/architecture-patterns.md#live-snapshot-adapter). The Kit and UI references, `docs/kit-implementation.md` and `docs/ux-v2/design.md`, are read in holocron's checkout (`~/Development/products/holocron`) at the pinned revision.
 
-| Holocron pattern                                    | Application in v1per                                                                                             |
+| Holocron pattern                                    | Application in V1Per                                                                                             |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | Axum router, explicit startup composition, AppState | One server hosts the API, probe endpoints, push endpoint, public status pages, health and built web assets       |
 | Operation registry with generated TS and OpenAPI    | Named commands and queries in `crates/protocol`; `export-types` generates TypeScript and OpenAPI, drift-checked  |

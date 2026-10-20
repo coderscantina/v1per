@@ -1,4 +1,4 @@
-//! What this v1per instance is, and its settings.
+//! What this V1Per instance is, and its settings.
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

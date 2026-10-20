@@ -4,7 +4,7 @@ This document owns the meaning of statuses, uptime numbers, incident impact and 
 
 ## Heartbeat status
 
-Confirmed: v1per keeps Kuma's four heartbeat statuses so imported history needs no translation.
+Confirmed: V1Per keeps Kuma's four heartbeat statuses so imported history needs no translation.
 
 | Value | Status      | Meaning                                                                 |
 | ----- | ----------- | ----------------------------------------------------------------------- |
@@ -25,7 +25,7 @@ A heartbeat row carries monitor, probe, time (UTC, millisecond precision), statu
 - Settled: `upside_down` inverts up and down before retries, so an inverted failure retries and an inverted success resets retries. Pending and maintenance are never inverted. An upside-down push monitor is up while pushes are missing.
 - Settled: group monitors read the latest monitor-level status of their direct members. Down when any member is down, pending when any member is pending or has no status yet and none is down, up otherwise. Paused members are skipped, members in maintenance count as up, an empty group is pending. A down member goes through the group's own retries and upside down. Groups are evaluated on their own interval.
 - Settled: a monitor is in maintenance when one of its windows is active or an ancestor group is in maintenance. Its check is skipped and the beat is status 3 with message "Monitor under maintenance"; a push during maintenance is stored as status 3.
-- Settled: manual monitors show pending until an operator sets a status, then take that status and record a beat every interval. Until a status is set they record no beat, so an unset manual monitor does not count as down in uptime or color its bars (milestone 05 fix; Kuma records pending beats here, which v1per counts as down).
+- Settled: manual monitors show pending until an operator sets a status, then take that status and record a beat every interval. Until a status is set they record no beat, so an unset manual monitor does not count as down in uptime or color its bars (milestone 05 fix; Kuma records pending beats here, which V1Per counts as down).
 - Settled: a beat is important on the first beat, on up to down, down to up, pending to down and on any change into or out of maintenance. A notification goes out on a first beat that is down, up to down, pending to down, down to up and maintenance to down; leaving maintenance to up is silent. `resend_interval` counts consecutive non-important down beats and repeats the down alert when reached.
 
 ## Uptime

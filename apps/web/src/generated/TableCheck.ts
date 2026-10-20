@@ -9,7 +9,7 @@ export type TableCheck = { table: string,
  */
 source: number, 
 /**
- * Rows that became v1per records.
+ * Rows that became V1Per records.
  */
 mapped: number, 
 /**
@@ -17,6 +17,6 @@ mapped: number,
  */
 inventoried: number, 
 /**
- * v1per rows of the counterpart, where there is one table to count.
+ * V1Per rows of the counterpart, where there is one table to count.
  */
 destination?: number, reconciled: boolean, };

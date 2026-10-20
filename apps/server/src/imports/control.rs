@@ -36,7 +36,7 @@ use crate::monitors::{self, settings};
 use crate::notifications::config::channel_context;
 use crate::pages::{normalize_hostname, valid_slug};
 
-/// Longest page title and maintenance or incident title v1per accepts.
+/// Longest page title and maintenance or incident title V1Per accepts.
 const PAGE_TITLE_MAX: usize = 100;
 const TITLE_MAX: usize = 200;
 /// The role Kuma users get on the target node: Kuma has no roles, everyone manages everything.
@@ -104,7 +104,7 @@ pub async fn preflight(
         let slug = page.slug.trim().to_lowercase();
         if !valid_slug(&slug) {
             problems.push(format!(
-                "status page slug `{}` is not a valid v1per slug",
+                "status page slug `{}` is not a valid V1Per slug",
                 page.slug
             ));
         } else if !slugs.insert(slug.clone())
@@ -576,7 +576,7 @@ async fn write_monitor(
         probes: Vec::new(),
         channels: None,
     };
-    // Settings v1per's form would refuse are kept as they are, paused, so nothing is lost.
+    // Settings V1Per's form would refuse are kept as they are, paused, so nothing is lost.
     // Unsupported settings never validate and never run; their row is in the inventory.
     let checked = match settings {
         MonitorSettings::Unsupported(_) => Ok(()),
@@ -591,7 +591,7 @@ async fn write_monitor(
             .map(|(f, _)| f)
             .collect();
         notes.add(format!(
-            "monitor `{}` was imported paused: {fields:?} do not pass v1per's checks",
+            "monitor `{}` was imported paused: {fields:?} do not pass V1Per's checks",
             monitor.name
         ));
         active = false;
@@ -629,7 +629,7 @@ async fn write_monitor(
     Ok(id)
 }
 
-/// The protocol settings of a planned monitor. Anything v1per cannot run as Kuma ran it is
+/// The protocol settings of a planned monitor. Anything V1Per cannot run as Kuma ran it is
 /// `Unsupported`, which never runs; its Kuma row is in the inventory.
 fn settings_of(monitor: &MonitorPlan) -> MonitorSettings {
     let unsupported = |reason: &str| {
@@ -643,13 +643,13 @@ fn settings_of(monitor: &MonitorPlan) -> MonitorSettings {
     }
     match &monitor.kind {
         MonitorKind::Check(definition) => check_settings(definition, monitor)
-            .unwrap_or_else(|| unsupported("authentication v1per does not support")),
+            .unwrap_or_else(|| unsupported("authentication V1Per does not support")),
         MonitorKind::Push { token } => MonitorSettings::Push(PushSettings {
             push_token: token.as_ref().map(|token| token.expose().to_owned()),
         }),
         MonitorKind::Group => MonitorSettings::Group,
         MonitorKind::Manual { .. } => MonitorSettings::Manual,
-        MonitorKind::Unsupported => unsupported("monitor type not supported by v1per"),
+        MonitorKind::Unsupported => unsupported("monitor type not supported by V1Per"),
     }
 }
 
@@ -700,7 +700,7 @@ fn secret(value: &checks::Secret) -> SecretField {
     }
 }
 
-/// `None` for NTLM and mTLS, which v1per does not run.
+/// `None` for NTLM and mTLS, which V1Per does not run.
 fn http_settings(request: &checks::HttpRequest, expiry_notification: bool) -> Option<HttpSettings> {
     let auth = match &request.auth {
         checks::HttpAuth::None => HttpAuth::None,
@@ -913,7 +913,7 @@ async fn write_page(
             let Some(monitor) = monitors.get(&component.monitor.0) else {
                 continue;
             };
-            // A monitor shows once per page in v1per; Kuma allowed it in several groups.
+            // A monitor shows once per page in V1Per; Kuma allowed it in several groups.
             if !placed.insert(*monitor) {
                 notes.add(format!(
                     "status page `{slug}` listed a monitor in several groups; it shows in the first"

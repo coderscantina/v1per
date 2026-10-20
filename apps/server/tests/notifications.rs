@@ -129,7 +129,7 @@ async fn down_and_up_reach_email_and_discord_like_kuma() {
             "name": "Ops mail", "is_default": true,
             "settings": {
                 "type": "smtp", "host": "127.0.0.1", "port": sink.port,
-                "from": "v1per <alerts@example.test>", "to": "ops@example.test",
+                "from": "V1Per <alerts@example.test>", "to": "ops@example.test",
             },
         }),
     )
@@ -418,7 +418,7 @@ async fn channels_are_scoped_sealed_and_testable() {
         .ok(
             &admin,
             "instance.updateSmtp",
-            json!({ "smtp": { "host": "127.0.0.1", "port": sink.port, "from": "v1per <noreply@example.test>", "username": "v1per", "password": { "value": "smtp-pass" } } }),
+            json!({ "smtp": { "host": "127.0.0.1", "port": sink.port, "from": "V1Per <noreply@example.test>", "username": "v1per", "password": { "value": "smtp-pass" } } }),
         )
         .await;
     let settings = harness.query(Some(&admin), "instance.settings", "").await;
@@ -637,7 +637,7 @@ async fn the_instance_smtp_server_can_be_tested() {
     let background = harness.start();
     let admin = harness.session(&harness.admin).await;
     let sink = SmtpSink::start().await;
-    let form = json!({ "host": "127.0.0.1", "port": sink.port, "from": "v1per <noreply@example.test>",
+    let form = json!({ "host": "127.0.0.1", "port": sink.port, "from": "V1Per <noreply@example.test>",
                        "username": "v1per", "password": { "value": "typed-pass" } });
 
     let unsaved = harness

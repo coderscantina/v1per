@@ -237,7 +237,7 @@ function requestInput(settings: HttpSettings, base: RequestInput): RequestInput 
   }
 }
 
-/** The editor state of a stored monitor; `null` for an imported type v1per does not run. */
+/** The editor state of a stored monitor; `null` for an imported type V1Per does not run. */
 export function formFromMonitor(monitor: Monitor): MonitorForm | null {
   const { settings } = monitor
   if (settings.type === 'unsupported') return null

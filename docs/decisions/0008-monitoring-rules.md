@@ -4,12 +4,12 @@ Status: Adopted (milestone 01, team decision) unless an item says otherwise. Ite
 
 ## Problem
 
-The [monitoring contract](../monitoring-contract.md) left status, retry, group, push, maintenance and uptime rules to be checked against Uptime Kuma 2.5.0. v1per imports Kuma history and keeps computing uptime from cutover on, so a rule that differs from Kuma makes the numbers jump on the day of the move.
+The [monitoring contract](../monitoring-contract.md) left status, retry, group, push, maintenance and uptime rules to be checked against Uptime Kuma 2.5.0. V1Per imports Kuma history and keeps computing uptime from cutover on, so a rule that differs from Kuma makes the numbers jump on the day of the move.
 
 ## Constraints
 
 - Imported `stat_*` rows are kept as they are (contract, confirmed). New rollups must merge with them without a visible break.
-- Kuma runs one check location per monitor. v1per adds probes and a quorum, which Kuma has no rule for.
+- Kuma runs one check location per monitor. V1Per adds probes and a quorum, which Kuma has no rule for.
 - Where the contract's proposal and Kuma differ, follow Kuma unless the difference is a product choice for Mike.
 
 ## Evidence
@@ -33,12 +33,12 @@ Read from Uptime Kuma 2.5.0 at commit `d9a60dfc` (`sources/manifest.json`). Path
 
 ## Choice
 
-1. **Uptime.** `up / (up + down)` counted in heartbeats, with pending counted as down and maintenance excluded and counted on its own. The contract proposed pending as up; Kuma counts it as down, so v1per follows Kuma. A window with no up or down beats has no uptime and shows "no data"; v1per does not copy Kuma's fallback to the last bucket, which only affects paused or idle monitors.
+1. **Uptime.** `up / (up + down)` counted in heartbeats, with pending counted as down and maintenance excluded and counted on its own. The contract proposed pending as up; Kuma counts it as down, so V1Per follows Kuma. A window with no up or down beats has no uptime and shows "no data"; V1Per does not copy Kuma's fallback to the last bucket, which only affects paused or idle monitors.
 2. **Windows.** 24 hours, 7 days, 30 days and 1 year use Kuma's buckets: 1440 minutes, 168 hours, 30 UTC days and 365 UTC days, each including the current bucket.
 3. **Latency.** Average, minimum and maximum over up beats with a latency. An imported row maps to `latency_sum = ping * up` and `latency_count = up`, which reproduces Kuma's weighted merge exactly. Imported `extras.maintenance` becomes the rollup's maintenance count; Kuma does not count pending separately, so imported pending stays inside `down`.
 4. **Retries.** Each probe applies Kuma's retry rule to its own results: pending while `retries < maxretries`, then down; reset on success; the next check after a pending result waits `retry_interval` if it is above 0. `retry_only_on_status_code_failure` is honoured for `json-query`.
 5. **Upside down.** Inverts up and down before retries, so an inverted failure retries like any failure and an inverted success resets retries. Pending and maintenance are never inverted.
-6. **Important beats and notifications.** v1per keeps Kuma's two tables: a beat is important on the first beat and on up/down, pending to down and any change into or out of maintenance; a notification goes out on a first beat that is down, up to down, pending to down, down to up and maintenance to down. Leaving maintenance to up is silent. `resend_interval` counts consecutive non-important down beats.
+6. **Important beats and notifications.** V1Per keeps Kuma's two tables: a beat is important on the first beat and on up/down, pending to down and any change into or out of maintenance; a notification goes out on a first beat that is down, up to down, pending to down, down to up and maintenance to down. Leaving maintenance to up is silent. `resend_interval` counts consecutive non-important down beats.
 7. **Push.** The deadline is the latest beat plus `interval` plus 1 s. A missed deadline records a failure through the retry rule: pending beats every `retry_interval`, then down, then a down beat every `interval` until a push arrives. A push with `status=up` (or no status) is up, any other value is down, both before upside down is applied. An upside-down push monitor is up while pushes are missing.
 8. **Groups.** The contract's rule holds, with Kuma's details: direct members only, by their latest monitor-level status; paused members are skipped; a member with no status yet is pending; maintenance members count as up; an empty group is pending. A down member is a failure that goes through the group's own retries and upside down. Groups are evaluated on their own interval, as in Kuma, so group histories keep one beat per interval.
 9. **Maintenance.** Heartbeat status 3 means the monitor or an ancestor group was in an active maintenance window and the check was not run. The beat message is "Monitor under maintenance". Push requests during maintenance are stored as maintenance. Window states and strategy semantics follow Kuma's six strategies as listed in the evidence.
@@ -61,7 +61,7 @@ Read from Uptime Kuma 2.5.0 at commit `d9a60dfc` (`sources/manifest.json`). Path
 
 ## Consequences
 
-- Rollups count pending inside down for uptime but keep a pending count of their own for native data, so v1per can show pending separately later without changing the uptime number.
+- Rollups count pending inside down for uptime but keep a pending count of their own for native data, so V1Per can show pending separately later without changing the uptime number.
 - The monitor-level series records one status per check round, so its counts stay comparable with Kuma's one beat per interval.
 - Importers must read `extras` JSON for maintenance counts and expect minute rows for 24 hours and hour rows for 30 days only.
 - Notification tests (07) use the important-beat and notification tables as their truth table.

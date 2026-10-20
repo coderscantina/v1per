@@ -1,7 +1,7 @@
 //! Channel configs, deserialized straight from Kuma's `notification.config` JSON.
 //!
 //! Field names are Kuma's, unknown fields are ignored, and `type` picks the provider. Types
-//! v1per does not send yet keep their raw JSON in [`UnsupportedConfig`].
+//! V1Per does not send yet keep their raw JSON in [`UnsupportedConfig`].
 
 use std::fmt;
 use std::str::FromStr;
@@ -69,7 +69,7 @@ impl<'de> Deserialize<'de> for ChannelConfig {
     }
 }
 
-/// A provider v1per cannot send to yet. Keeps the whole config, secrets included.
+/// A provider V1Per cannot send to yet. Keeps the whole config, secrets included.
 pub struct UnsupportedConfig {
     kind: String,
     raw: Map<String, Value>,

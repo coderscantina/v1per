@@ -220,7 +220,7 @@ pub async fn record_object(
     Ok(())
 }
 
-/// Kuma ID to v1per row ID of every record of `kind` the run created.
+/// Kuma ID to V1Per row ID of every record of `kind` the run created.
 pub async fn objects(
     conn: &mut SqliteConnection,
     run: i64,

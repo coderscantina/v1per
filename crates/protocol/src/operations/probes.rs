@@ -119,7 +119,7 @@ pub struct Probe {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub last_seen_at: Option<i64>,
-    /// The agent's v1per version.
+    /// The agent's V1Per version.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub version: Option<String>,

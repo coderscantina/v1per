@@ -1,6 +1,6 @@
 //! Channel settings between the protocol's typed form and Kuma's `notification.config` JSON.
 //! The JSON is what is sealed, what the importer writes and what `v1per_notify` reads, so an
-//! imported channel and one made in v1per send alike.
+//! imported channel and one made in V1Per send alike.
 
 use serde_json::{Map, Value};
 use v1per_notify as notify;
@@ -481,7 +481,7 @@ mod tests {
                 value: Some("https://discord.test/api/webhooks/1/abc".into()),
                 ..SecretField::default()
             },
-            username: Some("v1per".into()),
+            username: Some("V1Per".into()),
             message_format: Some(DiscordMessageFormat::Custom),
             message_template: Some("{{ msg }}".into()),
             channel_type: Some(DiscordChannelType::PostToThread),
@@ -494,7 +494,7 @@ mod tests {
             panic!("discord");
         };
         assert!(shown.webhook_url.set && shown.webhook_url.value.is_none());
-        assert_eq!(shown.username.as_deref(), Some("v1per"));
+        assert_eq!(shown.username.as_deref(), Some("V1Per"));
 
         let kept = to_kuma("Ops", &ChannelSettings::Discord(shown.clone()), Some(&kuma)).unwrap();
         assert_eq!(kept["discordWebhookUrl"], kuma["discordWebhookUrl"]);

@@ -1,5 +1,5 @@
-# Caddy in front of v1per. Caddy gets and renews a certificate for every domain listed here,
-# and passes the Host header through, which v1per uses to pick the status page.
+# Caddy in front of V1Per. Caddy gets and renews a certificate for every domain listed here,
+# and passes the Host header through, which V1Per uses to pick the status page.
 #
 # Add one block per custom status page domain. See docs/guide/install.md.
 

@@ -12,7 +12,7 @@ pub enum Event {
     MonitorUp(Beat),
     CertificateExpiry(CertificateExpiry),
     DomainExpiry(DomainExpiry),
-    /// v1per only: Kuma has a single check location.
+    /// V1Per only: Kuma has a single check location.
     ProbeOffline(ProbeOffline),
     /// The channel dialog's test button. Kuma applies email templates to it.
     Test {
@@ -43,7 +43,7 @@ pub struct Monitor {
     /// Ancestor group names, outermost first.
     pub groups: Vec<String>,
     pub tags: Vec<MonitorTag>,
-    /// Absolute link to this monitor in v1per, where Kuma links `/dashboard/<id>`.
+    /// Absolute link to this monitor in V1Per, where Kuma links `/dashboard/<id>`.
     pub link: Option<String>,
 }
 

@@ -1,6 +1,6 @@
 <div align="center">
 
-# v1per
+# V1Per
 
 **Uptime monitoring and status pages for every client you look after.**
 
@@ -18,9 +18,9 @@ One self-hosted instance for your agency, your clients and their teams. Monitors
 </div>
 
 > [!NOTE]
-> v1per is in beta. Every feature below is built, and you should still expect rough edges. Releases use calendar versions, e.g. `v26.10.19-010a9a6`.
+> V1Per is in beta. Every feature below is built, and you should still expect rough edges. Releases use calendar versions, e.g. `v26.10.19-010a9a6`.
 
-## Why v1per
+## Why V1Per
 
 - **One instance, many clients.** Nodes form a tree of any depth: your agency, each client, their teams. Invite people at any node and they see that subtree, nothing else.
 - **Status pages and incidents in the same place.** Every client gets its own pages on its own domain, with an incident timeline and scheduled maintenance. Customers read updates there instead of asking you.
@@ -74,9 +74,9 @@ The [guide](docs/guide/README.md) covers [installation](docs/guide/install.md), 
 
 ## How it compares
 
-v1per is built for monitoring many clients from one instance. Here's where it stands next to the tools people usually run, as of October 2026, for their self-hosted editions.
+V1Per is built for monitoring many clients from one instance. Here's where it stands next to the tools people usually run, as of October 2026, for their self-hosted editions.
 
-|                                     | v1per                         | Uptime Kuma          | OpenStatus                  | Gatus                  |
+|                                     | V1Per                         | Uptime Kuma          | OpenStatus                  | Gatus                  |
 | ----------------------------------- | ----------------------------- | -------------------- | --------------------------- | ---------------------- |
 | Many clients in one instance        | Nested node tree              | No                   | Workspaces                  | No                     |
 | Users and roles                     | Invites and roles per node    | One admin            | Invites and roles           | No                     |
@@ -93,7 +93,7 @@ v1per is built for monitoring many clients from one instance. Here's where it st
 | Configuration                       | Web app and API               | Web app              | Web app, YAML, Terraform    | YAML                   |
 | License                             | AGPL-3.0                      | MIT                  | AGPL-3.0                    | Apache-2.0             |
 
-Pick Uptime Kuma if you need its long list of monitor types and notification channels. Pick Gatus if you want monitoring as code in YAML. Pick v1per if you look after many clients and want their monitors, status pages and incidents in one place.
+Pick Uptime Kuma if you need its long list of monitor types and notification channels. Pick Gatus if you want monitoring as code in YAML. Pick V1Per if you look after many clients and want their monitors, status pages and incidents in one place.
 
 ## Tech stack
 
@@ -112,10 +112,10 @@ Please report vulnerabilities privately, as described in the [security policy](S
 
 ## License
 
-v1per is licensed under the [GNU AGPLv3](LICENSE).
+V1Per is licensed under the [GNU AGPLv3](LICENSE).
 
 ## Acknowledgements
 
-- Louis Lam and contributors for [Uptime Kuma](https://github.com/louislam/uptime-kuma), which v1per replaces and imports from
+- Louis Lam and contributors for [Uptime Kuma](https://github.com/louislam/uptime-kuma), which V1Per replaces and imports from
 - The [OpenStatus](https://www.openstatus.dev/) team for the status page ideas
-- The people behind the Rust and Vue libraries v1per is built on
+- The people behind the Rust and Vue libraries V1Per is built on

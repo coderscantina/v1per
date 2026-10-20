@@ -1,6 +1,6 @@
-# v1per agent guide
+# V1Per agent guide
 
-v1per is a self-hosted uptime monitoring and status page server in Rust. It replaces Uptime Kuma, imports its database, and adds status pages with incident management for a tree of teams and clients.
+V1Per is a self-hosted uptime monitoring and status page server in Rust. It replaces Uptime Kuma, imports its database, and adds status pages with incident management for a tree of teams and clients.
 
 ## Start here
 

@@ -133,7 +133,7 @@ async fn trusted_certificate_reports_tls_info() {
     assert!(tls.hostname_match);
     let leaf = &tls.chain[0];
     assert_eq!(leaf.subject, "localhost");
-    assert_eq!(leaf.issuer, "v1per test CA");
+    assert_eq!(leaf.issuer, "V1Per test CA");
     assert_eq!(leaf.cert_type, CertType::Server);
     assert_eq!(leaf.valid_for, ["localhost"]);
     assert!(leaf.days_remaining > 0);

@@ -1,6 +1,6 @@
-# v1per user guide
+# V1Per user guide
 
-v1per is a self-hosted uptime monitoring and status page server. One process with one data directory runs your checks, sends alerts and serves status pages for every team and client you look after.
+V1Per is a self-hosted uptime monitoring and status page server. One process with one data directory runs your checks, sends alerts and serves status pages for every team and client you look after.
 
 This guide is for the people who install and run an instance, and for the admins who set up monitors, channels and pages inside it.
 

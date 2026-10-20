@@ -19,7 +19,7 @@ pub struct DryRunReport {
     /// Child nodes made from group monitors.
     pub nodes: u64,
     pub monitors_by_type: Vec<MonitorTypeCount>,
-    /// Monitors imported paused because v1per cannot run them, by reason.
+    /// Monitors imported paused because V1Per cannot run them, by reason.
     pub held_reasons: BTreeMap<String, u64>,
     pub channels_by_provider: Vec<ProviderCount>,
     pub secrets: SecretCounts,
@@ -38,7 +38,7 @@ pub struct TableCount {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Disposition {
-    /// Mapped to v1per records, some rows possibly inventoried.
+    /// Mapped to V1Per records, some rows possibly inventoried.
     Config,
     /// Every row goes to the inventory.
     Inventory,

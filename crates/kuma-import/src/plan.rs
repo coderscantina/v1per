@@ -1,4 +1,4 @@
-//! The import plan: every Kuma configuration row, mapped to what v1per creates on the target
+//! The import plan: every Kuma configuration row, mapped to what V1Per creates on the target
 //! node or listed in the inventory with a reason. The server translates these structs into
 //! its own records (decision 0007); IDs here are Kuma's.
 
@@ -50,7 +50,7 @@ pub struct ImportPlan {
     pub incidents: Vec<IncidentPlan>,
     pub users: Vec<UserPlan>,
     pub settings: SettingsPlan,
-    /// Certificate expiry reminders Kuma already sent, so v1per does not repeat them.
+    /// Certificate expiry reminders Kuma already sent, so V1Per does not repeat them.
     pub certificate_reminders: Vec<CertificateReminder>,
     pub inventory: Vec<InventoryItem>,
     pub secrets: SecretCounts,
@@ -109,7 +109,7 @@ pub enum MonitorKind {
     Manual {
         status: Option<ManualStatus>,
     },
-    /// A Kuma type v1per does not run, or a definition that does not validate. The row is
+    /// A Kuma type V1Per does not run, or a definition that does not validate. The row is
     /// in the inventory.
     Unsupported,
 }
@@ -126,7 +126,7 @@ pub enum RunState {
     Active,
     /// Paused in Kuma.
     Paused,
-    /// Imported paused because v1per cannot run it as configured. Its row is in the
+    /// Imported paused because V1Per cannot run it as configured. Its row is in the
     /// inventory, so nothing of the definition is lost.
     PausedUnsupported {
         reason: String,
@@ -256,7 +256,7 @@ pub struct UserPlan {
     pub timezone: Option<String>,
 }
 
-/// Kuma settings with a v1per equivalent. Every other setting is inventoried.
+/// Kuma settings with a V1Per equivalent. Every other setting is inventoried.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct SettingsPlan {
     pub primary_base_url: Option<String>,
@@ -293,7 +293,7 @@ pub struct InventoryItem {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum InventoryKind {
-    /// A monitor imported paused; the row keeps what v1per could not map.
+    /// A monitor imported paused; the row keeps what V1Per could not map.
     Monitor,
     Channel,
     Maintenance,
