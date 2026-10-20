@@ -34,7 +34,7 @@ base64 = "0.22"
 blake3 = "1.8"
 # Verifies the bcrypt hashes of imported Kuma accounts until their first sign-in replaces them.
 bcrypt = "0.19"
-chacha20poly1305 = { version = "0.10", default-features = false, features = ["alloc"] }
+chacha20poly1305 = { version = "0.11", default-features = false, features = ["alloc"] }
 chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
 chrono-tz = "0.10"
 clap = { version = "4", features = ["derive", "env"] }
