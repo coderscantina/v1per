@@ -1,66 +1,27 @@
 <script setup lang="ts">
 // Adapted from Kit (f447e797, MIT): resources/js/components/app/AppUserMenu.vue. Laravel auth and
 // abilities are replaced by the `auth.session` resource; the PWA install entry is dropped. Account
-// links lead to security and API keys. Colour mode and language are kept in this browser, the accent
-// in the person's preferences.
+// links lead to security and API keys. Appearance, language and formats are set on the account's
+// Appearance page.
 import Icon from '~/components/Icon.vue'
 import { Avatar } from '~/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
-import { accentColors } from '~/composables/useAccentColor'
-import { colorModes, type ColorMode, useColorMode } from '~/composables/useColorMode'
-import { useAccentPreference } from '~/composables/usePreferences'
 import { useSession, useSignOut } from '~/composables/useSession'
 import { useShortcutHelp } from '~/composables/useShortcuts'
-import type { IconName } from '~/lib/icons'
 import { initials } from '~/lib/utils'
-import { isSupportedLocale, useI18n, type MessageKey } from '~/plugins/i18n'
+import { useI18n } from '~/plugins/i18n'
 
-const { t, locale, locales, setLocale } = useI18n()
+const { t } = useI18n()
 const { account } = useSession()
 const signOut = useSignOut()
-const { mode, isDark, setMode } = useColorMode()
 const shortcutHelp = useShortcutHelp()
-const { accent, pick } = useAccentPreference()
-
-const colorModeIcons: Record<ColorMode, IconName> = {
-  light: 'lucide:sun',
-  dark: 'lucide:moon',
-  system: 'lucide:monitor',
-}
-
-const colorModeLabels: Record<ColorMode, MessageKey> = {
-  light: 'colorMode.light',
-  dark: 'colorMode.dark',
-  system: 'colorMode.system',
-}
-
-const onMode = (value: unknown) => {
-  const next = colorModes.find((entry) => entry === value)
-  if (!next) return
-  setMode(next)
-}
-
-const onAccent = (value: unknown) => {
-  const next = accentColors.find((entry) => entry === value)
-  if (next) pick(next)
-}
-
-const onLocale = (value: unknown) => {
-  if (typeof value !== 'string' || !isSupportedLocale(value)) return
-  setLocale(value)
-}
 </script>
 
 <template>
@@ -97,6 +58,12 @@ const onLocale = (value: unknown) => {
         </RouterLink>
       </DropdownMenuItem>
       <DropdownMenuItem as-child>
+        <RouterLink :to="{ name: 'account-appearance' }">
+          <Icon name="lucide:palette" />
+          {{ t('account.nav.appearance') }}
+        </RouterLink>
+      </DropdownMenuItem>
+      <DropdownMenuItem as-child>
         <RouterLink :to="{ name: 'account-api-keys' }">
           <Icon name="lucide:key-round" />
           {{ t('account.nav.apiKeys') }}
@@ -104,75 +71,6 @@ const onLocale = (value: unknown) => {
       </DropdownMenuItem>
       <DropdownMenuSeparator />
 
-      <DropdownMenuSub>
-        <DropdownMenuSubTrigger>
-          <Icon :name="isDark ? colorModeIcons.dark : colorModeIcons.light" />
-          {{ t('colorMode.label') }}
-        </DropdownMenuSubTrigger>
-        <DropdownMenuSubContent>
-          <DropdownMenuRadioGroup
-            :model-value="mode"
-            @update:model-value="onMode"
-          >
-            <DropdownMenuRadioItem
-              v-for="option in colorModes"
-              :key="option"
-              :value="option"
-            >
-              <Icon :name="colorModeIcons[option]" />
-              {{ t(colorModeLabels[option]) }}
-            </DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-        </DropdownMenuSubContent>
-      </DropdownMenuSub>
-
-      <DropdownMenuSub>
-        <DropdownMenuSubTrigger>
-          <Icon name="lucide:palette" />
-          {{ t('accent.label') }}
-        </DropdownMenuSubTrigger>
-        <DropdownMenuSubContent>
-          <DropdownMenuRadioGroup
-            :model-value="accent"
-            @update:model-value="onAccent"
-          >
-            <DropdownMenuRadioItem
-              v-for="option in accentColors"
-              :key="option"
-              :value="option"
-            >
-              <span
-                :data-accent="option"
-                class="mr-1 size-3.5 shrink-0 rounded-full bg-accent shadow-[0_0_8px_var(--accent)]"
-                aria-hidden="true"
-              />
-              {{ t(`accent.${option}`) }}
-            </DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-        </DropdownMenuSubContent>
-      </DropdownMenuSub>
-
-      <DropdownMenuSub>
-        <DropdownMenuSubTrigger>
-          <Icon name="lucide:languages" />
-          {{ t('shell.language') }}
-        </DropdownMenuSubTrigger>
-        <DropdownMenuSubContent>
-          <DropdownMenuRadioGroup
-            :model-value="locale"
-            @update:model-value="onLocale"
-          >
-            <DropdownMenuRadioItem
-              v-for="entry in locales"
-              :key="entry.code"
-              :value="entry.code"
-              :lang="entry.code"
-            >
-              {{ entry.name }}
-            </DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-        </DropdownMenuSubContent>
-      </DropdownMenuSub>
 
       <DropdownMenuItem
         class="max-lg:hidden"

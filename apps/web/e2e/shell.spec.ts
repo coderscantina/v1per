@@ -76,7 +76,7 @@ test('a screen with many live panels stays live and keeps answering', async ({ b
   // editor follows more topics than the six connections a browser opens per host.
   const modes = page.getByRole('navigation', { name: 'Mode' })
   await page.getByRole('link', { name: 'All incidents' }).click()
-  await page.getByRole('link', { name: 'Open incident' }).first().click()
+  await page.getByRole('link', { name: 'New incident' }).first().click()
   await expect(page).toHaveURL(/\/incidents\/new$/)
   await modes.getByRole('link', { name: 'Configure' }).click()
   await page.getByRole('link', { name: 'Add monitor' }).first().click()
@@ -85,6 +85,80 @@ test('a screen with many live panels stays live and keeps answering', async ({ b
   await modes.getByRole('link', { name: 'Observe' }).click()
   await expect(page.getByRole('link', { name: /Below is slow/ })).toBeVisible()
   await expect.poll(() => streams.open.size, { message: 'one stream open' }).toBe(1)
+  await page.context().close()
+})
+
+test('a folder is named in place in the tree and can be dragged right away', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: viewports.desktop, storageState: sessionFile })
+  const page = await context.newPage()
+  const { node } = await ownNode(page, 'Folders')
+  await page.goto(`/n/${node}/monitors`)
+  const tree = page.getByRole('navigation', { name: 'Nodes and monitors' })
+  const add = page.getByRole('button', { name: 'New folder in Folders' }).first()
+  const field = tree.getByRole('textbox', { name: 'Folder name' })
+
+  await add.click()
+  await expect(field).toBeFocused()
+  await field.press('Escape')
+  await expect(field).toBeHidden()
+
+  await add.click()
+  await field.fill('Inside')
+  await field.press('Enter')
+  await expect(field).toBeHidden()
+  await expect(tree.locator('li', { has: page.getByRole('link', { name: /^Inside/ }) })).toHaveAttribute('draggable', 'true')
+  await page.context().close()
+})
+
+test('a double click renames a folder and a monitor in place', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: viewports.desktop, storageState: sessionFile })
+  const page = await context.newPage()
+  const { node } = await ownNode(page, 'Renames')
+  const created = await page.request.post('/api/commands/monitors.create', {
+    headers: { 'x-v1per-request': '1', origin: new URL(page.url()).origin },
+    data: {
+      idempotency_key: crypto.randomUUID(),
+      node,
+      name: 'Billing',
+      description: '',
+      settings: { type: 'manual' },
+      interval: 60,
+      max_retries: 0,
+      resend_interval: 0,
+      upside_down: false,
+      quorum: 'majority',
+      tags: [],
+      probes: [],
+    },
+  })
+  expect(created.ok()).toBe(true)
+  const { monitor: billing } = (await created.json()) as { monitor: { id: string } }
+  await page.goto(`/n/${node}/monitors`)
+  const tree = page.getByRole('navigation', { name: 'Nodes and monitors' })
+
+  await tree.getByRole('link', { name: /^Renames/ }).dblclick()
+  const folder = tree.getByRole('textbox', { name: 'Rename Renames' })
+  await expect(folder).toBeFocused()
+  await folder.press('Escape')
+  await expect(folder).toBeHidden()
+  await tree.getByRole('link', { name: /^Renames/ }).dblclick()
+  await folder.fill('Renamed')
+  await folder.press('Enter')
+  await expect(tree.getByRole('link', { name: /^Renamed/ })).toBeVisible()
+
+  await tree.getByRole('link', { name: /^Billing/ }).dblclick()
+  const monitor = tree.getByRole('textbox', { name: 'Rename Billing' })
+  await monitor.fill('Invoices')
+  await monitor.press('Enter')
+  await expect(tree.getByRole('link', { name: /^Invoices/ })).toBeVisible()
+  await page.reload()
+  await expect(tree.getByRole('link', { name: /^Invoices/ })).toBeVisible()
+  await expect(tree.getByRole('link', { name: /^Renamed/ })).toBeVisible()
+  const removed = await page.request.post('/api/commands/monitors.delete', {
+    headers: { 'x-v1per-request': '1', origin: new URL(page.url()).origin },
+    data: { idempotency_key: crypto.randomUUID(), monitor: billing.id },
+  })
+  expect(removed.ok()).toBe(true)
   await page.context().close()
 })
 
@@ -115,15 +189,13 @@ test('keyboard: skip link, user menu, appearance and command palette', async ({ 
   await page.keyboard.press('Enter')
   await expect(page.getByText(admin.email)).toBeVisible()
   await shot(page, 'user-menu-desktop-light')
-  await page.getByRole('menuitem', { name: 'Appearance' }).press('ArrowRight')
-  await page.getByRole('menuitemradio', { name: 'Dark' }).press('Enter')
+  await page.getByRole('menuitem', { name: 'Appearance' }).press('Enter')
+  await expect(page).toHaveURL(/\/account\/appearance$/)
+  const modes = page.getByRole('radiogroup', { name: 'Mode' })
+  await modes.getByRole('radio', { name: 'Dark' }).press('Enter')
   await expect(page.locator('html')).toHaveClass(/dark/)
-  await expect(menu).toBeFocused()
-
-  await menu.press('Enter')
-  await page.getByRole('menuitem', { name: 'Appearance' }).press('ArrowRight')
-  await page.getByRole('menuitemradio', { name: 'System' }).press('Enter')
-  await page.keyboard.press('Escape')
+  await modes.getByRole('radio', { name: 'Dark' }).press('ArrowRight')
+  await expect(modes.getByRole('radio', { name: 'System' })).toHaveAttribute('aria-checked', 'true')
 
   // The test browser reports a Windows user agent, so the shortcut is Ctrl+K.
   await page.keyboard.press('Control+k')

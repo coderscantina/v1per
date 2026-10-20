@@ -140,8 +140,13 @@
       "collapse": "{name} zuklappen",
       "down": "{count} aus",
       "noMatch": "Nichts gefunden.",
-      "empty": "Noch keine Knoten."
-    }
+      "empty": "Noch keine Knoten.",
+      "moveAccess": "Das Verschieben nach {target} ändert den Zugriff: {gains} erhalten ihn, {losses} verlieren ihn, {changes} bekommen eine andere Rolle. Wer genau, zeigt Knoten verschieben in den Einstellungen des Knotens.",
+      "newFolderIn": "Neuer Ordner in {name}",
+      "folderName": "Ordnername",
+      "rename": "{name} umbenennen"
+    },
+    "configureMonitor": "Monitor einrichten"
   },
   "shortcuts": {
     "title": "Tastenkürzel",
@@ -195,7 +200,6 @@
     "moveUp": "{name} nach oben",
     "moveDown": "{name} nach unten",
     "name": "Name",
-    "nameHint": "Bis zu {max} Zeichen.",
     "picker": {
       "search": "Knoten suchen",
       "noMatch": "Kein Knoten passt.",
@@ -297,9 +301,8 @@
     "createdDescription": "Schicke diesen Link an {email}. Er funktioniert einmal.",
     "link": "Einladungslink",
     "email": "E-Mail",
-    "roleHint": "Du kannst mit Rollen unter deiner eigenen einladen.",
-    "lifetime": "Gültig für Tage",
-    "lifetimeHint": "1 bis {max} Tage.",
+    "lifetime": "Gültig für",
+    "lifetimeHint": "1 bis {max}.",
     "state": "Status",
     "expires": "Läuft ab",
     "empty": "Keine Einladungen.",
@@ -362,7 +365,6 @@
       "step3": "Gib den {digits}-stelligen Code ein, den sie anzeigt.",
       "qr": "QR-Code für deine Authenticator-App",
       "manualEntry": "Schlüssel zum Abtippen",
-      "codeHint": "Die {digits} Ziffern, die deine App gerade zeigt.",
       "confirm": "Einschalten",
       "withheld": "Diese Antwort wurde wiederholt, der Schlüssel wird nicht erneut gezeigt. Geh zurück und beginne neu."
     },
@@ -385,14 +387,14 @@
     "signInFirst": "Für {email} gibt es ein Konto. Melde dich an, um anzunehmen.",
     "createAccount": "Lege dein Konto an, um anzunehmen.",
     "name": "Dein Name",
-    "nameHint": "Bis zu {max} Zeichen, sichtbar für alle, mit denen du arbeitest.",
     "createAndAccept": "Konto anlegen und annehmen"
   },
   "account": {
     "nav": {
       "label": "Konto",
       "security": "Sicherheit",
-      "apiKeys": "API-Schlüssel"
+      "apiKeys": "API-Schlüssel",
+      "appearance": "Darstellung"
     },
     "security": {
       "title": "Sicherheit",
@@ -406,6 +408,37 @@
       "changePassword": "Passwort ändern",
       "passwordChanged": "Passwort geändert.",
       "wrongPassword": "Das aktuelle Passwort ist falsch."
+    },
+    "appearance": {
+      "title": "Darstellung",
+      "theme": "Design",
+      "themeDescription": "Hell oder dunkel und die Akzentfarbe. Der Modus bleibt in diesem Browser, die Akzentfarbe folgt dir.",
+      "mode": "Modus",
+      "statusCard": "Monitorstatus",
+      "statusCardDescription": "Wie eine Monitorseite den aktuellen Status und seine Verfügbarkeit zeigt.",
+      "cards": {
+        "banner": "Ein getönter Block mit Status, Meldung und Verfügbarkeitszahlen.",
+        "hero": "Der Status in großer Schrift neben großen Verfügbarkeitszahlen.",
+        "compact": "Eine Zeile, für mehr Platz darunter.",
+        "gauge": "Ringe für 24 Stunden, 7 Tage und 30 Tage, Ausfälle rot markiert."
+      },
+      "formats": "Sprache und Formate",
+      "formatsDescription": "Wie Zahlen, Daten und Uhrzeiten geschrieben werden. Der Sprache folgen nutzt ihre übliche Schreibweise.",
+      "byLanguage": "Der Sprache folgen ({example})",
+      "number": "Zahlen",
+      "date": "Datum",
+      "time": "Uhrzeit",
+      "zone": "Zeitzone",
+      "zoneLocal": "Dieser Browser ({zone})",
+      "zoneUtc": "UTC",
+      "preview": "Vorschau",
+      "previewLabels": {
+        "when": "Jetzt",
+        "latency": "Antwortzeit",
+        "uptime": "Verfügbarkeit",
+        "ago": "Relative Zeit"
+      },
+      "week": "Erster Wochentag"
     }
   },
   "apiKeys": {
@@ -413,7 +446,6 @@
     "list": "API-Schlüssel",
     "description": "Sende einen Schlüssel als {scheme}-Token. Er handelt als du auf einem Knoten und darunter, nur mit den gewählten Rechten.",
     "name": "Name",
-    "nameHint": "Bis zu {max} Zeichen, um Schlüssel zu unterscheiden.",
     "node": "Knoten",
     "nodeHint": "Der Schlüssel reicht bis {node} und alles darunter.",
     "noNode": "noch keinen Knoten",
@@ -439,7 +471,6 @@
     "generalDescription": "Der Name erscheint in der Anwendung und in der Authenticator-App. Einladungslinks beginnen mit der öffentlichen URL.",
     "name": "Name",
     "publicUrl": "Öffentliche URL",
-    "publicUrlHint": "Die Adresse, unter der diese Instanz erreichbar ist, zum Beispiel https://status.example.com.",
     "fixed": "Vom Server über {variable} gesetzt, darum hier nicht änderbar.",
     "about": "Über",
     "version": "Version",
@@ -447,20 +478,18 @@
       "title": "Benachrichtigungen",
       "description": "Zeiten in Nachrichten und Wartungen ohne eigene Zeitzone verwenden diese Zone.",
       "timezone": "Zeitzone",
-      "timezoneHint": "Eine IANA-Zone, etwa Europe/Vienna.",
       "expiryDays": "Zertifikatswarnungen",
-      "expiryDaysHint": "Tage vor Ablauf eines Zertifikats, mit Komma getrennt, etwa 7, 14, 21."
+      "expiryDaysHint": "Mit Komma getrennt, etwa 7, 14, 21."
     },
     "smtp": {
       "title": "Mailserver",
       "description": "E-Mail-Kanäle ohne eigenen Server senden über diesen.",
       "none": "Kein Mailserver gesetzt, daher brauchen E-Mail-Kanäle einen eigenen.",
-      "fromHint": "Der Absender jeder E-Mail, die keinen eigenen setzt.",
       "remove": "Entfernen",
       "removeTitle": "Mailserver entfernen?",
       "removeConfirm": "E-Mail-Kanäle ohne eigenen Server senden nicht mehr, bis du wieder einen setzt.",
       "testTitle": "Test-E-Mail",
-      "testDescription": "Sendet eine Nachricht über den Server, wie er oben eingetragen ist, also auch vor dem Speichern.",
+      "testDescription": "Sendet eine E-Mail über den Server, wie er oben eingetragen ist, auch vor dem Speichern.",
       "testTo": "Senden an",
       "testSend": "Test-E-Mail senden"
     }
@@ -596,8 +625,7 @@
     },
     "detail": {
       "status": "Aktueller Status",
-      "since": "Seit {time}",
-      "lastCheck": "Letzte Prüfung {time}",
+      "lastCheck": "Letzte Prüfung",
       "noBeat": "Noch keine Prüfung gelaufen.",
       "uptime": "Verfügbarkeit",
       "uptime24h": "24 Stunden",
@@ -605,22 +633,15 @@
       "uptime30d": "30 Tage",
       "uptime1y": "1 Jahr",
       "noData": "Keine Daten",
-      "bars": "Letzte 90 Tage",
-      "barsZone": "Tage in {zone}",
-      "barsAgo": "Vor 90 Tagen",
-      "barsToday": "Heute",
-      "barTitle": "{day}: {uptime}",
-      "barEmpty": "{day}: keine Daten",
-      "barUtc": "{day} (UTC-Tag): {uptime}",
-      "barsSummary": "{down} von {days} Tagen mit Ausfällen.",
-      "day": "Tag",
       "latency": "Antwortzeit",
       "range": "Zeitraum",
       "ranges": {
         "1h": "1 h",
         "24h": "24 h",
         "7d": "7 T",
-        "30d": "30 T"
+        "30d": "30 T",
+        "90d": "90 T",
+        "1y": "1 J"
       },
       "latencyEmpty": "Keine Antwortzeiten in diesem Zeitraum.",
       "average": "Durchschnitt",
@@ -632,7 +653,6 @@
       "showOlder": "Ältere Prüfungen zeigen",
       "message": "Meldung",
       "httpStatus": "HTTP",
-      "settings": "Einstellungen",
       "target": "Ziel",
       "interval": "Intervall",
       "every": "Alle {seconds} s",
@@ -643,38 +663,57 @@
       "upsideDown": "Umgekehrt",
       "pause": "Pausieren",
       "resume": "Fortsetzen",
-      "paused": "Pausiert. Bis zum Fortsetzen laufen keine Prüfungen.",
-      "edit": "Bearbeiten",
       "delete": "Löschen",
       "deleteTitle": "Monitor löschen",
       "deleteConfirm": "{name} und alle Prüfungen löschen? Das lässt sich nicht rückgängig machen.",
       "manual": "Status setzen",
-      "manualHint": "Ein manueller Monitor zeigt den gesetzten Status. Ohne Status ist er ausstehend.",
       "manualClear": "Status entfernen",
       "manualSet": "Status auf {status} gesetzt.",
       "push": "Push-URL",
       "pushHint": "Rufe diese URL aus deinem Job auf. Ohne Status oder mit status=up gilt erreichbar, alles andere als ausgefallen.",
       "unsupported": "Aus Uptime Kuma als {type} importiert. v1per führt diesen Typ nicht aus, daher bleibt er pausiert.",
       "probes": "Probes",
-      "probesMeta": "Quorum: {rule}",
       "probe": "Probe",
-      "live": "Im Quorum",
-      "liveYes": "Ja",
-      "liveNo": "Nein",
-      "received": "Empfangen",
-      "probesEmpty": "Noch keine Probe hat gemeldet.",
       "probeFilter": "Probe",
       "allProbes": "Monitorstatus",
       "alerts": "Letzte Alarme",
       "alertsMeta": "aus den Kanälen dieses Monitors",
       "alertsEmpty": "Für diesen Monitor wurde noch kein Alarm gesendet.",
-      "showOlderAlerts": "Ältere Alarme zeigen"
+      "showOlderAlerts": "Ältere Alarme zeigen",
+      "configure": "Konfigurieren",
+      "everySpan": "alle {span}",
+      "forSpan": "seit {span}",
+      "quorumLine": "{count} von {total} melden {status}",
+      "quorumRules": {
+        "majority": "die Mehrheit entscheidet",
+        "any": "eine genügt",
+        "all": "alle müssen zustimmen"
+      },
+      "builtin": "Eingebaut",
+      "agent": "Agent",
+      "agentFrom": "Agent · von {node}",
+      "notInQuorum": "Nicht im Quorum",
+      "incident": "Vorfall",
+      "incidentStarted": "begonnen {time}",
+      "incidentsMore": "{count} weitere offen",
+      "postUpdate": "Update schreiben",
+      "told": "Wer benachrichtigt wird",
+      "toldFrom": "{provider} · von {node}",
+      "toldAbove": "{provider} · von oben",
+      "toldNone": "Kein Kanal alarmiert für diesen Monitor.",
+      "shownOn": "Angezeigt auf",
+      "changes": "Letzte Änderungen",
+      "recovered": "Erholt nach {span}",
+      "changesNone": "Keine Änderungen in den letzten Prüfungen.",
+      "uptimeIn": "Verfügbarkeit {window}",
+      "checkedAgo": "Geprüft {time}",
+      "details": "Details",
+      "upsideDownOn": "An"
     },
     "editor": {
       "createTitle": "Monitor hinzufügen",
       "editTitle": "Monitor bearbeiten",
       "type": "Typ",
-      "typeHint": "Was der Monitor prüft.",
       "typeNotes": {
         "http": "Erreichbar, wenn die URL mit einem akzeptierten Statuscode antwortet.",
         "keyword": "Erreichbar, wenn die Antwort das Schlüsselwort enthält.",
@@ -686,14 +725,12 @@
         "group": "Ausgefallen, wenn ein Mitglied ausgefallen ist. Wähle die Gruppe in den Einstellungen eines Mitglieds.",
         "manual": "Zeigt den Status, den du auf seiner Seite setzt."
       },
-      "basics": "Name und Ort",
+      "basics": "Allgemein",
       "name": "Name",
       "description": "Beschreibung",
       "tags": "Tags",
-      "tagsHint": "Mit Kommas trennen. Bis zu {max}.",
       "group": "Gruppe",
       "noGroup": "Keine Gruppe",
-      "groupHint": "Gruppenmonitore in diesem Knoten oder darüber.",
       "check": "Prüfung",
       "url": "URL",
       "method": "Methode",
@@ -705,20 +742,18 @@
       "operator": "Vergleich",
       "expectedValue": "Erwarteter Wert",
       "retryOnlyOnStatusCodeFailure": "Sofort ausgefallen, wenn der Vergleich scheitert",
-      "retryOnlyOnStatusCodeFailureHint": "Nur gescheiterte Anfragen nutzen die Wiederholungen.",
       "hostname": "Hostname",
       "hostnameDns": "Aufzulösender Name",
       "port": "Port",
       "pingCount": "Pings pro Prüfung",
-      "packetSize": "Paketgröße in Bytes",
-      "pingTimeout": "Wartezeit pro Antwort in Sekunden",
+      "packetSize": "Paketgröße",
+      "pingTimeout": "Wartezeit pro Antwort",
       "dnsRecordType": "Eintragstyp",
       "dnsServer": "Resolver",
-      "dnsServerHint": "Adressen mit Kommas getrennt.",
       "dnsPort": "Resolver-Port",
       "request": "Anfrage",
       "headers": "Header",
-      "headersHint": "Versiegle einen Header mit einem Schlüssel; sein Wert wird verschlüsselt gespeichert und nie wieder angezeigt.",
+      "headersHint": "Versiegelte Werte werden verschlüsselt gespeichert und nie wieder angezeigt.",
       "addHeader": "Header hinzufügen",
       "headerName": "Name",
       "headerValue": "Wert",
@@ -747,10 +782,8 @@
         "client_secret_post": "Anfrage-Body"
       },
       "acceptedStatusCodes": "Akzeptierte Statuscodes",
-      "acceptedStatusCodesHint": "Codes oder Bereiche, etwa 200-299, 304.",
       "maxRedirects": "Höchstens Weiterleitungen",
       "ignoreTls": "TLS-Fehler ignorieren",
-      "ignoreTlsHint": "Abgelaufene oder selbst signierte Zertifikate akzeptieren.",
       "ipFamily": "IP-Version",
       "ipFamilies": {
         "any": "Beliebig",
@@ -759,28 +792,21 @@
       },
       "cacheBust": "Zufälligen Query-Parameter anhängen",
       "schedule": "Zeitplan und Wiederholungen",
-      "interval": "Intervall in Sekunden",
-      "intervalHint": "Mindestens {min}.",
-      "retryInterval": "Wiederholungsintervall in Sekunden",
-      "retryIntervalHint": "Solange ausstehend. Leer nutzt das Intervall.",
+      "interval": "Intervall",
+      "retryInterval": "Wiederholungsintervall",
       "maxRetries": "Wiederholungen",
-      "maxRetriesHint": "Gescheiterte Prüfungen, die als ausstehend gelten, bevor der Monitor ausfällt.",
-      "resendInterval": "Ausfallmeldung wiederholen nach",
-      "resendIntervalHint": "Ausgefallene Prüfungen zwischen wiederholten Meldungen. 0 sendet eine.",
-      "timeout": "Zeitlimit in Sekunden",
-      "timeoutHint": "Leer nutzt 80 % des Intervalls.",
+      "resendInterval": "Meldung wiederholen alle",
+      "timeout": "Zeitlimit",
       "upsideDown": "Umgekehrt",
       "upsideDownHint": "Erreichbar, wenn die Prüfung scheitert, ausgefallen, wenn sie gelingt.",
       "quorum": "Probe-Quorum",
-      "quorumHint": "Wann der Monitor ausgefallen ist, gezählt über die Probes, die ihn prüfen.",
       "quorums": {
         "majority": "Die Hälfte oder mehr",
         "any": "Eine Probe",
         "all": "Alle Probes"
       },
       "probes": "Probes",
-      "probesHint": "Wo die Prüfung läuft. Ohne Auswahl übernimmt die eingebaute Probe.",
-      "probeInherited": "Von einem übergeordneten Knoten",
+      "probesHint": "Ohne Auswahl prüft die eingebaute Probe.",
       "push": "Push-URL",
       "pushNew": "Die Push-URL erscheint hier, sobald der Monitor angelegt ist.",
       "pushHidden": "Mitglieder, Admins und Eigentümer sehen die Push-URL.",
@@ -800,13 +826,37 @@
       "saveCreate": "Monitor hinzufügen",
       "saveEdit": "Änderungen speichern",
       "notifications": "Benachrichtigungen",
-      "notificationsHint": "Wohin seine Alarme zu Ausfall, Erholung und Zertifikat gehen.",
       "channels": "Kanäle",
-      "channelsHint": "Kanäle dieses Knotens und der Knoten darüber. Bis du wählst, bekommt ein neuer Monitor die Standardkanäle.",
+      "channelsHint": "Kanäle dieses Knotens und der Knoten darüber. Ein neuer Monitor startet mit den Standardkanälen.",
       "noChannels": "Hier gibt es noch keine Kanäle. Füge einen unter Benachrichtigungen hinzu.",
       "expiryNotification": "Vor Ablauf des Zertifikats alarmieren",
-      "expiryNotificationHint": "An den Tagen aus den Instanzeinstellungen, standardmäßig 21, 14 und 7 Tage vorher.",
-      "expiryNotificationIgnored": "Wirkt nicht, solange ungültige Zertifikate akzeptiert werden."
+      "expiryNotificationIgnored": "Wirkt nicht, solange ungültige Zertifikate akzeptiert werden.",
+      "saved": "Gespeichert.",
+      "deleteSection": "Monitor löschen",
+      "deleteText": "Entfernt den Monitor mit allen Prüfungen und seinem Verlauf.",
+      "tagsPlaceholder": "shop, produktion",
+      "acceptedPlaceholder": "200-299, 304",
+      "dnsServerPlaceholder": "1.1.1.1, 8.8.8.8",
+      "scheduleHint": "Wiederholungen laufen, bevor ein Monitor ausfällt. Bei 0 kommt eine Meldung pro Ausfall.",
+      "probesSection": "Wo er läuft"
+    },
+    "cardStyles": {
+      "banner": "Banner",
+      "hero": "Groß",
+      "compact": "Kompakt",
+      "gauge": "Ring"
+    },
+    "history": {
+      "title": "Verlauf",
+      "availability": "Verfügbarkeit",
+      "summary": "{down} von {count} Balken mit fehlgeschlagenen Prüfungen",
+      "slotDown": "{uptime} · {count} fehlgeschlagene Prüfungen",
+      "maintenanceOnly": "Wartung",
+      "showProbe": "Verlauf von {name} zeigen",
+      "failed": "Fehlgeschlagene Prüfungen",
+      "average": "Durchschnitt",
+      "p95": "95. Perzentil",
+      "max": "Langsamste"
     }
   },
   "probes": {
@@ -817,7 +867,7 @@
     "create": "Probe hinzufügen",
     "createDescription": "Eine Probe führt Prüfungen von einem anderen Rechner aus. Sie baut nur ausgehende Verbindungen zu diesem Server auf und funktioniert daher auch hinter NAT.",
     "name": "Name",
-    "nameHint": "Wo sie läuft, etwa Frankfurt oder Büro. Bis zu {max} Zeichen.",
+    "nameHint": "Ein kurzer Name, etwa Frankfurt 1 oder Büro.",
     "createdTitle": "Probe hinzugefügt",
     "createdDescription": "Führe das auf dem Rechner aus, der die Prüfungen übernehmen soll. Sobald er sich verbindet, ist die Probe online.",
     "token": "Token",
@@ -854,7 +904,17 @@
     "revokeTitle": "Probe widerrufen",
     "revokeConfirm": "{name} widerrufen? Der Agent wird bei seiner nächsten Anfrage abgewiesen und beendet sich, und seine Monitore nutzen ihn nicht mehr. Das lässt sich nicht rückgängig machen.",
     "revoked": "{name} widerrufen.",
-    "revokedOn": "Widerrufen am {date}"
+    "revokedOn": "Widerrufen am {date}",
+    "country": "Land",
+    "noCountry": "Kein Land",
+    "city": "Stadt",
+    "cityPlaceholder": "Wien",
+    "provider": "Anbieter",
+    "providerPlaceholder": "Scaleway",
+    "edit": "Probe bearbeiten",
+    "editNamed": "{name} bearbeiten",
+    "editDescription": "Benenne die Probe und gib an, wo sie läuft. Monitorseiten zeigen Flagge, Stadt und Anbieter.",
+    "saved": "{name} gespeichert."
   },
   "channels": {
     "title": "Benachrichtigungen",
@@ -908,15 +968,12 @@
       "basics": "Kanal",
       "basicsHint": "Wohin Alarme gehen und welche Monitore ihn nutzen.",
       "provider": "Anbieter",
-      "providerHint": "Importierte Kanäle anderer Kuma-Anbieter bleiben erhalten, senden aber nicht.",
       "name": "Name",
       "untitled": "Neuer Kanal",
       "isDefault": "Standardkanal",
-      "isDefaultHint": "Neue Monitore auf diesem Knoten und darunter nutzen ihn, außer wer sie anlegt wählt andere Kanäle.",
+      "isDefaultHint": "Neue Monitore starten damit.",
       "applyExisting": "Zu bestehenden Monitoren hinzufügen",
-      "applyExistingHint": "Verknüpft beim Speichern jeden Monitor auf diesem Knoten und darunter mit diesem Kanal.",
       "active": "Aktiv",
-      "activeHint": "Ein inaktiver Kanal sendet nichts.",
       "unsupported": "Dieser Kanal wurde aus Uptime Kuma importiert und kann von v1per nicht senden: {reason} Du kannst ihn löschen.",
       "invalid": "Einige Felder brauchen Aufmerksamkeit.",
       "saveCreate": "Kanal hinzufügen",
@@ -924,38 +981,30 @@
     },
     "smtp": {
       "ownServer": "Eigenen Mailserver verwenden",
-      "ownServerHint": "Dieser Kanal sendet über den Server unten.",
-      "instanceServerHint": "Sendet über den Mailserver der Instanz aus den Instanzeinstellungen.",
+      "instanceServerHint": "Nutzt den Mailserver der Instanz.",
       "host": "SMTP-Host",
       "port": "Port",
       "security": "Sicherheit",
-      "securityHint": "STARTTLS läuft meist auf Port 587 oder 25, TLS auf Port 465.",
       "securities": {
         "starttls": "Keine oder STARTTLS",
         "tls": "TLS"
       },
       "ignoreStarttls": "Nie auf TLS umstellen",
-      "ignoreStarttlsHint": "Sendet unverschlüsselt, auch wenn der Server STARTTLS anbietet.",
       "ignoreTlsError": "Ungültige Zertifikate akzeptieren",
       "username": "Benutzername",
       "password": "Passwort",
       "from": "Absender",
       "fromHint": "Leer verwendet den Absender der Instanz.",
       "to": "An",
-      "recipientsHint": "Adressen mit Komma getrennt. Fülle mindestens eines von An, CC und BCC aus.",
+      "recipientsHint": "Adressen mit Komma trennen.",
       "cc": "CC",
       "bcc": "BCC",
       "subject": "Betreffvorlage",
-      "subjectHint": "Leer verwendet Kumas Betreff, etwa \"[API] [🔴 Down] timeout\".",
       "body": "Textvorlage",
-      "bodyHint": "Leer verwendet Kumas Nachricht mit der Uhrzeit in der Zeitzone der Instanz.",
       "htmlBody": "Text als HTML senden",
-      "htmlBodyHint": "Gilt nur für einen eigenen Text.",
       "advanced": "Header und DKIM-Signatur",
-      "headers": "Zusätzliche Header",
-      "headersHint": "Ein JSON-Objekt, versiegelt wie ein Passwort.",
+      "headers": "Zusätzliche Header als JSON",
       "dkimDomain": "DKIM-Domain",
-      "dkimDomainHint": "Signiert Nachrichten, wenn gesetzt.",
       "dkimKeySelector": "Schlüsselselektor",
       "dkimPrivateKey": "Privater Schlüssel",
       "dkimHashAlgo": "Hash-Verfahren",
@@ -965,7 +1014,6 @@
     "discord": {
       "webhookUrl": "Webhook-URL",
       "username": "Anzeigename",
-      "usernameHint": "Leer postet als \"Uptime Kuma\".",
       "channelType": "Posten in",
       "channelTypes": {
         "channel": "Den Kanal des Webhooks",
@@ -980,17 +1028,11 @@
         "minimalist": "Minimal",
         "custom": "Eigene Vorlage"
       },
-      "formatHints": {
-        "normal": "Ein Embed mit Dienst, Adresse, Uhrzeit und Fehler.",
-        "minimalist": "Eine Zeile, etwa \"🔴 API is down.\"",
-        "custom": "Deine Vorlage, mit Kumas Variablen gefüllt."
-      },
       "prefixMessage": "Vorangestellte Nachricht",
-      "prefixMessageHint": "Text über dem Embed, zum Beispiel eine Rollen-Erwähnung.",
+      "prefixMessageHint": "Über dem Embed, etwa eine Rollen-Erwähnung.",
       "messageTemplate": "Nachrichtenvorlage",
       "disableUrl": "Adresse des Monitors ausblenden",
-      "suppressNotifications": "Still posten",
-      "suppressNotificationsHint": "Mitglieder sehen die Nachricht ohne Push-Benachrichtigung."
+      "suppressNotifications": "Still posten"
     },
     "webhook": {
       "url": "URL",
@@ -1002,7 +1044,7 @@
         "custom": "Eigene Vorlage"
       },
       "customBody": "Inhaltsvorlage",
-      "headers": "Zusätzliche Header"
+      "headers": "Zusätzliche Header als JSON"
     },
     "slack": {
       "webhookUrl": "Webhook-URL",
@@ -1036,7 +1078,7 @@
       "topic": "Thema",
       "priority": "Priorität",
       "priorityDown": "Priorität bei Ausfall",
-      "priorityHint": "1 bis 5.",
+      "priorityHint": "1 bis 5",
       "auth": "Anmeldung",
       "auths": {
         "none": "Keine",
@@ -1059,8 +1101,8 @@
       "sound": "Ton bei Ausfall",
       "soundUp": "Ton bei Erholung",
       "priority": "Priorität",
-      "priorityHint": "-2 bis 2.",
-      "ttl": "Lebensdauer in Sekunden"
+      "priorityHint": "-2 bis 2",
+      "ttl": "Lebensdauer"
     },
     "templates": {
       "title": "Vorlagenvariablen",
@@ -1126,7 +1168,7 @@
   },
   "incidents": {
     "title": "Vorfälle",
-    "create": "Vorfall eröffnen",
+    "create": "Neuer Vorfall",
     "edit": "Bearbeiten",
     "delete": "Löschen",
     "deleteTitle": "Diesen Vorfall löschen?",
@@ -1135,7 +1177,6 @@
     "dismissTitle": "Diesen automatischen Vorfall verwerfen?",
     "dismissConfirm": "\"{title}\" und sein Verlauf werden gelöscht, wie bei einem Fehlalarm.",
     "resolve": "Beheben",
-    "resolvedAt": "Behoben",
     "status": "Status",
     "open": "Offene Vorfälle",
     "all": "Alle Vorfälle",
@@ -1145,7 +1186,6 @@
     "readOnly": "Mitglieder dieses Knotens verwalten seine Vorfälle. Du kannst sie lesen.",
     "unavailable": "Dieser Vorfall ist nicht verfügbar.",
     "empty": "Keine offenen Vorfälle",
-    "emptyHint": "Ein ausgefallener Monitor eröffnet selbst einen. Für alles andere kannst du einen eröffnen.",
     "emptyReadOnly": "Gerade ist alles in Ordnung.",
     "noMatch": "Kein Vorfall passt zu diesen Filtern.",
     "showOlder": "Ältere anzeigen",
@@ -1161,14 +1201,6 @@
     "origins": {
       "auto": "Automatischer Vorfall",
       "manual": "Manuell"
-    },
-    "columns": {
-      "state": "Stand",
-      "title": "Titel",
-      "impact": "Auswirkung",
-      "affected": "Betroffen",
-      "started": "Begonnen",
-      "updated": "Aktualisiert"
     },
     "states": {
       "investigating": "Wird untersucht",
@@ -1189,51 +1221,57 @@
       "postUpdate": "Update posten"
     },
     "targets": {
-      "search": "Nach Name filtern",
+      "search": "Monitore und Komponenten suchen",
       "none": "Keine Monitore oder statischen Komponenten auf diesem Knoten oder darunter.",
       "monitor": "Monitor",
       "component": "Komponente",
       "impactOf": "Auswirkung auf {name}"
     },
     "editor": {
-      "createTitle": "Vorfall eröffnen",
+      "createTitle": "Neuer Vorfall",
       "editTitle": "Vorfall bearbeiten",
-      "basics": "Vorfall",
       "title": "Titel",
-      "titleHint": "Was Leute bemerken, etwa \"Checkout ist langsam\".",
       "affected": "Betroffen",
-      "affectedHint": "Wähle die betroffenen Monitore und statischen Komponenten, jeweils mit ihrer Auswirkung.",
-      "affectedEditHint": "Ein entferntes Ziel verliert seine Auswirkung. Ein neues hat keine, bis ein Update es nennt.",
-      "saveCreate": "Vorfall eröffnen",
       "saveEdit": "Änderungen speichern"
     },
     "update": {
       "title": "Update posten",
       "state": "Stand",
       "message": "Nachricht",
-      "messageHint": "Was bekannt ist und was als Nächstes passiert.",
       "impacts": "Auswirkung",
-      "noImpact": "Keine Auswirkung gesetzt",
-      "resolvedHint": "Beheben setzt jedes betroffene Ziel auf In Betrieb.",
-      "post": "Update posten"
+      "noImpact": "Keine Auswirkung gesetzt"
     },
     "timeline": {
       "title": "Verlauf",
-      "count": "{count} Update | {count} Updates",
       "automatic": "v1per",
       "removed": "Entferntes Ziel"
     },
     "pages": {
       "title": "Statusseiten",
-      "none": "Keine Statusseite zeigt, was dieser Vorfall betrifft.",
       "publishedAt": "Veröffentlicht {date}",
       "scheduledAt": "Wird automatisch veröffentlicht: {date}",
       "draft": "Nicht veröffentlicht",
-      "publish": "Veröffentlichen",
-      "unpublish": "Zurückziehen",
       "publishTo": "Auf {title} veröffentlichen",
       "unpublishFrom": "Von {title} zurückziehen",
       "publishAll": "Auf {count} Seite veröffentlichen | Auf {count} Seiten veröffentlichen"
+    },
+    "composer": {
+      "titlePlaceholder": "Was ist kaputt?",
+      "messagePlaceholder": "Was passiert gerade?",
+      "affects": "Betrifft",
+      "remove": "{name} entfernen",
+      "noMatch": "Nichts gefunden.",
+      "perTarget": "Pro Ziel",
+      "mixed": "Gemischte Auswirkung",
+      "post": "Posten"
+    },
+    "feed": {
+      "started": "Begonnen {time}",
+      "updated": "Aktualisiert {time}",
+      "openFor": "Offen seit {duration}",
+      "lasted": "Dauerte {duration}",
+      "affected": "{count} betroffen | {count} betroffen",
+      "more": "Weitere Aktionen"
     }
   },
   "maintenance": {
@@ -1279,14 +1317,6 @@
       "recurring-day-of-month": "An Monatstagen",
       "cron": "Cron-Ausdruck"
     },
-    "strategyHints": {
-      "manual": "Aktiv ab dem Speichern, bis du sie pausierst.",
-      "single": "Ein Fenster zwischen zwei Zeitpunkten.",
-      "recurring-interval": "Ein tägliches Fenster, das sich alle paar Tage wiederholt.",
-      "recurring-weekday": "Ein Fenster an den gewählten Wochentagen.",
-      "recurring-day-of-month": "Ein Fenster an den gewählten Tagen des Monats.",
-      "cron": "Fenster, die nach einem Cron-Zeitplan beginnen und eine feste Zeit dauern."
-    },
     "windows": {
       "from": "Ab {time}",
       "until": "Bis {time}",
@@ -1302,25 +1332,22 @@
       "strategy": "Wiederholung",
       "start": "Beginn",
       "end": "Ende",
-      "intervalDay": "Alle wie viele Tage",
-      "intervalDayHint": "1 läuft jeden Tag.",
+      "intervalDay": "Alle",
       "weekdays": "Wochentage",
       "daysOfMonth": "Tage des Monats",
       "lastDayOfMonth": "Auch am letzten Tag jedes Monats",
       "cron": "Cron-Ausdruck",
-      "cronHint": "Fünf Felder, etwa \"30 3 * * 0\" für sonntags um 03:30. Sechs Felder beginnen mit Sekunden.",
-      "duration": "Dauer in Minuten",
+      "cronHint": "Fünf Felder, etwa \"30 3 * * 0\" für sonntags um 03:30.",
+      "duration": "Dauer",
       "startTime": "Von",
       "endTime": "Bis",
-      "endTimeHint": "Ein Ende vor dem Beginn läuft über Mitternacht.",
+      "endTimeHint": "Früher als der Beginn endet am nächsten Tag.",
       "rangeStart": "Nicht vor",
       "rangeEnd": "Nicht nach",
-      "rangeHint": "Optional. Beide leer lassen, um dauerhaft zu wiederholen.",
       "timezone": "Zeitzone",
-      "timezoneHint": "Die Zeiten oben gelten in dieser Zone. Leer verwendet die Zeitzone der Instanz.",
       "timezonePlaceholder": "Zeitzone der Instanz",
       "monitors": "Abgedeckte Monitore",
-      "monitorsHint": "Sie melden Wartung und senden keine Alarme, solange ein Fenster aktiv ist. Mitglieder einer abgedeckten Gruppe sind mit abgedeckt.",
+      "monitorsHint": "Sie senden keine Alarme, solange ein Fenster aktiv ist. Mitglieder einer abgedeckten Gruppe sind mit abgedeckt.",
       "noMonitors": "Noch keine Monitore auf diesem Knoten oder darunter.",
       "invalid": "Einige Felder brauchen Aufmerksamkeit.",
       "saveCreate": "Wartung planen",
@@ -1354,7 +1381,6 @@
   },
   "pages": {
     "title": "Statusseiten",
-    "intro": "Seiten mit dem Status von Monitoren und Komponenten dieses Knotens und darunter, für die Öffentlichkeit, Kunden oder Ihr Team. Neue Seiten sind nur für Ihr Team, bis Sie sie öffnen.",
     "create": "Seite erstellen",
     "createDescription": "Danach wählen Sie Komponenten und wer die Seite öffnen darf.",
     "empty": "Noch keine Statusseiten",
@@ -1376,7 +1402,8 @@
       "layout": "Komponenten",
       "access": "Zugang",
       "hostnames": "Domains",
-      "preview": "Vorschau"
+      "preview": "Vorschau",
+      "incidents": "Vorfälle"
     },
     "statuses": {
       "operational": "In Betrieb",
@@ -1389,10 +1416,9 @@
       "basics": "Seite",
       "title": "Titel",
       "slug": "Adresse",
-      "slugHint": "Kleinbuchstaben, Ziffern und Bindestriche. Die Seite liegt unter {path}.",
+      "slugHint": "Die Seite liegt unter {path}.",
       "description": "Beschreibung",
       "footer": "Fußzeile",
-      "maxChars": "Bis zu {max} Zeichen.",
       "look": "Aussehen",
       "lookHint": "Besucher sehen die Seite in diesen Farben. Automatisch folgt ihrem Gerät.",
       "logo": "Logo",
@@ -1400,7 +1426,6 @@
       "logoUpload": "Logo hochladen",
       "logoReplace": "Logo ersetzen",
       "logoRemove": "Logo entfernen",
-      "logoHint": "PNG, JPEG, GIF, WebP oder SVG, bis {max} KB.",
       "logoTooLarge": "Diese Datei ist größer als {max} KB.",
       "logoInvalid": "Diese Datei ist kein PNG-, JPEG-, GIF-, WebP- oder SVG-Bild.",
       "theme": "Darstellung",
@@ -1424,9 +1449,8 @@
       "languagesHint": "Besucher bekommen die Sprache ihres Browsers, wenn die Seite sie anbietet, sonst die Standardsprache.",
       "defaultLocale": "Standardsprache",
       "locales": "Angebotene Sprachen",
-      "defaultAlwaysOn": "Die Standardsprache wird immer angeboten.",
+      "defaultAlwaysOn": "Standard",
       "timezone": "Zeitzone der Tagesbalken",
-      "timezoneHint": "Jeder Balken umfasst einen Tag in dieser Zeitzone.",
       "timezonePlaceholder": "Zeitzone der Instanz",
       "autoIncidents": "Automatische Vorfälle",
       "autoIncidentsHint": "Vorfälle, die sich öffnen, wenn ein Monitor dieser Seite ausfällt.",
@@ -1438,8 +1462,8 @@
         "draft": "Sie bleiben intern, bis jemand sie auf dieser Seite veröffentlicht.",
         "auto_publish": "Sie erscheinen auf dieser Seite, sobald sie die Wartezeit über offen waren."
       },
-      "grace": "Wartezeit in Minuten",
-      "graceHint": "0 bis {max}. Ein Ausfall, der früher endet, erscheint nie.",
+      "grace": "Wartezeit",
+      "graceHint": "Ausfälle, die früher enden, erscheinen nie.",
       "save": "Einstellungen speichern",
       "deleteTitle": "Diese Seite löschen",
       "deleteHint": "Adresse, Domains und Freigabelinks funktionieren nicht mehr. Vorfälle bleiben.",
@@ -1511,9 +1535,9 @@
       "emailHint": "Gelistete Personen fordern per E-Mail einen Link an, der die Seite öffnet.",
       "noSmtp": "Anmeldelinks brauchen SMTP. Ein Instanz-Admin richtet es in den Instanzeinstellungen ein.",
       "emails": "Erlaubte Adressen",
-      "emailsHint": "Eine pro Zeile, bis zu {max}.",
+      "emailsHint": "Eine pro Zeile.",
       "domains": "Erlaubte Domains",
-      "domainsHint": "Alle mit einer Adresse bei diesen Domains, eine pro Zeile.",
+      "domainsHint": "Eine pro Zeile.",
       "save": "Zugang speichern"
     },
     "tokens": {
@@ -1521,7 +1545,6 @@
       "intro": "Ein Freigabelink öffnet die Seite ohne Anmeldung, bis er abläuft oder Sie ihn widerrufen.",
       "introPublic": "Die Seite ist öffentlich, Freigabelinks braucht es gerade nicht. Sie gelten wieder, sobald sie eingeschränkt ist.",
       "name": "Name",
-      "nameHint": "Für wen er ist, bis zu {max} Zeichen.",
       "expires": "Läuft ab",
       "expiresHint": "Leer: nie.",
       "create": "Freigabelink erstellen",
@@ -1568,6 +1591,11 @@
       "noComponents": "Keine sichtbaren Komponenten.",
       "noStatus": "Kein Status",
       "withDetail": "Antwortzeiten"
+    },
+    "incidents": {
+      "compose": "Neuer Vorfall auf dieser Seite",
+      "title": "Vorfälle auf dieser Seite",
+      "none": "Keine Vorfälle auf dieser Seite."
     }
   },
   "observe": {
@@ -1637,5 +1665,12 @@
       "empty": "Hier braucht dich gerade nichts."
     },
     "instance": "Instanz"
+  },
+  "units": {
+    "seconds": "s",
+    "bytes": "Bytes",
+    "checks": "Prüfungen",
+    "days": "Tage",
+    "minutes": "Min."
   }
 }

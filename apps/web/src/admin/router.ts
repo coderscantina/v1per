@@ -147,6 +147,7 @@ const routes: RouteRecordRaw[] = [
     children: [
       { path: '', redirect: { name: 'account-security' } },
       { path: 'security', name: 'account-security', component: () => import('./pages/account/SecurityPage.vue') },
+      { path: 'appearance', name: 'account-appearance', component: () => import('./pages/account/AppearancePage.vue') },
       { path: 'api-keys', name: 'account-api-keys', component: () => import('./pages/account/ApiKeysPage.vue') },
     ],
   },

@@ -49,6 +49,7 @@ import type { MonitorArgs } from './MonitorArgs'
 import type { MonitorDeleted } from './MonitorDeleted'
 import type { MonitorResult } from './MonitorResult'
 import type { MonitorsCreateArgs } from './MonitorsCreateArgs'
+import type { MonitorsMoveArgs } from './MonitorsMoveArgs'
 import type { MonitorsSetManualStatusArgs } from './MonitorsSetManualStatusArgs'
 import type { MonitorsUpdateArgs } from './MonitorsUpdateArgs'
 import type { NodeDeleted } from './NodeDeleted'
@@ -73,6 +74,7 @@ import type { ProbeArgs } from './ProbeArgs'
 import type { ProbeCreated } from './ProbeCreated'
 import type { ProbeResult } from './ProbeResult'
 import type { ProbesCreateArgs } from './ProbesCreateArgs'
+import type { ProbesUpdateArgs } from './ProbesUpdateArgs'
 import type { ReauthenticateArgs } from './ReauthenticateArgs'
 import type { Reauthenticated } from './Reauthenticated'
 import type { RecoveryCodes } from './RecoveryCodes'
@@ -121,6 +123,7 @@ export interface Commands {
   'members.updateRole': { args: MembersUpdateRoleArgs; result: MemberResult; access: 'person'; key: false; reauth: 'handler' }
   'monitors.create': { args: MonitorsCreateArgs; result: MonitorResult; access: 'person'; key: true; reauth: 'never' }
   'monitors.delete': { args: MonitorArgs; result: MonitorDeleted; access: 'person'; key: true; reauth: 'never' }
+  'monitors.move': { args: MonitorsMoveArgs; result: MonitorResult; access: 'person'; key: true; reauth: 'never' }
   'monitors.pause': { args: MonitorArgs; result: MonitorResult; access: 'person'; key: true; reauth: 'never' }
   'monitors.resume': { args: MonitorArgs; result: MonitorResult; access: 'person'; key: true; reauth: 'never' }
   'monitors.setManualStatus': { args: MonitorsSetManualStatusArgs; result: MonitorResult; access: 'person'; key: true; reauth: 'never' }
@@ -143,10 +146,11 @@ export interface Commands {
   'pages.updateLayout': { args: PagesUpdateLayoutArgs; result: PageDetail; access: 'person'; key: false; reauth: 'never' }
   'probes.create': { args: ProbesCreateArgs; result: ProbeCreated; access: 'person'; key: false; reauth: 'never' }
   'probes.revoke': { args: ProbeArgs; result: ProbeResult; access: 'person'; key: false; reauth: 'never' }
+  'probes.update': { args: ProbesUpdateArgs; result: ProbeResult; access: 'person'; key: false; reauth: 'never' }
   'twoFactor.begin': { args: Empty; result: TwoFactorEnrollment; access: 'person'; key: false; reauth: 'handler' }
   'twoFactor.confirm': { args: TwoFactorConfirmArgs; result: RecoveryCodes; access: 'person'; key: false; reauth: 'handler' }
   'twoFactor.disable': { args: Empty; result: TwoFactorStatus; access: 'person'; key: false; reauth: 'always' }
   'twoFactor.regenerateRecoveryCodes': { args: Empty; result: RecoveryCodes; access: 'person'; key: false; reauth: 'always' }
 }
 
-export const commandNames = ['account.changePassword', 'account.updatePreferences', 'apiKeys.create', 'apiKeys.revoke', 'auth.login', 'auth.logout', 'auth.reauthenticate', 'auth.verifySecondFactor', 'channels.create', 'channels.delete', 'channels.test', 'channels.update', 'components.create', 'components.delete', 'components.update', 'incidents.addUpdate', 'incidents.create', 'incidents.delete', 'incidents.publish', 'incidents.unpublish', 'incidents.update', 'instance.testSmtp', 'instance.updateSettings', 'instance.updateSmtp', 'invitations.accept', 'maintenance.create', 'maintenance.delete', 'maintenance.pause', 'maintenance.resume', 'maintenance.update', 'members.invite', 'members.remove', 'members.revokeInvitation', 'members.updateRole', 'monitors.create', 'monitors.delete', 'monitors.pause', 'monitors.resume', 'monitors.setManualStatus', 'monitors.update', 'nodes.create', 'nodes.delete', 'nodes.move', 'nodes.rename', 'nodes.reorder', 'nodes.requireTwoFactor', 'pages.claimHostname', 'pages.create', 'pages.createShareToken', 'pages.delete', 'pages.releaseHostname', 'pages.removeLogo', 'pages.revokeShareToken', 'pages.update', 'pages.updateAccess', 'pages.updateLayout', 'probes.create', 'probes.revoke', 'twoFactor.begin', 'twoFactor.confirm', 'twoFactor.disable', 'twoFactor.regenerateRecoveryCodes'] as const satisfies readonly (keyof Commands)[]
+export const commandNames = ['account.changePassword', 'account.updatePreferences', 'apiKeys.create', 'apiKeys.revoke', 'auth.login', 'auth.logout', 'auth.reauthenticate', 'auth.verifySecondFactor', 'channels.create', 'channels.delete', 'channels.test', 'channels.update', 'components.create', 'components.delete', 'components.update', 'incidents.addUpdate', 'incidents.create', 'incidents.delete', 'incidents.publish', 'incidents.unpublish', 'incidents.update', 'instance.testSmtp', 'instance.updateSettings', 'instance.updateSmtp', 'invitations.accept', 'maintenance.create', 'maintenance.delete', 'maintenance.pause', 'maintenance.resume', 'maintenance.update', 'members.invite', 'members.remove', 'members.revokeInvitation', 'members.updateRole', 'monitors.create', 'monitors.delete', 'monitors.move', 'monitors.pause', 'monitors.resume', 'monitors.setManualStatus', 'monitors.update', 'nodes.create', 'nodes.delete', 'nodes.move', 'nodes.rename', 'nodes.reorder', 'nodes.requireTwoFactor', 'pages.claimHostname', 'pages.create', 'pages.createShareToken', 'pages.delete', 'pages.releaseHostname', 'pages.removeLogo', 'pages.revokeShareToken', 'pages.update', 'pages.updateAccess', 'pages.updateLayout', 'probes.create', 'probes.revoke', 'probes.update', 'twoFactor.begin', 'twoFactor.confirm', 'twoFactor.disable', 'twoFactor.regenerateRecoveryCodes'] as const satisfies readonly (keyof Commands)[]

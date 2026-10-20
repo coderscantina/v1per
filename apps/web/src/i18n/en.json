@@ -140,8 +140,13 @@
       "collapse": "Collapse {name}",
       "down": "{count} down",
       "noMatch": "Nothing matches.",
-      "empty": "No nodes yet."
-    }
+      "empty": "No nodes yet.",
+      "moveAccess": "Moving it into {target} changes access: {gains} gain it, {losses} lose it, {changes} get another role. Move node in the node's settings lists who.",
+      "newFolderIn": "New folder in {name}",
+      "folderName": "Folder name",
+      "rename": "Rename {name}"
+    },
+    "configureMonitor": "Monitor configuration"
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
@@ -195,7 +200,6 @@
     "moveUp": "Move {name} up",
     "moveDown": "Move {name} down",
     "name": "Name",
-    "nameHint": "Up to {max} characters.",
     "picker": {
       "search": "Search nodes",
       "noMatch": "No node matches.",
@@ -297,9 +301,8 @@
     "createdDescription": "Send this link to {email}. It works once.",
     "link": "Invitation link",
     "email": "Email",
-    "roleHint": "You can invite with roles below your own.",
-    "lifetime": "Valid for days",
-    "lifetimeHint": "1 to {max} days.",
+    "lifetime": "Valid for",
+    "lifetimeHint": "1 to {max}.",
     "state": "State",
     "expires": "Expires",
     "empty": "No invitations.",
@@ -362,7 +365,6 @@
       "step3": "Enter the {digits}-digit code it shows.",
       "qr": "QR code for your authenticator app",
       "manualEntry": "Key for manual entry",
-      "codeHint": "The {digits} digits your app shows now.",
       "confirm": "Turn on",
       "withheld": "This answer was repeated, so the key is not shown again. Go back and start over."
     },
@@ -385,14 +387,14 @@
     "signInFirst": "An account for {email} exists. Sign in to accept.",
     "createAccount": "Create your account to accept.",
     "name": "Your name",
-    "nameHint": "Up to {max} characters, shown to people you work with.",
     "createAndAccept": "Create account and accept"
   },
   "account": {
     "nav": {
       "label": "Account",
       "security": "Security",
-      "apiKeys": "API keys"
+      "apiKeys": "API keys",
+      "appearance": "Appearance"
     },
     "security": {
       "title": "Security",
@@ -406,6 +408,37 @@
       "changePassword": "Change password",
       "passwordChanged": "Password changed.",
       "wrongPassword": "The current password is wrong."
+    },
+    "appearance": {
+      "title": "Appearance",
+      "theme": "Theme",
+      "themeDescription": "Light or dark and the accent colour. The mode stays in this browser, the accent follows you.",
+      "mode": "Mode",
+      "statusCard": "Monitor status",
+      "statusCardDescription": "How a monitor page shows the current status and its uptime.",
+      "cards": {
+        "banner": "A tinted block with the status, its message and uptime figures.",
+        "hero": "The status in large type beside big uptime figures.",
+        "compact": "One line, for more room below.",
+        "gauge": "Rings for 24 hours, 7 days and 30 days, with downtime marked in red."
+      },
+      "formats": "Language and formats",
+      "formatsDescription": "How numbers, dates and times are written. Following the language uses its usual style.",
+      "byLanguage": "Follow language ({example})",
+      "number": "Numbers",
+      "date": "Dates",
+      "time": "Times",
+      "zone": "Time zone",
+      "zoneLocal": "This browser ({zone})",
+      "zoneUtc": "UTC",
+      "preview": "Preview",
+      "previewLabels": {
+        "when": "Now",
+        "latency": "Response time",
+        "uptime": "Uptime",
+        "ago": "Relative time"
+      },
+      "week": "First day of the week"
     }
   },
   "apiKeys": {
@@ -413,7 +446,6 @@
     "list": "API keys",
     "description": "Send a key as {scheme} token. It acts as you on one node and below, with only the capabilities you pick.",
     "name": "Name",
-    "nameHint": "Up to {max} characters, to tell keys apart.",
     "node": "Node",
     "nodeHint": "The key reaches {node} and everything below it.",
     "noNode": "no node yet",
@@ -439,7 +471,6 @@
     "generalDescription": "The name shows in the app and the authenticator app. Invitation links start with the public URL.",
     "name": "Name",
     "publicUrl": "Public URL",
-    "publicUrlHint": "The address people use to reach this instance, for example https://status.example.com.",
     "fixed": "Set by {variable} on the server, so it cannot change here.",
     "about": "About",
     "version": "Version",
@@ -447,20 +478,18 @@
       "title": "Notifications",
       "description": "Times in messages, and maintenance without its own timezone, use this zone.",
       "timezone": "Timezone",
-      "timezoneHint": "An IANA zone, such as Europe/Vienna.",
       "expiryDays": "Certificate warnings",
-      "expiryDaysHint": "Days before a certificate expires, comma-separated, such as 7, 14, 21."
+      "expiryDaysHint": "Comma-separated, such as 7, 14, 21."
     },
     "smtp": {
       "title": "Mail server",
       "description": "Email channels without their own server send through this one.",
       "none": "No mail server is set, so email channels need their own.",
-      "fromHint": "The sender of every email that does not set its own.",
       "remove": "Remove",
       "removeTitle": "Remove the mail server?",
       "removeConfirm": "Email channels without their own server stop sending until you set one again.",
       "testTitle": "Test email",
-      "testDescription": "Sends one message through the server as the form above has it, so you can try it before saving.",
+      "testDescription": "Sends one email through the server as the form has it, before you save.",
       "testTo": "Send to",
       "testSend": "Send test email"
     }
@@ -596,8 +625,7 @@
     },
     "detail": {
       "status": "Current status",
-      "since": "Since {time}",
-      "lastCheck": "Last check {time}",
+      "lastCheck": "Last check",
       "noBeat": "No check has run yet.",
       "uptime": "Uptime",
       "uptime24h": "24 hours",
@@ -605,22 +633,15 @@
       "uptime30d": "30 days",
       "uptime1y": "1 year",
       "noData": "No data",
-      "bars": "Last 90 days",
-      "barsZone": "Days in {zone}",
-      "barsAgo": "90 days ago",
-      "barsToday": "Today",
-      "barTitle": "{day}: {uptime}",
-      "barEmpty": "{day}: no data",
-      "barUtc": "{day} (UTC day): {uptime}",
-      "barsSummary": "{down} of {days} days with downtime.",
-      "day": "Day",
       "latency": "Response time",
       "range": "Range",
       "ranges": {
         "1h": "1 h",
         "24h": "24 h",
         "7d": "7 d",
-        "30d": "30 d"
+        "30d": "30 d",
+        "90d": "90 d",
+        "1y": "1 y"
       },
       "latencyEmpty": "No response times in this range.",
       "average": "Average",
@@ -632,7 +653,6 @@
       "showOlder": "Show older checks",
       "message": "Message",
       "httpStatus": "HTTP",
-      "settings": "Settings",
       "target": "Target",
       "interval": "Interval",
       "every": "Every {seconds} s",
@@ -643,38 +663,57 @@
       "upsideDown": "Upside down",
       "pause": "Pause",
       "resume": "Resume",
-      "paused": "Paused. No checks run until you resume it.",
-      "edit": "Edit",
       "delete": "Delete",
       "deleteTitle": "Delete monitor",
       "deleteConfirm": "Delete {name} and all its checks? This cannot be undone.",
       "manual": "Set status",
-      "manualHint": "A manual monitor shows the status you set. Without one it is pending.",
       "manualClear": "Clear status",
       "manualSet": "Status set to {status}.",
       "push": "Push URL",
       "pushHint": "Call this URL from your job. No status or status=up counts as up, anything else as down.",
       "unsupported": "Imported from Uptime Kuma as {type}. v1per does not run this type, so it stays paused.",
       "probes": "Probes",
-      "probesMeta": "Quorum: {rule}",
       "probe": "Probe",
-      "live": "In quorum",
-      "liveYes": "Yes",
-      "liveNo": "No",
-      "received": "Received",
-      "probesEmpty": "No probe has reported yet.",
       "probeFilter": "Probe",
       "allProbes": "Monitor status",
       "alerts": "Recent alerts",
       "alertsMeta": "from this monitor's channels",
       "alertsEmpty": "No alerts sent for this monitor yet.",
-      "showOlderAlerts": "Show older alerts"
+      "showOlderAlerts": "Show older alerts",
+      "configure": "Configure",
+      "everySpan": "every {span}",
+      "forSpan": "for {span}",
+      "quorumLine": "{count} of {total} report {status}",
+      "quorumRules": {
+        "majority": "majority rules",
+        "any": "one is enough",
+        "all": "all must agree"
+      },
+      "builtin": "Built-in",
+      "agent": "Agent",
+      "agentFrom": "Agent · from {node}",
+      "notInQuorum": "Not in quorum",
+      "incident": "Incident",
+      "incidentStarted": "started {time}",
+      "incidentsMore": "{count} more open",
+      "postUpdate": "Post update",
+      "told": "Who gets told",
+      "toldFrom": "{provider} · from {node}",
+      "toldAbove": "{provider} · from above",
+      "toldNone": "No channel alerts on this monitor.",
+      "shownOn": "Shown on",
+      "changes": "Recent changes",
+      "recovered": "Recovered after {span}",
+      "changesNone": "No changes in the recent checks.",
+      "uptimeIn": "Uptime {window}",
+      "checkedAgo": "Checked {time}",
+      "details": "Details",
+      "upsideDownOn": "On"
     },
     "editor": {
       "createTitle": "Add monitor",
       "editTitle": "Edit monitor",
       "type": "Type",
-      "typeHint": "What the monitor checks.",
       "typeNotes": {
         "http": "Up when the URL answers with an accepted status code.",
         "keyword": "Up when the response contains the keyword.",
@@ -686,14 +725,12 @@
         "group": "Down when a member is down. Pick this group in a member's settings.",
         "manual": "Shows the status you set on its page."
       },
-      "basics": "Name and place",
+      "basics": "General",
       "name": "Name",
       "description": "Description",
       "tags": "Tags",
-      "tagsHint": "Separate with commas. Up to {max}.",
       "group": "Group",
       "noGroup": "No group",
-      "groupHint": "Group monitors on this node or above it.",
       "check": "Check",
       "url": "URL",
       "method": "Method",
@@ -705,20 +742,18 @@
       "operator": "Comparison",
       "expectedValue": "Expected value",
       "retryOnlyOnStatusCodeFailure": "Down at once when the comparison fails",
-      "retryOnlyOnStatusCodeFailureHint": "Only failed requests use the retries.",
       "hostname": "Hostname",
       "hostnameDns": "Name to resolve",
       "port": "Port",
       "pingCount": "Pings per check",
-      "packetSize": "Packet size in bytes",
-      "pingTimeout": "Wait per reply in seconds",
+      "packetSize": "Packet size",
+      "pingTimeout": "Wait per reply",
       "dnsRecordType": "Record type",
       "dnsServer": "Resolvers",
-      "dnsServerHint": "Comma separated addresses.",
       "dnsPort": "Resolver port",
       "request": "Request",
       "headers": "Headers",
-      "headersHint": "Seal a header that carries a key; its value is stored encrypted and never shown again.",
+      "headersHint": "Sealed values are stored encrypted and never shown again.",
       "addHeader": "Add header",
       "headerName": "Name",
       "headerValue": "Value",
@@ -747,10 +782,8 @@
         "client_secret_post": "Request body"
       },
       "acceptedStatusCodes": "Accepted status codes",
-      "acceptedStatusCodesHint": "Codes or ranges, such as 200-299, 304.",
       "maxRedirects": "Most redirects",
       "ignoreTls": "Ignore TLS errors",
-      "ignoreTlsHint": "Accept expired or self-signed certificates.",
       "ipFamily": "IP version",
       "ipFamilies": {
         "any": "Any",
@@ -759,28 +792,21 @@
       },
       "cacheBust": "Add a random query parameter",
       "schedule": "Schedule and retries",
-      "interval": "Interval in seconds",
-      "intervalHint": "At least {min}.",
-      "retryInterval": "Retry interval in seconds",
-      "retryIntervalHint": "While pending. Empty uses the interval.",
+      "interval": "Interval",
+      "retryInterval": "Retry interval",
       "maxRetries": "Retries",
-      "maxRetriesHint": "Failed checks shown as pending before the monitor is down.",
-      "resendInterval": "Repeat the down alert after",
-      "resendIntervalHint": "Down checks between repeated alerts. 0 sends one.",
-      "timeout": "Timeout in seconds",
-      "timeoutHint": "Empty uses 80 % of the interval.",
+      "resendInterval": "Repeat alert every",
+      "timeout": "Timeout",
       "upsideDown": "Upside down",
       "upsideDownHint": "Up when the check fails, down when it passes.",
       "quorum": "Probe quorum",
-      "quorumHint": "When the monitor is down, counted over the probes that run it.",
       "quorums": {
         "majority": "Half or more",
         "any": "Any probe",
         "all": "Every probe"
       },
       "probes": "Probes",
-      "probesHint": "Where the check runs. With none picked, the built-in probe runs it.",
-      "probeInherited": "From a node above",
+      "probesHint": "With none picked, the built-in probe runs the check.",
       "push": "Push URL",
       "pushNew": "The push URL shows here after you add the monitor.",
       "pushHidden": "Members, admins and owners see the push URL.",
@@ -800,13 +826,37 @@
       "saveCreate": "Add monitor",
       "saveEdit": "Save changes",
       "notifications": "Notifications",
-      "notificationsHint": "Where its down, up and certificate alerts go.",
       "channels": "Channels",
-      "channelsHint": "Channels of this node and the nodes above. Until you pick, a new monitor gets the default channels.",
+      "channelsHint": "Channels of this node and the nodes above. A new monitor starts with the default channels.",
       "noChannels": "No channels here yet. Add one under Notifications.",
       "expiryNotification": "Alert before the certificate expires",
-      "expiryNotificationHint": "At the days set in the instance settings, by default 21, 14 and 7 days before.",
-      "expiryNotificationIgnored": "Has no effect while invalid certificates are accepted."
+      "expiryNotificationIgnored": "Has no effect while invalid certificates are accepted.",
+      "saved": "Saved.",
+      "deleteSection": "Delete monitor",
+      "deleteText": "Removes the monitor with all its checks and history.",
+      "tagsPlaceholder": "shop, production",
+      "acceptedPlaceholder": "200-299, 304",
+      "dnsServerPlaceholder": "1.1.1.1, 8.8.8.8",
+      "scheduleHint": "Retries run before a monitor goes down. A repeat of 0 alerts once per outage.",
+      "probesSection": "Where it runs"
+    },
+    "cardStyles": {
+      "banner": "Banner",
+      "hero": "Large",
+      "compact": "Compact",
+      "gauge": "Ring"
+    },
+    "history": {
+      "title": "History",
+      "availability": "Availability",
+      "summary": "{down} of {count} bars with failed checks",
+      "slotDown": "{uptime} · {count} failed checks",
+      "maintenanceOnly": "Maintenance",
+      "showProbe": "Show the history of {name}",
+      "failed": "Failed checks",
+      "average": "Average",
+      "p95": "95th percentile",
+      "max": "Slowest"
     }
   },
   "probes": {
@@ -817,7 +867,7 @@
     "create": "Add probe",
     "createDescription": "A probe runs checks from another machine. It only opens outbound connections to this server, so it works behind NAT.",
     "name": "Name",
-    "nameHint": "Where it runs, such as Frankfurt or Office. Up to {max} characters.",
+    "nameHint": "A short name, such as Frankfurt 1 or Office.",
     "createdTitle": "Probe added",
     "createdDescription": "Run this on the machine that should run the checks. It shows as online once it connects.",
     "token": "Token",
@@ -854,7 +904,17 @@
     "revokeTitle": "Revoke probe",
     "revokeConfirm": "Revoke {name}? Its agent is refused at its next request and stops, and its monitors no longer use it. This cannot be undone.",
     "revoked": "{name} revoked.",
-    "revokedOn": "Revoked {date}"
+    "revokedOn": "Revoked {date}",
+    "country": "Country",
+    "noCountry": "No country",
+    "city": "City",
+    "cityPlaceholder": "Vienna",
+    "provider": "Provider",
+    "providerPlaceholder": "Scaleway",
+    "edit": "Edit probe",
+    "editNamed": "Edit {name}",
+    "editDescription": "Name the probe and say where it runs. Monitor pages show the flag, city and provider.",
+    "saved": "{name} saved."
   },
   "channels": {
     "title": "Notifications",
@@ -908,15 +968,12 @@
       "basics": "Channel",
       "basicsHint": "Where alerts go and which monitors use it.",
       "provider": "Provider",
-      "providerHint": "Imported channels of other Kuma providers are kept but cannot send.",
       "name": "Name",
       "untitled": "New channel",
       "isDefault": "Default channel",
-      "isDefaultHint": "New monitors on this node and below use it unless their creator picks channels.",
+      "isDefaultHint": "New monitors start with it.",
       "applyExisting": "Add to existing monitors",
-      "applyExistingHint": "Links every monitor on this node and below to this channel when you save.",
       "active": "Active",
-      "activeHint": "An inactive channel sends nothing.",
       "unsupported": "This channel was imported from Uptime Kuma and cannot send from v1per: {reason} You can delete it.",
       "invalid": "Some fields need attention.",
       "saveCreate": "Add channel",
@@ -924,38 +981,30 @@
     },
     "smtp": {
       "ownServer": "Use its own mail server",
-      "ownServerHint": "This channel sends through the server below.",
-      "instanceServerHint": "Sends through the instance mail server in the instance settings.",
+      "instanceServerHint": "Uses the instance mail server.",
       "host": "SMTP host",
       "port": "Port",
       "security": "Security",
-      "securityHint": "STARTTLS usually runs on port 587 or 25, TLS on port 465.",
       "securities": {
         "starttls": "None or STARTTLS",
         "tls": "TLS"
       },
       "ignoreStarttls": "Never upgrade to TLS",
-      "ignoreStarttlsHint": "Sends in plain text even when the server offers STARTTLS.",
       "ignoreTlsError": "Accept invalid certificates",
       "username": "Username",
       "password": "Password",
       "from": "From",
       "fromHint": "Empty uses the instance sender.",
       "to": "To",
-      "recipientsHint": "Comma-separated addresses. Fill in at least one of To, CC and BCC.",
+      "recipientsHint": "Separate addresses with commas.",
       "cc": "CC",
       "bcc": "BCC",
       "subject": "Subject template",
-      "subjectHint": "Empty uses Kuma's subject, such as \"[API] [🔴 Down] timeout\".",
       "body": "Body template",
-      "bodyHint": "Empty uses Kuma's message with the time in the instance timezone.",
       "htmlBody": "Send the body as HTML",
-      "htmlBodyHint": "Only applies to a custom body.",
       "advanced": "Headers and DKIM signing",
-      "headers": "Extra headers",
-      "headersHint": "A JSON object, sealed like a password.",
+      "headers": "Extra headers as JSON",
       "dkimDomain": "DKIM domain",
-      "dkimDomainHint": "Signs messages when set.",
       "dkimKeySelector": "Key selector",
       "dkimPrivateKey": "Private key",
       "dkimHashAlgo": "Hash algorithm",
@@ -965,7 +1014,6 @@
     "discord": {
       "webhookUrl": "Webhook URL",
       "username": "Display name",
-      "usernameHint": "Empty posts as \"Uptime Kuma\".",
       "channelType": "Post to",
       "channelTypes": {
         "channel": "The webhook's channel",
@@ -980,17 +1028,11 @@
         "minimalist": "Minimalist",
         "custom": "Custom template"
       },
-      "formatHints": {
-        "normal": "An embed with the service, its address, the time and the error.",
-        "minimalist": "One line, such as \"🔴 API is down.\"",
-        "custom": "Your template, rendered with Kuma's variables."
-      },
       "prefixMessage": "Prefix message",
-      "prefixMessageHint": "Text above the embed, for example a role mention.",
+      "prefixMessageHint": "Above the embed, such as a role mention.",
       "messageTemplate": "Message template",
       "disableUrl": "Hide the monitor's address",
-      "suppressNotifications": "Post silently",
-      "suppressNotificationsHint": "Members see the message without a push notification."
+      "suppressNotifications": "Post silently"
     },
     "webhook": {
       "url": "URL",
@@ -1002,7 +1044,7 @@
         "custom": "Custom template"
       },
       "customBody": "Body template",
-      "headers": "Extra headers"
+      "headers": "Extra headers as JSON"
     },
     "slack": {
       "webhookUrl": "Webhook URL",
@@ -1036,7 +1078,7 @@
       "topic": "Topic",
       "priority": "Priority",
       "priorityDown": "Priority when down",
-      "priorityHint": "1 to 5.",
+      "priorityHint": "1 to 5",
       "auth": "Authentication",
       "auths": {
         "none": "None",
@@ -1059,8 +1101,8 @@
       "sound": "Sound when down",
       "soundUp": "Sound when up",
       "priority": "Priority",
-      "priorityHint": "-2 to 2.",
-      "ttl": "Time to live in seconds"
+      "priorityHint": "-2 to 2",
+      "ttl": "Time to live"
     },
     "templates": {
       "title": "Template variables",
@@ -1126,7 +1168,7 @@
   },
   "incidents": {
     "title": "Incidents",
-    "create": "Open incident",
+    "create": "New incident",
     "edit": "Edit",
     "delete": "Delete",
     "deleteTitle": "Delete this incident?",
@@ -1135,7 +1177,6 @@
     "dismissTitle": "Dismiss this auto-incident?",
     "dismissConfirm": "\"{title}\" and its timeline will be deleted, as for a false alarm.",
     "resolve": "Resolve",
-    "resolvedAt": "Resolved",
     "status": "Status",
     "open": "Open incidents",
     "all": "All incidents",
@@ -1145,7 +1186,6 @@
     "readOnly": "Members of this node manage its incidents. You can read them.",
     "unavailable": "This incident is not available.",
     "empty": "No open incidents",
-    "emptyHint": "A failing monitor opens one by itself. You can open one for anything else.",
     "emptyReadOnly": "Nothing is wrong right now.",
     "noMatch": "No incident matches these filters.",
     "showOlder": "Show older",
@@ -1161,14 +1201,6 @@
     "origins": {
       "auto": "Auto-incident",
       "manual": "Manual"
-    },
-    "columns": {
-      "state": "State",
-      "title": "Title",
-      "impact": "Impact",
-      "affected": "Affected",
-      "started": "Started",
-      "updated": "Updated"
     },
     "states": {
       "investigating": "Investigating",
@@ -1189,51 +1221,57 @@
       "postUpdate": "Post an update"
     },
     "targets": {
-      "search": "Filter by name",
+      "search": "Search monitors and components",
       "none": "No monitors or static components on this node or below.",
       "monitor": "Monitor",
       "component": "Component",
       "impactOf": "Impact on {name}"
     },
     "editor": {
-      "createTitle": "Open incident",
+      "createTitle": "New incident",
       "editTitle": "Edit incident",
-      "basics": "Incident",
       "title": "Title",
-      "titleHint": "What people notice, such as \"Checkout is slow\".",
       "affected": "Affected",
-      "affectedHint": "Pick the monitors and static components it affects, each with its impact.",
-      "affectedEditHint": "A target you take out loses its impact. One you add has none until an update names it.",
-      "saveCreate": "Open incident",
       "saveEdit": "Save changes"
     },
     "update": {
       "title": "Post an update",
       "state": "State",
       "message": "Message",
-      "messageHint": "What is known and what happens next.",
       "impacts": "Impact",
-      "noImpact": "No impact set",
-      "resolvedHint": "Resolving sets every affected target to operational.",
-      "post": "Post update"
+      "noImpact": "No impact set"
     },
     "timeline": {
       "title": "Timeline",
-      "count": "{count} update | {count} updates",
       "automatic": "v1per",
       "removed": "Removed target"
     },
     "pages": {
       "title": "Status pages",
-      "none": "No status page shows what this incident affects.",
       "publishedAt": "Published {date}",
       "scheduledAt": "Publishes automatically {date}",
       "draft": "Not published",
-      "publish": "Publish",
-      "unpublish": "Unpublish",
       "publishTo": "Publish to {title}",
       "unpublishFrom": "Unpublish from {title}",
       "publishAll": "Publish to {count} page | Publish to {count} pages"
+    },
+    "composer": {
+      "titlePlaceholder": "What's broken?",
+      "messagePlaceholder": "What's happening?",
+      "affects": "Affects",
+      "remove": "Remove {name}",
+      "noMatch": "Nothing matches.",
+      "perTarget": "Per target",
+      "mixed": "Mixed impact",
+      "post": "Post"
+    },
+    "feed": {
+      "started": "Started {time}",
+      "updated": "Updated {time}",
+      "openFor": "Open for {duration}",
+      "lasted": "Lasted {duration}",
+      "affected": "{count} affected | {count} affected",
+      "more": "More actions"
     }
   },
   "maintenance": {
@@ -1279,14 +1317,6 @@
       "recurring-day-of-month": "On days of the month",
       "cron": "Cron expression"
     },
-    "strategyHints": {
-      "manual": "Active from when you save it until you pause it.",
-      "single": "One window between two dates.",
-      "recurring-interval": "A daily window that repeats every given number of days.",
-      "recurring-weekday": "A window on the weekdays you pick.",
-      "recurring-day-of-month": "A window on the days of the month you pick.",
-      "cron": "Windows that start on a cron schedule and last a set time."
-    },
     "windows": {
       "from": "From {time}",
       "until": "Until {time}",
@@ -1302,25 +1332,22 @@
       "strategy": "Repeats",
       "start": "Starts",
       "end": "Ends",
-      "intervalDay": "Every how many days",
-      "intervalDayHint": "1 runs every day.",
+      "intervalDay": "Every",
       "weekdays": "Weekdays",
       "daysOfMonth": "Days of the month",
       "lastDayOfMonth": "The last day of every month too",
       "cron": "Cron expression",
-      "cronHint": "Five fields, such as \"30 3 * * 0\" for Sundays at 03:30. Six fields start with seconds.",
-      "duration": "Duration in minutes",
+      "cronHint": "Five fields, such as \"30 3 * * 0\" for Sundays at 03:30.",
+      "duration": "Duration",
       "startTime": "From",
       "endTime": "Until",
-      "endTimeHint": "An end before the start runs past midnight.",
+      "endTimeHint": "Earlier than the start ends the next day.",
       "rangeStart": "Not before",
       "rangeEnd": "Not after",
-      "rangeHint": "Optional. Leave both empty to repeat for good.",
       "timezone": "Timezone",
-      "timezoneHint": "Times above are in this zone. Empty uses the instance timezone.",
       "timezonePlaceholder": "Instance timezone",
       "monitors": "Covered monitors",
-      "monitorsHint": "They report maintenance and send no alerts while a window is active. Members of a covered group are covered too.",
+      "monitorsHint": "They send no alerts during a window. Members of a covered group are covered too.",
       "noMonitors": "No monitors on this node or below yet.",
       "invalid": "Some fields need attention.",
       "saveCreate": "Plan maintenance",
@@ -1354,7 +1381,6 @@
   },
   "pages": {
     "title": "Status pages",
-    "intro": "Pages that show the status of monitors and components on this node and below, for the public, clients or your team. New pages are for your team until you open them up.",
     "create": "Create page",
     "createDescription": "You pick its components and who can open it next.",
     "empty": "No status pages yet",
@@ -1376,7 +1402,8 @@
       "layout": "Components",
       "access": "Access",
       "hostnames": "Domains",
-      "preview": "Preview"
+      "preview": "Preview",
+      "incidents": "Incidents"
     },
     "statuses": {
       "operational": "Operational",
@@ -1389,10 +1416,9 @@
       "basics": "Page",
       "title": "Title",
       "slug": "Address",
-      "slugHint": "Lowercase letters, digits and dashes. The page opens at {path}.",
+      "slugHint": "The page opens at {path}.",
       "description": "Description",
       "footer": "Footer",
-      "maxChars": "Up to {max} characters.",
       "look": "Look",
       "lookHint": "Visitors see the page in these colors. Auto follows their device.",
       "logo": "Logo",
@@ -1400,7 +1426,6 @@
       "logoUpload": "Upload logo",
       "logoReplace": "Replace logo",
       "logoRemove": "Remove logo",
-      "logoHint": "PNG, JPEG, GIF, WebP or SVG, up to {max} KB.",
       "logoTooLarge": "This file is larger than {max} KB.",
       "logoInvalid": "This file is not a PNG, JPEG, GIF, WebP or SVG image.",
       "theme": "Theme",
@@ -1424,9 +1449,8 @@
       "languagesHint": "Visitors get their browser's language when the page offers it, else the default.",
       "defaultLocale": "Default language",
       "locales": "Offered languages",
-      "defaultAlwaysOn": "The default is always offered.",
+      "defaultAlwaysOn": "Default",
       "timezone": "Timezone of the daily bars",
-      "timezoneHint": "Each bar covers one day in this timezone.",
       "timezonePlaceholder": "Instance timezone",
       "autoIncidents": "Auto-incidents",
       "autoIncidentsHint": "Incidents opened when a monitor on this page goes down.",
@@ -1438,8 +1462,8 @@
         "draft": "They stay internal until someone publishes them to this page.",
         "auto_publish": "They show on this page once they stayed open for the grace period."
       },
-      "grace": "Grace period in minutes",
-      "graceHint": "0 to {max}. An outage that ends sooner never shows.",
+      "grace": "Grace period",
+      "graceHint": "Outages shorter than this never show.",
       "save": "Save settings",
       "deleteTitle": "Delete this page",
       "deleteHint": "Its address, domains and share links stop working. Incidents stay.",
@@ -1511,9 +1535,9 @@
       "emailHint": "Listed people request a link by email that opens the page.",
       "noSmtp": "Sign-in links need SMTP. An instance admin sets it up in the instance settings.",
       "emails": "Allowed addresses",
-      "emailsHint": "One per line, up to {max}.",
+      "emailsHint": "One per line.",
       "domains": "Allowed domains",
-      "domainsHint": "Anyone with an address at these domains, one per line.",
+      "domainsHint": "One per line.",
       "save": "Save access"
     },
     "tokens": {
@@ -1521,7 +1545,6 @@
       "intro": "A share link opens the page without signing in, until it expires or you revoke it.",
       "introPublic": "The page is public, so share links are not needed now. They work again once it is restricted.",
       "name": "Name",
-      "nameHint": "Who it is for, up to {max} characters.",
       "expires": "Expires",
       "expiresHint": "Empty: never.",
       "create": "Create share link",
@@ -1568,6 +1591,11 @@
       "noComponents": "No components visible.",
       "noStatus": "No status",
       "withDetail": "Response times"
+    },
+    "incidents": {
+      "compose": "New incident on this page",
+      "title": "Incidents on this page",
+      "none": "No incidents on this page."
     }
   },
   "observe": {
@@ -1637,5 +1665,12 @@
       "empty": "Nothing needs you here."
     },
     "instance": "Instance"
+  },
+  "units": {
+    "seconds": "s",
+    "bytes": "bytes",
+    "checks": "checks",
+    "days": "days",
+    "minutes": "min"
   }
 }

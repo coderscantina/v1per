@@ -4,6 +4,8 @@ import TrendSparkline from '~/components/observe/TrendSparkline.vue'
 import type { HourPoint, HourState, MonitorSummary } from '~/generated'
 import { formatLatency, formatUptime, presenceFill, presenceLabels, presenceOf, typeIcons, typeLabels } from '~/lib/monitor-status'
 import { useI18n } from '~/plugins/i18n'
+import { useDateFormat } from '~/composables/useDateFormat'
+import { useFormats } from '~/composables/usePreferences'
 
 /**
  * One monitor on the extended wall: what it is, how it is now (status, latest response time,
@@ -21,6 +23,8 @@ const props = defineProps<{
 }>()
 
 const { t, locale } = useI18n()
+const { numberLocale } = useFormats()
+const { format: formatDate } = useDateFormat()
 
 const HOUR = 3_600_000
 const stateFill: Record<HourState, string> = {
@@ -32,18 +36,18 @@ const stateFill: Record<HourState, string> = {
 
 const presence = computed(() => presenceOf(props.monitor))
 const hovered = ref<number | null>(null)
-const hourFormat = computed(() => new Intl.DateTimeFormat(locale.value, { hour: '2-digit', minute: '2-digit' }))
+const hourFormat = computed(() => formatDate({ hour: '2-digit', minute: '2-digit' }))
 const hourOf = (index: number) => (props.from === undefined ? '' : hourFormat.value.format(props.from + index * HOUR))
 
 const latency = computed(() => {
   const point = hovered.value === null ? undefined : props.points?.[hovered.value]
-  if (point) return { value: point.latency_ms === undefined ? '–' : formatLatency(point.latency_ms, locale.value), note: hourOf(hovered.value ?? 0) }
-  return { value: props.monitor.latency_ms === undefined ? '–' : formatLatency(props.monitor.latency_ms, locale.value), note: t('observe.card.latest') }
+  if (point) return { value: point.latency_ms === undefined ? '–' : formatLatency(point.latency_ms, numberLocale.value), note: hourOf(hovered.value ?? 0) }
+  return { value: props.monitor.latency_ms === undefined ? '–' : formatLatency(props.monitor.latency_ms, numberLocale.value), note: t('observe.card.latest') }
 })
 
 const hourLabel = (point: HourPoint, index: number) =>
   `${hourOf(index)}: ${point.state ? t(presenceLabels[point.state]) : t('observe.card.noData')}${
-    point.uptime === undefined ? '' : `, ${formatUptime(point.uptime, locale.value)}`
+    point.uptime === undefined ? '' : `, ${formatUptime(point.uptime, numberLocale.value)}`
   }`
 </script>
 
@@ -89,7 +93,7 @@ const hourLabel = (point: HourPoint, index: number) =>
       </div>
       <div class="grid min-w-0 shrink-0 grid-cols-[auto_auto] gap-x-2 text-xs">
         <dt class="text-right text-muted">{{ t('observe.card.uptime') }}</dt>
-        <dd class="text-right font-semibold text-primary">{{ formatUptime(monitor.uptime_24h, locale) ?? '–' }}</dd>
+        <dd class="text-right font-semibold text-primary">{{ formatUptime(monitor.uptime_24h, numberLocale) ?? '–' }}</dd>
         <dt class="text-right text-muted">{{ t('observe.card.checked') }}</dt>
         <dd class="text-right font-semibold text-primary">{{ checked ?? '–' }}</dd>
       </div>

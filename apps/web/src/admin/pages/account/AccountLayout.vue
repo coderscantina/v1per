@@ -14,6 +14,7 @@ const { account } = useSession()
 
 const links = [
   { name: 'account-security', labelKey: 'account.nav.security', icon: 'lucide:shield' },
+  { name: 'account-appearance', labelKey: 'account.nav.appearance', icon: 'lucide:palette' },
   { name: 'account-api-keys', labelKey: 'account.nav.apiKeys', icon: 'lucide:key-round' },
 ] as const satisfies { name: string; labelKey: MessageKey; icon: string }[]
 </script>

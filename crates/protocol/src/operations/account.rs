@@ -62,6 +62,97 @@ pub struct Preferences {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub accent: Option<AppAccent>,
+    /// How the monitor page draws the status block.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub status_card: Option<StatusCardStyle>,
+    /// How numbers group and mark decimals; absent follows the app language.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub number_format: Option<NumberFormat>,
+    /// The order of a date's parts, written in digits; absent follows the app language.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub date_format: Option<DateFormat>,
+    /// Absent follows the app language.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub time_format: Option<TimeFormat>,
+    /// The zone times are shown in; absent is the browser's.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub time_zone: Option<DisplayZone>,
+    /// The first day of a week in lists of weekdays; absent follows the app language.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub week_start: Option<WeekStart>,
+}
+
+/// Digit grouping and decimal mark, named by the grouping mark, then the decimal mark where
+/// one grouping mark goes with either.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum NumberFormat {
+    /// 1,234.5
+    Comma,
+    /// 1.234,5
+    Period,
+    /// 1 234,5
+    Space,
+    /// 1 234.5
+    SpacePeriod,
+    /// 1'234.5
+    Apostrophe,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum DateFormat {
+    /// 20.10.2026
+    DayMonthYear,
+    /// 10/20/2026
+    MonthDayYear,
+    /// 2026-10-20
+    YearMonthDay,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum TimeFormat {
+    /// 14:30
+    H24,
+    /// 2:30 PM
+    H12,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum WeekStart {
+    Monday,
+    Saturday,
+    Sunday,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum DisplayZone {
+    /// The browser's own zone.
+    Local,
+    Utc,
+}
+
+/// Designs of the status block on the monitor page. Banner is the default.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum StatusCardStyle {
+    /// A tinted block with the status, its message and the latest check.
+    Banner,
+    /// The status in large type with uptime figures beside it.
+    Hero,
+    /// One line.
+    Compact,
+    /// A ring of the 30 day uptime around the status.
+    Gauge,
 }
 
 /// Accent colour presets of the admin app, apart from the status page presets. Indigo is the

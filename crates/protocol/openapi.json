@@ -4448,7 +4448,7 @@
     "/api/queries/monitors.list": {
       "get": {
         "operationId": "monitors.list",
-        "description": "The monitors on one node, or with `subtree` on the node and every node below it,\n with their current status, last latency and 24-hour uptime, by name. Needs\n `node.read`. On the `monitors:<id>` topic, with `subtree` on `monitor-tree:<id>`.",
+        "description": "The monitors on one node, or with `subtree` on the node and every node below it,\n with their current status, last latency and 24-hour uptime, by node and position.\n Needs `node.read`. On the `monitors:<id>` topic, with `subtree` on\n `monitor-tree:<id>`.",
         "security": [
           {
             "session": []
@@ -4489,6 +4489,76 @@
                     },
                     {
                       "$ref": "#/components/schemas/MonitorList"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/commands/monitors.move": {
+      "post": {
+        "operationId": "monitors.move",
+        "description": "Puts a monitor at `position` among the monitors on `node`, counted from 0; past the\n end means last. With another `node` it moves there; `group` replaces its group, and\n leaving it out takes it out of one. Needs `monitors.manage` on the monitor's node and\n on `node`. `group` must be a group monitor on `node` or an ancestor the caller can\n read, and not the monitor or one of its members (`invalid_value` on `group`). A\n moved group takes its members on the same node along, right after it and still in\n the group; members on other nodes stay and leave the group unless `node` is their\n node or an ancestor. Moved monitors lose the probes and channels `node` does not\n offer, and leave maintenances and status pages that no longer reach them.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x-v1per-request",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CommandKey"
+                  },
+                  {
+                    "$ref": "#/components/schemas/MonitorsMoveArgs"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/MonitorResult"
                     }
                   ]
                 }
@@ -6519,6 +6589,73 @@
         }
       }
     },
+    "/api/commands/probes.update": {
+      "post": {
+        "operationId": "probes.update",
+        "description": "Renames a probe and replaces where it runs. Needs `probes.manage` on the probe's\n node. The built-in probe takes a name and location too. A revoked probe is\n `invalid_value` on `probe`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x-v1per-request",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CommandKey"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ProbesUpdateArgs"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ProbeResult"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/commands/twoFactor.begin": {
       "post": {
         "operationId": "twoFactor.begin",
@@ -7197,6 +7334,72 @@
                 "type": "null"
               }
             ]
+          },
+          "status_card": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StatusCardStyle"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How the monitor page draws the status block."
+          },
+          "number_format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberFormat"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How numbers group and mark decimals; absent follows the app language."
+          },
+          "date_format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateFormat"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The order of a date's parts, written in digits; absent follows the app language."
+          },
+          "time_format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimeFormat"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absent follows the app language."
+          },
+          "time_zone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DisplayZone"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The zone times are shown in; absent is the browser's."
+          },
+          "week_start": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WeekStart"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The first day of a week in lists of weekdays; absent follows the app language."
           }
         },
         "description": "Per-person display settings. The browser applies them; the server only stores them."
@@ -7214,6 +7417,117 @@
           "azure"
         ],
         "description": "Accent colour presets of the admin app, apart from the status page presets. Indigo is the\ndefault; the others are neon."
+      },
+      "StatusCardStyle": {
+        "oneOf": [
+          {
+            "type": "string",
+            "const": "banner",
+            "description": "A tinted block with the status, its message and the latest check."
+          },
+          {
+            "type": "string",
+            "const": "hero",
+            "description": "The status in large type with uptime figures beside it."
+          },
+          {
+            "type": "string",
+            "const": "compact",
+            "description": "One line."
+          },
+          {
+            "type": "string",
+            "const": "gauge",
+            "description": "A ring of the 30 day uptime around the status."
+          }
+        ],
+        "description": "Designs of the status block on the monitor page. Banner is the default."
+      },
+      "NumberFormat": {
+        "oneOf": [
+          {
+            "type": "string",
+            "const": "comma",
+            "description": "1,234.5"
+          },
+          {
+            "type": "string",
+            "const": "period",
+            "description": "1.234,5"
+          },
+          {
+            "type": "string",
+            "const": "space",
+            "description": "1 234,5"
+          },
+          {
+            "type": "string",
+            "const": "space_period",
+            "description": "1 234.5"
+          },
+          {
+            "type": "string",
+            "const": "apostrophe",
+            "description": "1'234.5"
+          }
+        ],
+        "description": "Digit grouping and decimal mark, named by the grouping mark, then the decimal mark where\none grouping mark goes with either."
+      },
+      "DateFormat": {
+        "oneOf": [
+          {
+            "type": "string",
+            "const": "day_month_year",
+            "description": "20.10.2026"
+          },
+          {
+            "type": "string",
+            "const": "month_day_year",
+            "description": "10/20/2026"
+          },
+          {
+            "type": "string",
+            "const": "year_month_day",
+            "description": "2026-10-20"
+          }
+        ]
+      },
+      "TimeFormat": {
+        "oneOf": [
+          {
+            "type": "string",
+            "const": "h24",
+            "description": "14:30"
+          },
+          {
+            "type": "string",
+            "const": "h12",
+            "description": "2:30 PM"
+          }
+        ]
+      },
+      "DisplayZone": {
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "utc"
+            ]
+          },
+          {
+            "type": "string",
+            "const": "local",
+            "description": "The browser's own zone."
+          }
+        ]
+      },
+      "WeekStart": {
+        "type": "string",
+        "enum": [
+          "monday",
+          "saturday",
+          "sunday"
+        ]
       },
       "ApiKeysCreateArgs": {
         "type": "object",
@@ -10475,6 +10789,16 @@
           "status": {
             "$ref": "#/components/schemas/ProbeStatus"
           },
+          "location": {
+            "$ref": "#/components/schemas/ProbeLocation"
+          },
+          "platform": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Operating system and CPU architecture the agent reported, such as `linux/x86_64`."
+          },
           "created_at": {
             "type": "integer",
             "format": "int64"
@@ -10549,6 +10873,7 @@
           "name",
           "builtin",
           "status",
+          "location",
           "created_at",
           "clock_skewed",
           "checks_started",
@@ -10583,6 +10908,33 @@
             "description": "No contact for 90 seconds. Its results no longer count in any quorum."
           }
         ]
+      },
+      "ProbeLocation": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 3166-1 alpha-2 code in upper case, such as `AT`."
+          },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Up to 100 characters."
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The hosting provider or data center, such as `Scaleway`. Up to 100 characters."
+          }
+        },
+        "description": "Where a probe runs, as its admins describe it. Every field is optional; blank ones are\nstored as absent."
       },
       "OutboxHealth": {
         "type": "object",
@@ -12628,6 +12980,12 @@
           "node": {
             "$ref": "#/components/schemas/NodeId"
           },
+          "position": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Place among the monitors on its node, from 0."
+          },
           "name": {
             "type": "string"
           },
@@ -12729,6 +13087,7 @@
         "required": [
           "id",
           "node",
+          "position",
           "name",
           "description",
           "settings",
@@ -13284,10 +13643,18 @@
               "$ref": "#/components/schemas/LatencyPoint"
             },
             "description": "Buckets with up beats only."
+          },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusBucket"
+            },
+            "description": "Beat counts of every bucket with beats, oldest first."
           }
         },
         "required": [
-          "points"
+          "points",
+          "buckets"
         ]
       },
       "LatencyPoint": {
@@ -13317,6 +13684,39 @@
           "max_ms",
           "avg_ms"
         ]
+      },
+      "StatusBucket": {
+        "type": "object",
+        "properties": {
+          "bucket": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Bucket start, Unix milliseconds."
+          },
+          "up": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "down": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Pending counted in, as for uptime; imported Kuma rows fold pending in already."
+          },
+          "maintenance": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "bucket",
+          "up",
+          "down",
+          "maintenance"
+        ],
+        "description": "Beats in one bucket of a latency series, by status."
       },
       "MonitorsListArgs": {
         "type": "object",
@@ -13357,6 +13757,12 @@
           "node": {
             "$ref": "#/components/schemas/NodeId",
             "description": "The node the monitor sits on."
+          },
+          "position": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Place among the monitors on its node, from 0."
           },
           "name": {
             "type": "string"
@@ -13421,6 +13827,7 @@
         "required": [
           "id",
           "node",
+          "position",
           "name",
           "type",
           "active",
@@ -13448,6 +13855,40 @@
             "const": "unsupported",
             "description": "An imported Kuma type v1per does not run. Always paused."
           }
+        ]
+      },
+      "MonitorsMoveArgs": {
+        "type": "object",
+        "properties": {
+          "monitor": {
+            "$ref": "#/components/schemas/MonitorId"
+          },
+          "node": {
+            "$ref": "#/components/schemas/NodeId",
+            "description": "The node to sit on; its current one to reorder only."
+          },
+          "group": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MonitorId"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The group to sit in; absent for none."
+          },
+          "position": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Place among the monitors on `node`, from 0."
+          }
+        },
+        "required": [
+          "monitor",
+          "node",
+          "position"
         ]
       },
       "MonitorsSetManualStatusArgs": {
@@ -15406,6 +15847,9 @@
           "status": {
             "$ref": "#/components/schemas/ProbeStatus"
           },
+          "location": {
+            "$ref": "#/components/schemas/ProbeLocation"
+          },
           "own": {
             "type": "boolean",
             "description": "Registered on the node itself rather than on an ancestor."
@@ -15435,6 +15879,7 @@
           "name",
           "builtin",
           "status",
+          "location",
           "own"
         ],
         "description": "A probe a monitor may use."
@@ -15448,6 +15893,10 @@
           "name": {
             "type": "string",
             "description": "1 to 100 characters after trimming."
+          },
+          "location": {
+            "$ref": "#/components/schemas/ProbeLocation",
+            "default": {}
           }
         },
         "required": [
@@ -15512,6 +15961,27 @@
         },
         "required": [
           "probe"
+        ]
+      },
+      "ProbesUpdateArgs": {
+        "type": "object",
+        "properties": {
+          "probe": {
+            "$ref": "#/components/schemas/ProbeId"
+          },
+          "name": {
+            "type": "string",
+            "description": "1 to 100 characters after trimming."
+          },
+          "location": {
+            "$ref": "#/components/schemas/ProbeLocation",
+            "description": "Replaces the stored location; absent fields are cleared.",
+            "default": {}
+          }
+        },
+        "required": [
+          "probe",
+          "name"
         ]
       },
       "TwoFactorEnrollment": {

@@ -3,6 +3,7 @@ import { useNow } from '@vueuse/core'
 
 import MonitorCard from '~/components/observe/MonitorCard.vue'
 import { useDateFormat } from '~/composables/useDateFormat'
+import { useFormats } from '~/composables/usePreferences'
 import { useMonitorHourly } from '~/composables/useMonitors'
 import type { MonitorSummary, TreeNode } from '~/generated'
 import { countPresences, formatLatency, formatUptime, presenceFill, presenceLabels, presenceOf, presenceRank, type Presence } from '~/lib/monitor-status'
@@ -21,6 +22,7 @@ import { useI18n } from '~/plugins/i18n'
 const props = defineProps<{ tree: MonitorTree; node: TreeNode; extended?: boolean }>()
 
 const { t, locale } = useI18n()
+const { numberLocale } = useFormats()
 const { relative } = useDateFormat()
 const now = useNow({ interval: 10_000 })
 const hourly = useMonitorHourly(() => props.node.id, () => props.extended)
@@ -65,8 +67,8 @@ const groups = computed(() => {
         presence: worstOf(group.monitors),
         counts,
         up: counts.up,
-        uptime: uptimes.length > 0 ? formatUptime(uptimes.reduce((sum, value) => sum + value, 0) / uptimes.length, locale.value) : null,
-        p95: p95 === undefined ? null : formatLatency(p95, locale.value),
+        uptime: uptimes.length > 0 ? formatUptime(uptimes.reduce((sum, value) => sum + value, 0) / uptimes.length, numberLocale.value) : null,
+        p95: p95 === undefined ? null : formatLatency(p95, numberLocale.value),
         newest: Math.max(0, ...group.monitors.map((monitor) => monitor.beat_at ?? 0)),
         problems: group.monitors.filter((monitor) => isProblem(presenceOf(monitor))).toSorted(byPresence),
       }
@@ -79,8 +81,8 @@ const monitorLink = (monitor: MonitorSummary) => ({ name: 'node-monitor', params
 /** Everything a tile knows, as its tooltip and accessible name. */
 function describe(monitor: MonitorSummary) {
   const parts = [monitor.name, t(presenceLabels[presenceOf(monitor)])]
-  if (monitor.latency_ms !== undefined) parts.push(formatLatency(monitor.latency_ms, locale.value))
-  const uptime = formatUptime(monitor.uptime_24h, locale.value)
+  if (monitor.latency_ms !== undefined) parts.push(formatLatency(monitor.latency_ms, numberLocale.value))
+  const uptime = formatUptime(monitor.uptime_24h, numberLocale.value)
   if (uptime) parts.push(t('observe.wall.uptime', { uptime }))
   if (monitor.beat_at !== undefined) parts.push(t('observe.wall.checked', { when: relative(monitor.beat_at, now.value.getTime()) }))
   return parts.join(' · ')
@@ -241,7 +243,7 @@ const tileClass = (monitor: MonitorSummary) => {
           <span
             v-if="monitor.uptime_24h !== undefined"
             class="shrink-0 text-muted tabular-nums"
-          >{{ formatUptime(monitor.uptime_24h, locale) }}</span>
+          >{{ formatUptime(monitor.uptime_24h, numberLocale) }}</span>
           <span
             class="shrink-0"
             :class="presenceOf(monitor) === 'down' ? 'font-medium text-status-down' : 'text-status-pending'"

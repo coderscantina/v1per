@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useDateFormat } from '~/composables/useDateFormat'
 import type { MaintenanceWindow } from '~/generated'
 import { useI18n } from '~/plugins/i18n'
 
@@ -8,12 +9,13 @@ import { useI18n } from '~/plugins/i18n'
  */
 const props = defineProps<{ windows: readonly MaintenanceWindow[]; timezone: string; limit?: number }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
+const { format: formatter } = useDateFormat()
 const format = computed(() => {
   try {
-    return new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium', timeStyle: 'short', timeZone: props.timezone })
+    return formatter({ dateStyle: 'medium', timeStyle: 'short', timeZone: props.timezone })
   } catch {
-    return new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium', timeStyle: 'short' })
+    return formatter({ dateStyle: 'medium', timeStyle: 'short' })
   }
 })
 const shown = computed(() => (props.limit ? props.windows.slice(0, props.limit) : props.windows))

@@ -12,9 +12,11 @@ import TableEmptyRow from '~/components/ui/TableEmptyRow.vue'
 import TableLoadingRow from '~/components/ui/TableLoadingRow.vue'
 import { useDateFormat } from '~/composables/useDateFormat'
 import { useErrorMessage } from '~/composables/useErrorMessage'
+import { useFormats } from '~/composables/usePreferences'
 import { useImportInventory, useImportRun, useImports } from '~/composables/useImports'
 import { usePageMeta } from '~/composables/usePageMeta'
 import type { ImportStep } from '~/generated'
+import { formatNumber } from '~/lib/formats'
 import { useI18n, type MessageKey } from '~/plugins/i18n'
 
 /**
@@ -23,6 +25,7 @@ import { useI18n, type MessageKey } from '~/plugins/i18n'
  * mapped, or mapped with a loss, with the reason, a page at a time.
  */
 const { t, locale } = useI18n()
+const { numberLocale } = useFormats()
 const { message } = useErrorMessage()
 const { dateTime } = useDateFormat()
 const route = useRoute()
@@ -45,7 +48,7 @@ const stepLabels: Record<ImportStep, MessageKey> = {
   reconcile: 'imports.steps.reconcile',
 }
 
-const number = (value: number) => new Intl.NumberFormat(locale.value).format(value)
+const number = (value: number) => formatNumber(numberLocale.value, value)
 const unmatched = computed(() => manifest.value?.uptime.per_monitor.filter((monitor) => !monitor.matched) ?? [])
 </script>
 

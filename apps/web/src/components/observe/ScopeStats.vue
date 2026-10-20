@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import TrendSparkline from '~/components/observe/TrendSparkline.vue'
 import type { MonitorSummary, NodeId, TrendPoint } from '~/generated'
+import { useDateFormat } from '~/composables/useDateFormat'
+import { useFormats } from '~/composables/usePreferences'
 import { useScopeTrend } from '~/composables/useMonitors'
 import { countPresences, formatLatency, formatUptime, presenceFill, type Presence } from '~/lib/monitor-status'
 import { useI18n, type MessageKey } from '~/plugins/i18n'
@@ -15,6 +17,8 @@ import { useI18n, type MessageKey } from '~/plugins/i18n'
 const props = defineProps<{ node: NodeId; monitors: MonitorSummary[] }>()
 
 const { t, locale } = useI18n()
+const { numberLocale } = useFormats()
+const { format: formatDate } = useDateFormat()
 const trend = useScopeTrend(() => props.node)
 
 const MIX: Presence[] = ['up', 'maintenance', 'pending', 'down', 'unknown']
@@ -30,8 +34,8 @@ const stats = computed(() => {
     counts,
     active: props.monitors.length - counts.paused,
     healthy: counts.up + counts.maintenance,
-    uptime: uptimes.length > 0 ? formatUptime(uptimes.reduce((sum, value) => sum + value, 0) / uptimes.length, locale.value) : null,
-    p95: p95 === undefined ? null : formatLatency(p95, locale.value),
+    uptime: uptimes.length > 0 ? formatUptime(uptimes.reduce((sum, value) => sum + value, 0) / uptimes.length, numberLocale.value) : null,
+    p95: p95 === undefined ? null : formatLatency(p95, numberLocale.value),
   }
 })
 
@@ -60,14 +64,14 @@ const tiles = computed(() => {
       value: uptime ?? '–',
       color: 'var(--status-up)',
       series: (point) => point.uptime ?? null,
-      format: (value) => formatUptime(value, locale.value) ?? '–',
+      format: (value) => formatUptime(value, numberLocale.value) ?? '–',
     },
     {
       label: 'observe.stats.p95',
       value: p95 ?? '–',
       color: 'var(--accent-text)',
       series: (point) => point.latency_ms ?? null,
-      format: (value) => formatLatency(value, locale.value),
+      format: (value) => formatLatency(value, numberLocale.value),
     },
     {
       label: 'observe.stats.down',
@@ -93,7 +97,7 @@ const tiles = computed(() => {
 const points = computed(() => trend.data.value?.points ?? [])
 /** The tile and hour under the pointer. */
 const hovered = ref<{ label: MessageKey; index: number } | null>(null)
-const hourFormat = computed(() => new Intl.DateTimeFormat(locale.value, { hour: '2-digit', minute: '2-digit' }))
+const hourFormat = computed(() => formatDate({ hour: '2-digit', minute: '2-digit' }))
 
 function hoverOf(tile: Tile) {
   if (hovered.value?.label !== tile.label) return null
@@ -143,7 +147,7 @@ const onHover = (label: MessageKey, index: number | null) => {
           >{{ hoverOf(tile)?.hour }}</span>
         </dt>
         <dd
-          class="text-[1.75rem]/9 font-[650] tracking-[-0.01em] tabular-nums"
+          class="truncate text-[1.75rem]/9 font-[650] tracking-[-0.01em] tabular-nums"
           :class="tile.alert && !hoverOf(tile) ? 'text-status-down' : 'text-primary'"
         >
           <template v-if="hoverOf(tile)">{{ hoverOf(tile)?.value }}</template>

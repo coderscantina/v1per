@@ -1,25 +1,38 @@
 // From holocron (84fc54ec): apps/web/src/composables/useDateFormat.ts.
+import { formatDate, formatDateTime, formatTime, withFormats } from '~/lib/formats'
 import { useI18n } from '~/plugins/i18n'
+
+import { useFormats } from './usePreferences'
 
 const cache = new Map<string, Intl.DateTimeFormat>()
 
-/** Dates of account records (keys, invitations) in the reader's locale and timezone. */
+/**
+ * Dates and times in the reader's formats: their digit order, clock and zone from their
+ * preferences, words such as month names from the app language. `timeZone` arguments override
+ * the reader's zone, for a UTC day or a schedule's own zone.
+ */
 export function useDateFormat() {
   const { locale } = useI18n()
+  const { formats } = useFormats()
+  /** A formatter for custom parts, such as an axis label, with the reader's clock and zone. */
   const format = (options: Intl.DateTimeFormatOptions) => {
-    const key = `${locale.value}:${JSON.stringify(options)}`
+    const applied = withFormats(formats.value, options)
+    const key = `${locale.value}:${JSON.stringify(applied)}`
     let formatter = cache.get(key)
     if (!formatter) {
-      formatter = new Intl.DateTimeFormat(locale.value, options)
+      formatter = new Intl.DateTimeFormat(locale.value, applied)
       cache.set(key, formatter)
     }
     return formatter
   }
   return {
-    /** Unix milliseconds as a date, "5 Oct 2026". */
-    date: (ms: number) => format({ dateStyle: 'medium' }).format(ms),
-    /** Unix milliseconds with the time, for tooltips. */
-    dateTime: (ms: number) => format({ dateStyle: 'medium', timeStyle: 'short' }).format(ms),
+    format,
+    /** Unix milliseconds as a date, "Oct 20, 2026" or "20.10.2026". */
+    date: (ms: number, timeZone?: string) => formatDate(formats.value, ms, timeZone),
+    /** Unix milliseconds as a time of day. */
+    time: (ms: number, timeZone?: string) => formatTime(formats.value, ms, timeZone),
+    /** Unix milliseconds with the time, for tooltips and tables. */
+    dateTime: (ms: number, timeZone?: string) => formatDateTime(formats.value, ms, timeZone),
     /**
      * How long before `now` a moment was, "25 seconds ago", in the largest whole unit; `narrow`
      * gives "25s ago" for tight spots.
