@@ -505,6 +505,22 @@ impl Storage {
         .await
     }
 
+    /// Counts and latency of `series` per `resolution` bucket with beats in
+    /// `[from_ms, to_ms)`, oldest first.
+    pub async fn buckets(
+        &self,
+        monitor: MonitorId,
+        series: Series,
+        resolution: Resolution,
+        from_ms: i64,
+        to_ms: i64,
+    ) -> Result<Read<Vec<(i64, Counts)>>, ReadError> {
+        self.read(move |s| {
+            queries::buckets(s.connection(), monitor, series, resolution, from_ms, to_ms)
+        })
+        .await
+    }
+
     /// The last `hours` UTC hours of the monitor series of `monitors` taken together, oldest
     /// first, the hour holding `now_ms` last; hours without data have zero counts.
     pub async fn trend(

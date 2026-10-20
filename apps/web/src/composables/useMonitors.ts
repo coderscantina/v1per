@@ -5,8 +5,9 @@ import { computed, effectScope, onScopeDispose, shallowRef, toValue, watch, type
 import { queryKeys } from '~/api/query-keys'
 import { instanceResource } from '~/api/resources/instance'
 import { monitorsResource } from '~/api/resources/monitors'
-import type { MonitorId, NodeId, ProbeId, Resolution } from '~/generated'
-import { DAY_BARS_MAX, HEARTBEATS_PAGE_DEFAULT } from '~/generated/limits'
+import type { MonitorId, NodeId, ProbeId } from '~/generated'
+import { HEARTBEATS_PAGE_DEFAULT } from '~/generated/limits'
+import { historyRanges, historyWindow, type HistoryRange } from '~/lib/monitor-history'
 
 import { useLiveSnapshot, type LiveStatus } from './useLive'
 
@@ -28,6 +29,7 @@ export function useNodeMonitors(id: MaybeRefOrGetter<NodeId | null>, subtree: Ma
       const node = toValue(id)
       return node && toValue(subtree) ? `${node}:subtree` : node
     },
+    cache: 'monitors.list',
     load: (_, signal) => monitorsResource.list({ node: toValue(id) ?? '', subtree: toValue(subtree) }, signal),
     affects: isMonitorEvent,
   })
@@ -97,6 +99,7 @@ export function useMonitorDetail(id: MaybeRefOrGetter<MonitorId | null>) {
   const queryClient = useQueryClient()
   const live = useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'monitors.get',
     load: (monitor, signal) => monitorsResource.get(monitor, signal),
     affects: (event) => isMonitorEvent(event) && (event.monitor === undefined || event.monitor === toValue(id)),
   })
@@ -157,48 +160,33 @@ export function useMonitorUptime(id: MaybeRefOrGetter<MonitorId | null>, probe: 
   })
 }
 
-/** Ranges of the latency chart, each at a resolution that stays under the point limit. */
-export const latencyRanges = {
-  '1h': { span: 3_600_000, resolution: 'minute' },
-  '24h': { span: 86_400_000, resolution: 'minute' },
-  '7d': { span: 7 * 86_400_000, resolution: 'hour' },
-  '30d': { span: 30 * 86_400_000, resolution: 'hour' },
-} as const satisfies Record<string, { span: number; resolution: Resolution }>
+/** The reader's own zone, so a day is the day they lived through. */
+export const localTimezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
 
-export type LatencyRange = keyof typeof latencyRanges
-export const latencyRangeNames = ['1h', '24h', '7d', '30d'] as const satisfies readonly LatencyRange[]
-
-export function useMonitorLatency(
+/**
+ * Response times and beat counts of one time frame. The answer carries the window it was read
+ * for, so bars and chart stay aligned with the data between reads.
+ */
+export function useMonitorSeries(
   id: MaybeRefOrGetter<MonitorId | null>,
-  range: MaybeRefOrGetter<LatencyRange>,
+  range: MaybeRefOrGetter<HistoryRange>,
   probe: ProbeFilter = null
 ) {
   return useQuery({
     queryKey: computed(() => queryKeys.latency(toValue(id) ?? '', toValue(range), toValue(probe) ?? '')),
-    queryFn: ({ signal }) => {
-      const { span, resolution } = latencyRanges[toValue(range)]
-      const to = Date.now()
-      const monitor = toValue(id) ?? ''
-      return monitorsResource.latency({ monitor, from: to - span, to, resolution, probe: toValue(probe) ?? undefined }, signal)
+    queryFn: async ({ signal }) => {
+      const window = historyWindow(toValue(range), Date.now())
+      const { resolution } = historyRanges[window.range]
+      const series = await monitorsResource.latency(
+        { monitor: toValue(id) ?? '', from: window.from, to: window.to, resolution, probe: toValue(probe) ?? undefined },
+        signal
+      )
+      return { window, ...series }
     },
     enabled: () => toValue(id) !== null,
     refetchInterval: HISTORY_REFRESH_MS,
     staleTime: HISTORY_REFRESH_MS,
     placeholderData: (previous) => previous,
-  })
-}
-
-/** The reader's own zone, so a bar is the day they lived through. */
-export const localTimezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-
-export function useMonitorDayBars(id: MaybeRefOrGetter<MonitorId | null>) {
-  const timezone = localTimezone()
-  return useQuery({
-    queryKey: computed(() => queryKeys.dayBars(toValue(id) ?? '', timezone)),
-    queryFn: ({ signal }) => monitorsResource.dayBars({ monitor: toValue(id) ?? '', days: DAY_BARS_MAX, timezone }, signal),
-    enabled: () => toValue(id) !== null,
-    refetchInterval: HISTORY_REFRESH_MS,
-    staleTime: HISTORY_REFRESH_MS,
   })
 }
 

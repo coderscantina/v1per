@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableNone, TableRo
 import TableEmptyRow from '~/components/ui/TableEmptyRow.vue'
 import TableLoadingRow from '~/components/ui/TableLoadingRow.vue'
 import { useDateFormat } from '~/composables/useDateFormat'
+import { useFormats } from '~/composables/usePreferences'
 import type { Heartbeat, ProbeId } from '~/generated'
 import { formatLatency } from '~/lib/monitor-status'
 import { useI18n } from '~/plugins/i18n'
@@ -16,6 +17,7 @@ import StatusLabel from './StatusLabel.vue'
 const props = defineProps<{ heartbeats: Heartbeat[] | null; error?: string | null; probes?: Map<ProbeId, string> | null }>()
 
 const { t, locale } = useI18n()
+const { numberLocale } = useFormats()
 const { dateTime } = useDateFormat()
 const columns = computed(() => (props.probes ? 6 : 5))
 </script>
@@ -72,13 +74,13 @@ const columns = computed(() => (props.probes ? 6 : 5))
           </TableCell>
           <TableCell
             v-if="probes"
-            class="max-w-40 truncate whitespace-nowrap"
+            class="whitespace-nowrap"
           >
             <template v-if="beat.probe">{{ probes.get(beat.probe) ?? beat.probe }}</template>
             <TableNone v-else />
           </TableCell>
           <TableCell kind="numeric">
-            <template v-if="beat.latency_ms !== undefined">{{ formatLatency(beat.latency_ms, locale) }}</template>
+            <template v-if="beat.latency_ms !== undefined">{{ formatLatency(beat.latency_ms, numberLocale) }}</template>
             <TableNone v-else />
           </TableCell>
           <TableCell
@@ -88,11 +90,8 @@ const columns = computed(() => (props.probes ? 6 : 5))
             <template v-if="beat.http_status !== undefined">{{ beat.http_status }}</template>
             <TableNone v-else />
           </TableCell>
-          <TableCell class="max-w-0 min-w-48">
-            <span
-              class="block truncate"
-              :title="beat.message"
-            >{{ beat.message }}</span>
+          <TableCell class="max-w-0 min-w-48 whitespace-normal">
+            <span class="block break-words select-text">{{ beat.message }}</span>
           </TableCell>
         </TableRow>
       </TableBody>

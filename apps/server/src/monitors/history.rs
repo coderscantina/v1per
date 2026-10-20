@@ -14,7 +14,7 @@ use v1per_protocol::limits::{
 use v1per_protocol::operations::monitors::{
     DayBar, DayBarList, DayBarsArgs, Heartbeat, HeartbeatPage, HeartbeatsArgs, HourPoint,
     HourState, LatencyArgs, LatencyPoint, LatencySeries, MonitorHourly, MonitorHourlyList,
-    MonitorUptime, Resolution, ScopeTrend, TrendPoint, UptimeArgs,
+    MonitorUptime, Resolution, ScopeTrend, StatusBucket, TrendPoint, UptimeArgs,
 };
 use v1per_storage::{
     self as storage, Counts, HeartbeatCursor, ReadError, Series, Storage, UptimeWindow,
@@ -166,16 +166,16 @@ pub async fn latency(storage: &Storage, args: &LatencyArgs) -> Result<LatencySer
         Resolution::Hour => storage::Resolution::Hour,
         Resolution::Day => storage::Resolution::Day,
     };
-    let buckets = (args.to - args.from) / resolution.step_ms();
-    if args.from >= args.to || buckets > i64::from(LATENCY_POINTS_MAX) {
+    let wanted = (args.to - args.from) / resolution.step_ms();
+    if args.from >= args.to || wanted > i64::from(LATENCY_POINTS_MAX) {
         return Err(FieldErrors::one(
             "to",
             FieldErrorCode::InvalidValue,
             Some(LATENCY_POINTS_MAX),
         ));
     }
-    let points = storage
-        .latency(
+    let buckets = storage
+        .buckets(
             id(args.monitor),
             series(args.probe),
             resolution,
@@ -185,14 +185,28 @@ pub async fn latency(storage: &Storage, args: &LatencyArgs) -> Result<LatencySer
         .await
         .map_err(read_failed)?
         .value;
+    let points = buckets
+        .iter()
+        .filter_map(|(bucket, counts)| {
+            let latency = counts.latency?;
+            Some(LatencyPoint {
+                bucket: *bucket,
+                min_ms: latency.min_ms,
+                max_ms: latency.max_ms,
+                avg_ms: latency.avg_ms,
+            })
+        })
+        .collect();
+    let count = |value: u64| u32::try_from(value).unwrap_or(u32::MAX);
     Ok(LatencySeries {
-        points: points
-            .into_iter()
-            .map(|point| LatencyPoint {
-                bucket: point.bucket_ms,
-                min_ms: point.latency.min_ms,
-                max_ms: point.latency.max_ms,
-                avg_ms: point.latency.avg_ms,
+        points,
+        buckets: buckets
+            .iter()
+            .map(|(bucket, counts)| StatusBucket {
+                bucket: *bucket,
+                up: count(counts.up),
+                down: count(counts.down + counts.pending),
+                maintenance: count(counts.maintenance),
             })
             .collect(),
     })

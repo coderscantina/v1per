@@ -94,6 +94,11 @@ export async function ownNode(page: Page, name: string): Promise<{ root: string;
 /** Opens a section of the current node's configuration through the mode switch and its tabs. */
 export async function configure(page: Page, section: string) {
   await page.getByRole('navigation', { name: 'Mode' }).getByRole('link', { name: 'Configure' }).click()
+  // From a monitor's page the switch opens its editor, whose bar leads back to the folder.
+  const monitor = page.getByRole('navigation', { name: 'Monitor configuration' })
+  const node = page.getByRole('navigation', { name: 'Node configuration' })
+  await expect(monitor.or(node)).toBeVisible()
+  if (await monitor.isVisible()) await monitor.getByRole('link').first().click()
   await page.getByRole('navigation', { name: 'Node configuration' }).getByRole('link', { name: section, exact: true }).click()
 }
 

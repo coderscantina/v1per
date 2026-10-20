@@ -761,6 +761,19 @@ pub struct LatencyPoint {
 pub struct LatencySeries {
     /// Buckets with up beats only.
     pub points: Vec<LatencyPoint>,
+    /// Beat counts of every bucket with beats, oldest first.
+    pub buckets: Vec<StatusBucket>,
+}
+
+/// Beats in one bucket of a latency series, by status.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct StatusBucket {
+    /// Bucket start, Unix milliseconds.
+    pub bucket: i64,
+    pub up: u32,
+    /// Pending counted in, as for uptime; imported Kuma rows fold pending in already.
+    pub down: u32,
+    pub maintenance: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]

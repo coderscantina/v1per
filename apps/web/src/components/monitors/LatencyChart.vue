@@ -5,6 +5,8 @@
 import type { LatencyPoint } from '~/generated'
 import { formatLatency } from '~/lib/monitor-status'
 import { useI18n } from '~/plugins/i18n'
+import { useDateFormat } from '~/composables/useDateFormat'
+import { useFormats } from '~/composables/usePreferences'
 
 const props = defineProps<{
   points: LatencyPoint[]
@@ -13,9 +15,15 @@ const props = defineProps<{
   to: number
   /** Bucket width in milliseconds; a longer step between points is a gap. */
   step: number
+  /** A shorter plot without the legend, for a summary next to other figures. */
+  compact?: boolean
+  /** Figures for the whole range, such as the average, shown in the readout while not hovering. */
+  stats?: string[]
 }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
+const { numberLocale } = useFormats()
+const { dateTime, format, time } = useDateFormat()
 
 /** The next round number at or above a positive value: one significant digit. */
 const roundUp = (value: number) => {
@@ -69,17 +77,13 @@ const bandPath = computed(() =>
 const lone = computed(() => runs.value.filter((run) => run.length === 1).flat())
 
 const ticks = computed(() => [top.value, top.value / 2, 0])
-const ms = (value: number) => formatLatency(value, locale.value)
+const ms = (value: number) => formatLatency(value, numberLocale.value)
 
 const short = computed(() => span.value <= 86_400_000)
 /** Axis labels are times within a day and dates beyond it; `full` is both, for the readout. */
 const formatTime = (value: number, full = false) => {
-  const options: Intl.DateTimeFormatOptions = full
-    ? { dateStyle: 'medium', timeStyle: 'short' }
-    : short.value
-      ? { timeStyle: 'short' }
-      : { day: 'numeric', month: 'short' }
-  return new Intl.DateTimeFormat(locale.value, options).format(value)
+  if (full) return dateTime(value)
+  return short.value ? time(value) : format({ day: 'numeric', month: 'short' }).format(value)
 }
 
 const axis = computed(() => [
@@ -110,30 +114,48 @@ const hover = (event: PointerEvent) => {
   <figure class="m-0">
     <figcaption class="sr-only">{{ summary }}</figcaption>
     <ul
-      class="mb-3 flex flex-wrap items-center gap-4 text-sm text-muted"
+      class="mb-3 flex h-5 flex-nowrap overflow-hidden pl-16 items-center gap-x-4 gap-y-1 text-[0.8125rem] text-muted tabular-nums"
       aria-hidden="true"
     >
-      <li class="flex items-center gap-1.5">
+      <li
+        v-if="!compact"
+        class="flex items-center gap-1.5"
+      >
         <span class="h-0.5 w-4 bg-series-primary" />
         {{ t('monitors.detail.average') }}
       </li>
-      <li class="flex items-center gap-1.5">
+      <li
+        v-if="!compact"
+        class="flex items-center gap-1.5"
+      >
         <span class="h-2.5 w-4 rounded-[2px] bg-series-projected-fill" />
         {{ t('monitors.detail.spread') }}
       </li>
       <li
         v-if="hovered"
-        class="ml-auto text-primary tabular-nums"
+        class="min-w-0 truncate text-primary"
+        :class="!compact && 'ml-auto'"
       >
         {{ formatTime(hovered.bucket, true) }} · {{ ms(hovered.avg_ms) }}
         <span class="text-muted">({{ ms(hovered.min_ms) }} – {{ ms(hovered.max_ms) }})</span>
       </li>
+      <template v-else>
+        <li
+          v-for="stat in stats"
+          :key="stat"
+        >
+          {{ stat }}
+        </li>
+      </template>
     </ul>
     <div
       class="grid grid-cols-[auto_1fr] gap-x-2"
       aria-hidden="true"
     >
-      <div class="relative h-56 min-w-14 text-right text-[0.8125rem] text-muted tabular-nums">
+      <div
+        class="relative w-14 text-right text-[0.8125rem] text-muted tabular-nums"
+        :class="compact ? 'h-36' : 'h-56'"
+      >
         <span
           v-for="tick in ticks"
           :key="tick"
@@ -145,7 +167,8 @@ const hover = (event: PointerEvent) => {
       </div>
       <div
         ref="plot"
-        class="relative h-56 touch-pan-y"
+        class="relative touch-pan-y"
+        :class="compact ? 'h-36' : 'h-56'"
         @pointermove="hover"
         @pointerleave="hovered = null"
       >

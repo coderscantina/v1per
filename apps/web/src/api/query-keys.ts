@@ -22,7 +22,6 @@ export const queryKeys = {
   uptime: (monitor: string, probe: string) => ['monitor-history', monitor, 'monitors.uptime', probe] as const,
   latency: (monitor: string, range: string, probe: string) =>
     ['monitor-history', monitor, 'monitors.latency', range, probe] as const,
-  dayBars: (monitor: string, timezone: string) => ['monitor-history', monitor, 'monitors.dayBars', timezone] as const,
   heartbeats: (monitor: string, probe: string) => ['monitor-history', monitor, 'monitors.heartbeats', probe] as const,
   /** The hourly trend of a node and everything below it; read it again when a status changes. */
   trend: (node: string) => ['monitors.trend', node] as const,

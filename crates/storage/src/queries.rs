@@ -594,6 +594,24 @@ pub(crate) fn latency(
     )
 }
 
+/// Counts and latency of one monitor's series per bucket in `[from_ms, to_ms)`, oldest
+/// first. Buckets without beats are left out.
+pub(crate) fn buckets(
+    conn: &Connection,
+    monitor: MonitorId,
+    series: Series,
+    resolution: Resolution,
+    from_ms: i64,
+    to_ms: i64,
+) -> duckdb::Result<Vec<(i64, Counts)>> {
+    Ok(
+        rollups(conn, resolution, series, &[monitor], from_ms, to_ms, true)?
+            .into_iter()
+            .map(|(_, bucket_ms, sum)| (bucket_ms, sum.counts()))
+            .collect(),
+    )
+}
+
 /// `[from, to)` of the last `hours` UTC hours, the hour holding `now_ms` last.
 fn hour_window(now_ms: i64, hours: u32) -> (i64, i64) {
     let to = now_ms.div_euclid(HOUR_MS) * HOUR_MS + HOUR_MS;

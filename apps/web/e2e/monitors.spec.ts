@@ -76,7 +76,7 @@ test('an http monitor goes up, and down when its target stops', async ({ browser
   await page.getByLabel('Name', { exact: true }).fill('Web shop')
   await page.getByLabel('Tags').fill('shop, web')
   await page.getByLabel('URL', { exact: true }).fill(targetUrl)
-  await page.getByLabel('Interval in seconds', { exact: true }).fill('20')
+  await page.getByLabel('Interval', { exact: true }).fill('20')
   await page.getByRole('button', { name: 'Add monitor' }).click()
 
   await expect(page).toHaveURL(/\/monitors\/\d+$/)
@@ -152,7 +152,7 @@ test('a sealed credential shows only that it is set, and can be replaced or clea
   await expect(page.getByRole('heading', { level: 1, name: 'Status API' })).toBeVisible()
   ids.secret = new URL(page.url()).pathname.split('/')[4] ?? ''
 
-  await page.getByRole('link', { name: 'Edit' }).click()
+  await page.getByRole('main').getByRole('link', { name: 'Configure' }).click()
   await expect(page.getByText('Set', { exact: true })).toBeVisible()
   await expect(page.getByText('very-secret-token')).toHaveCount(0)
   await page.getByRole('button', { name: 'Clear: Token' }).click()

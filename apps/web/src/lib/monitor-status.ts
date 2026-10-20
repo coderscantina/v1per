@@ -1,4 +1,5 @@
 import type { DayBar, HeartbeatStatus, MonitorType, Quorum } from '~/generated'
+import { formatNumber, type NumberLocale } from '~/lib/formats'
 import type { IconName } from '~/lib/icons'
 import type { MessageKey } from '~/plugins/i18n'
 
@@ -88,29 +89,26 @@ export const quorumLabels: Record<Quorum, MessageKey> = {
  * Uptime as a percentage with two decimals, as Kuma shows it. Rounded down, so a window with a
  * single miss never reads as 100 %. `null` without up or down beats in the window.
  */
-export function formatUptime(ratio: number | undefined, locale: string): string | null {
+export function formatUptime(ratio: number | undefined, locale: NumberLocale): string | null {
   if (ratio === undefined) return null
   const floored = Math.floor(ratio * 10_000) / 10_000
   const digits = floored >= 1 ? 0 : 2
-  return new Intl.NumberFormat(locale, {
-    style: 'percent',
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  }).format(floored)
+  return formatNumber(locale, floored, { style: 'percent', minimumFractionDigits: digits, maximumFractionDigits: digits })
 }
 
 /** Milliseconds, with one decimal below 10 ms where a whole number would hide the difference. */
-export const formatLatency = (ms: number, locale: string): string =>
-  `${new Intl.NumberFormat(locale, { maximumFractionDigits: ms < 10 ? 1 : 0 }).format(ms)} ms`
+export const formatLatency = (ms: number, locale: NumberLocale): string =>
+  `${formatNumber(locale, ms, { maximumFractionDigits: ms < 10 ? 1 : 0 })} ms`
 
 /**
- * A day's colour: all up, degraded from 95 % uptime, down below it. Pending counts as down, as
- * in the uptime number. A day with only maintenance shows as maintenance, one without beats as
- * empty. This follows the contract's proposed bar rule, coarsened to three tones.
+ * A bar's colour, for a day or a slot of the monitor page's history: all up, degraded from 95 %
+ * uptime, down below it. Pending counts as down, as in the uptime number. A bar with only
+ * maintenance shows as maintenance, one without beats as empty. This follows the contract's
+ * proposed bar rule, coarsened to three tones.
  */
 export type BarTone = 'up' | 'degraded' | 'down' | 'maintenance' | 'empty'
 
-export function barTone(bar: DayBar): BarTone {
+export function barTone(bar: Pick<DayBar, 'uptime' | 'maintenance'>): BarTone {
   if (bar.uptime === undefined) return bar.maintenance > 0 ? 'maintenance' : 'empty'
   if (bar.uptime >= 1) return 'up'
   return bar.uptime >= 0.95 ? 'degraded' : 'down'
