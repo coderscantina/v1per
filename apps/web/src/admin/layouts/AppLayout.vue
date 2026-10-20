@@ -9,6 +9,7 @@ import SkipLink from '~/components/app/SkipLink.vue'
 import ErrorBoundary from '~/components/ErrorBoundary.vue'
 import { useMode } from '~/composables/useMode'
 import { useCurrentPageTitle } from '~/composables/usePageMeta'
+import { useAccentPreference } from '~/composables/usePreferences'
 import { useShortcut } from '~/composables/useShortcuts'
 import { useSidebar } from '~/composables/useSidebar'
 import { useI18n } from '~/plugins/i18n'
@@ -19,6 +20,8 @@ const route = useRoute()
 const sidebar = useSidebar()
 const title = useCurrentPageTitle()
 const { mode, targets } = useMode()
+// Applies the stored accent once per sign-in; the Appearance page changes it.
+useAccentPreference()
 
 /** Configure mode frames the canvas in the accent and puts the node's sections above it. */
 const configuring = computed(() => {
@@ -34,7 +37,8 @@ const panel = ref<HTMLElement | null>(null)
 
 /**
  * A page change moves focus to the main region and announces the new title. Only the path
- * counts: a query-only change keeps focus on the control in use.
+ * counts: a query-only change keeps focus on the control in use. So does typing in a field that
+ * outlives the page, such as a name being edited in the tree after the click that opened its row.
  * The layout mounts only after the navigation that brought it in (App.vue waits for the first
  * one), so every navigation seen here is a later one and stealing focus on first render cannot
  * happen.
@@ -43,7 +47,7 @@ const removeFocusHook = router.afterEach((to, from) => {
   if (to.path === from.path) return
   void nextTick(() => {
     panel.value?.scrollTo({ top: 0 })
-    panel.value?.focus({ preventScroll: true })
+    if (!document.activeElement?.matches('input, textarea, [contenteditable]')) panel.value?.focus({ preventScroll: true })
     announcement.value = title.value
   })
 })

@@ -45,3 +45,23 @@
     }
   }
 }
+
+/* The admin app selects like a desktop app: chrome, labels and buttons don't highlight on a
+   drag or double click. Fields, code, monospace data, detail values (`dd`) and what people copy
+   (messages, errors, incident text) opt back in, the last with `select-text` where they render. Safari needs fields opted in explicitly, or they stop
+   accepting typing. The status page keeps normal document selection. */
+@layer base {
+  body {
+    @apply select-none;
+  }
+
+  input,
+  textarea,
+  [contenteditable],
+  code,
+  pre,
+  dd,
+  .font-mono {
+    @apply select-text;
+  }
+}

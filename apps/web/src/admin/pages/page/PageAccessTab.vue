@@ -15,7 +15,6 @@ import { Button } from '~/components/ui/button'
 import { useErrorMessage } from '~/composables/useErrorMessage'
 import { usePageEditor } from '~/composables/usePages'
 import type { PageDetail } from '~/generated'
-import { PAGE_ALLOWED_EMAILS_MAX } from '~/generated/limits'
 import { accessFromPage, accessModeLabels, accessModes, toAccessArgs, validateAccess, type AccessForm } from '~/lib/pages'
 import { useI18n } from '~/plugins/i18n'
 
@@ -136,12 +135,12 @@ const setPassword = (action: AccessForm['passwordAction']) => {
           <SettingsSection
             id="page-public"
             :title="t('pages.access.publicTitle')"
+            :description="t('pages.access.publicHint')"
           >
             <SwitchField
               id="page-public-switch"
               v-model="form.public"
               :label="t('pages.access.public')"
-              :description="t('pages.access.publicHint')"
             />
           </SettingsSection>
 
@@ -233,7 +232,7 @@ const setPassword = (action: AccessForm['passwordAction']) => {
               v-model="form.emails"
               :rows="3"
               :label="t('pages.access.emails')"
-              :description="t('pages.access.emailsHint', { max: PAGE_ALLOWED_EMAILS_MAX })"
+              :description="t('pages.access.emailsHint')"
               placeholder="ops@example.com"
               :error="errorFor('emails')"
             />

@@ -18,7 +18,7 @@ import { useConfirm } from '~/composables/useConfirm'
 import { useErrorMessage } from '~/composables/useErrorMessage'
 import { usePageEditor } from '~/composables/usePages'
 import type { Locale, PageDetail } from '~/generated'
-import { PAGE_DESCRIPTION_MAX_CHARS, PAGE_FOOTER_MAX_CHARS, PAGE_GRACE_MAX_MINUTES, PAGE_LOGO_MAX_BYTES, PAGE_PATH } from '~/generated/limits'
+import { PAGE_DESCRIPTION_MAX_CHARS, PAGE_FOOTER_MAX_CHARS, PAGE_LOGO_MAX_BYTES, PAGE_PATH, PAGE_SLUG_MAX_CHARS } from '~/generated/limits'
 import {
   accents,
   autoIncidentModes,
@@ -183,6 +183,7 @@ const shownFields = ['title', 'slug', 'description', 'footer', 'timezone', 'grac
           autocomplete="off"
           :label="t('pages.settings.slug')"
           :description="t('pages.settings.slugHint', { path: `${PAGE_PATH}${form.slug || 'status'}` })"
+          :maxlength="PAGE_SLUG_MAX_CHARS"
           :error="errorFor('slug')"
           required
         />
@@ -191,7 +192,7 @@ const shownFields = ['title', 'slug', 'description', 'footer', 'timezone', 'grac
           v-model="form.description"
           :rows="3"
           :label="t('pages.settings.description')"
-          :description="t('pages.settings.maxChars', { max: PAGE_DESCRIPTION_MAX_CHARS })"
+          :maxlength="PAGE_DESCRIPTION_MAX_CHARS"
           :error="errorFor('description')"
         />
         <TextareaField
@@ -199,7 +200,7 @@ const shownFields = ['title', 'slug', 'description', 'footer', 'timezone', 'grac
           v-model="form.footer"
           :rows="2"
           :label="t('pages.settings.footer')"
-          :description="t('pages.settings.maxChars', { max: PAGE_FOOTER_MAX_CHARS })"
+          :maxlength="PAGE_FOOTER_MAX_CHARS"
           :error="errorFor('footer')"
         />
       </SettingsSection>
@@ -261,10 +262,9 @@ const shownFields = ['title', 'slug', 'description', 'footer', 'timezone', 'grac
               {{ t('pages.settings.logoRemove') }}
             </Button>
           </div>
-          <p class="text-xs text-muted">{{ t('pages.settings.logoHint', { max: PAGE_LOGO_MAX_BYTES / 1024 }) }}</p>
           <p
             v-if="logoProblem || logo.error.value"
-            class="text-xs font-medium text-destructive"
+            class="text-sm font-medium text-destructive"
             role="alert"
           >
             {{ logoProblem ?? (fieldMessage(logo.error.value, 'logo') ? t('pages.settings.logoInvalid') : message(logo.error.value)) }}
@@ -307,7 +307,6 @@ const shownFields = ['title', 'slug', 'description', 'footer', 'timezone', 'grac
           id="page-timezone"
           v-model="form.timezone"
           :label="t('pages.settings.timezone')"
-          :description="t('pages.settings.timezoneHint')"
           :placeholder="t('pages.settings.timezonePlaceholder')"
           :error="errorFor('timezone')"
         />
@@ -331,7 +330,8 @@ const shownFields = ['title', 'slug', 'description', 'footer', 'timezone', 'grac
           v-model="form.graceMinutes"
           inputmode="numeric"
           :label="t('pages.settings.grace')"
-          :description="t('pages.settings.graceHint', { max: PAGE_GRACE_MAX_MINUTES })"
+          :description="t('pages.settings.graceHint')"
+          :suffix="t('units.minutes')"
           :error="errorFor('grace_minutes')"
         />
       </SettingsSection>

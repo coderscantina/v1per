@@ -14,6 +14,13 @@ const ready = computed(() => route.matched.length > 0)
 const bare = computed(() => !!(route.meta.guest || route.meta.public || route.meta.enrollment))
 const layout = computed(() => (bare.value ? GuestLayout : AppLayout))
 const inShell = computed(() => ready.value && !bare.value)
+
+/**
+ * A page remounts when its route or one of its params changes, so an editor opened on one
+ * monitor never carries its form over to the next. Child routes (a status page's tabs) share
+ * their parent's params and keep it mounted.
+ */
+const pageKey = computed(() => `${route.matched[0]?.path ?? ''}?${JSON.stringify(route.params)}`)
 </script>
 
 <template>
@@ -23,7 +30,7 @@ const inShell = computed(() => ready.value && !bare.value)
   >
     <RouterView v-slot="{ Component }">
       <div
-        :key="route.matched[0]?.path"
+        :key="pageKey"
         class="page-enter flex min-h-full flex-col"
       >
         <component :is="Component" />

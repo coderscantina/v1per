@@ -8,7 +8,7 @@ import { Button } from '~/components/ui/button'
 import { Dialog, DialogContent, DialogHeaderCombined } from '~/components/ui/dialog'
 import { useErrorMessage } from '~/composables/useErrorMessage'
 import type { NodeId } from '~/generated'
-import { PAGE_PATH } from '~/generated/limits'
+import { PAGE_PATH, PAGE_SLUG_MAX_CHARS } from '~/generated/limits'
 import { slugify } from '~/lib/pages'
 import { useI18n } from '~/plugins/i18n'
 
@@ -77,6 +77,7 @@ watch(open, (value) => {
           autocomplete="off"
           :label="t('pages.settings.slug')"
           :description="t('pages.settings.slugHint', { path: `${PAGE_PATH}${slug || 'status'}` })"
+          :maxlength="PAGE_SLUG_MAX_CHARS"
           :error="fieldMessage(create.error.value, 'slug')"
           required
           @update:model-value="editSlug"

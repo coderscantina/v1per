@@ -144,7 +144,7 @@ const onEnrolled = () => {
               {{ t('twoFactor.required') }}
             </Badge>
           </div>
-          <p class="text-xs text-pretty text-muted">
+          <p class="text-sm text-pretty text-muted">
             {{
               enrolled
                 ? t('twoFactor.onSince', {
@@ -194,7 +194,7 @@ const onEnrolled = () => {
     </div>
     <p
       v-if="enrolled && required"
-      class="text-xs text-muted"
+      class="text-sm text-muted"
     >
       {{ t('twoFactor.requiredHint') }}
     </p>

@@ -105,7 +105,7 @@ const expired = (token: PageShareToken) => token.expires_at !== undefined && tok
           v-model="name"
           autocomplete="off"
           :label="t('pages.tokens.name')"
-          :description="t('pages.tokens.nameHint', { max: NAME_MAX_CHARS })"
+          :maxlength="NAME_MAX_CHARS"
           :error="fieldMessage(create.error.value, 'name')"
           required
         />

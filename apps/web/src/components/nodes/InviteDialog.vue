@@ -136,7 +136,6 @@ const submit = () =>
                 </SelectItem>
               </SelectContent>
             </Select>
-            <p class="text-xs text-muted">{{ t('invitations.roleHint') }}</p>
           </div>
           <FormField
             id="invite-days"
@@ -144,6 +143,7 @@ const submit = () =>
             type="number"
             inputmode="numeric"
             :label="t('invitations.lifetime')"
+            :suffix="t('units.days')"
             :description="t('invitations.lifetimeHint', { max: INVITATION_LIFETIME_MAX_DAYS })"
             :error="fieldMessage(invite.error.value, 'lifetime_days')"
             required

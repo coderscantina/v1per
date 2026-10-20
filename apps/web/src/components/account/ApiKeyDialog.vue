@@ -134,7 +134,7 @@ const submit = () => {
             v-model="name"
             autocomplete="off"
             :label="t('apiKeys.name')"
-            :description="t('apiKeys.nameHint', { max: NAME_MAX_CHARS })"
+            :maxlength="NAME_MAX_CHARS"
             :error="fieldMessage(create.error.value, 'name')"
             required
           />
@@ -145,7 +145,7 @@ const submit = () => {
             >
               {{ t('apiKeys.node') }}
             </p>
-            <p class="text-xs text-muted">{{ t('apiKeys.nodeHint', { node: where }) }}</p>
+            <p class="text-sm text-muted">{{ t('apiKeys.nodeHint', { node: where }) }}</p>
             <div class="overflow-hidden rounded-lg border border-hairline">
               <NodeTreeList
                 :index="index"

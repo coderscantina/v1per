@@ -186,7 +186,7 @@ const back = () => {
               </li>
             </ul>
           </section>
-          <p class="text-xs text-muted">{{ t('nodes.move.belowHint') }}</p>
+          <p class="text-sm text-muted">{{ t('nodes.move.belowHint') }}</p>
         </div>
         <CommandAlert :error="move.error.value" />
         <div class="flex justify-end gap-2">

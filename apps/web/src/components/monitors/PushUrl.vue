@@ -22,7 +22,7 @@ const url = computed(() => pushUrl(origin.value, props.token))
         :id="id"
         :model-value="url"
         readonly
-        class="min-w-0 font-mono text-xs"
+        class="min-w-0 font-mono text-sm"
         :aria-describedby="`${id}-description`"
         @focus="($event.target as HTMLInputElement).select()"
       />
@@ -30,7 +30,7 @@ const url = computed(() => pushUrl(origin.value, props.token))
     </div>
     <p
       :id="`${id}-description`"
-      class="text-xs text-muted"
+      class="text-sm text-muted"
     >
       {{ t('monitors.detail.pushHint') }}
     </p>

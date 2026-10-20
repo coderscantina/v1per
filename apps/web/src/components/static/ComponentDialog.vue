@@ -56,7 +56,7 @@ watch(open, (value) => {
           v-model="name"
           autocomplete="off"
           :label="t('components.name')"
-          :description="t('nodes.nameHint', { max: NAME_MAX_CHARS })"
+          :maxlength="NAME_MAX_CHARS"
           :error="fieldMessage(save.error.value, 'name')"
           required
         />

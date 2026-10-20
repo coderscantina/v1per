@@ -236,14 +236,13 @@ const backTo = computed(() =>
             v-model="form.provider"
             :label="t('channels.editor.provider')"
             :options="providerOptions"
-            :description="t('channels.editor.providerHint')"
           />
           <FormField
             id="channel-name"
             v-model="form.name"
             autocomplete="off"
             :label="t('channels.editor.name')"
-            :description="t('nodes.nameHint', { max: NAME_MAX_CHARS })"
+            :maxlength="NAME_MAX_CHARS"
             :error="errorFor('name')"
             required
           />
@@ -257,13 +256,11 @@ const backTo = computed(() =>
             id="channel-apply-existing"
             v-model="form.applyExisting"
             :label="t('channels.editor.applyExisting')"
-            :description="t('channels.editor.applyExistingHint')"
           />
           <SwitchField
             id="channel-active"
             v-model="form.active"
             :label="t('channels.editor.active')"
-            :description="t('channels.editor.activeHint')"
           />
         </SettingsSection>
 

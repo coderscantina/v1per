@@ -144,7 +144,7 @@ const confirm = async () => {
         autocomplete="one-time-code"
         inputmode="numeric"
         :label="t('twoFactor.code')"
-        :description="t('twoFactor.setup.codeHint', { digits: TOTP_DIGITS })"
+        :maxlength="TOTP_DIGITS"
         required
       />
     </template>

@@ -20,11 +20,6 @@ const formatLabels: Record<DiscordMessageFormat, MessageKey> = {
   minimalist: 'channels.discord.formats.minimalist',
   custom: 'channels.discord.formats.custom',
 }
-const formatHints: Record<DiscordMessageFormat, MessageKey> = {
-  normal: 'channels.discord.formatHints.normal',
-  minimalist: 'channels.discord.formatHints.minimalist',
-  custom: 'channels.discord.formatHints.custom',
-}
 const typeLabels: Record<DiscordChannelType, MessageKey> = {
   channel: 'channels.discord.channelTypes.channel',
   create_new_forum_post: 'channels.discord.channelTypes.create_new_forum_post',
@@ -48,7 +43,6 @@ const typeOptions = computed(() => discordChannelTypes.map((value) => ({ value, 
       autocomplete="off"
       placeholder="Uptime Kuma"
       :label="t('channels.discord.username')"
-      :description="t('channels.discord.usernameHint')"
       :error="errorFor('settings.username')"
     />
     <SelectField
@@ -78,7 +72,6 @@ const typeOptions = computed(() => discordChannelTypes.map((value) => ({ value, 
       v-model="model.messageFormat"
       :label="t('channels.discord.messageFormat')"
       :options="formatOptions"
-      :description="t(formatHints[model.messageFormat])"
     />
     <FormField
       v-if="model.messageFormat === 'normal'"
@@ -110,7 +103,6 @@ const typeOptions = computed(() => discordChannelTypes.map((value) => ({ value, 
       id="channel-discord-silent"
       v-model="model.suppressNotifications"
       :label="t('channels.discord.suppressNotifications')"
-      :description="t('channels.discord.suppressNotificationsHint')"
     />
   </div>
 </template>

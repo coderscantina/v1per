@@ -1,4 +1,5 @@
 <script setup lang="ts" generic="Value extends string">
+import FieldMessages from '~/components/FieldMessages.vue'
 import { Label } from '~/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select'
 
@@ -26,7 +27,7 @@ const choose = (value: unknown) => {
 </script>
 
 <template>
-  <div class="grid gap-1.5">
+  <div class="grid content-start gap-1.5">
     <Label :for="id">{{ label }}</Label>
     <Select
       :model-value="model"
@@ -50,19 +51,10 @@ const choose = (value: unknown) => {
         </SelectItem>
       </SelectContent>
     </Select>
-    <p
-      v-if="description"
-      :id="`${id}-description`"
-      class="text-xs text-muted"
-    >
-      {{ description }}
-    </p>
-    <p
-      v-if="error"
-      :id="`${id}-error`"
-      class="text-xs font-medium text-destructive"
-    >
-      {{ error }}
-    </p>
+    <FieldMessages
+      :id="id"
+      :description="description"
+      :error="error"
+    />
   </div>
 </template>

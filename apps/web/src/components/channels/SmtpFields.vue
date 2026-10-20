@@ -31,7 +31,7 @@ const securityOptions = computed(() => smtpSecurities.map((value) => ({ value, l
       id="channel-smtp-own"
       v-model="model.ownServer"
       :label="t('channels.smtp.ownServer')"
-      :description="model.ownServer ? t('channels.smtp.ownServerHint') : t('channels.smtp.instanceServerHint')"
+      :description="model.ownServer ? undefined : t('channels.smtp.instanceServerHint')"
     />
     <template v-if="model.ownServer">
       <div class="grid gap-4 sm:grid-cols-[1fr_8rem]">
@@ -57,14 +57,12 @@ const securityOptions = computed(() => smtpSecurities.map((value) => ({ value, l
         v-model="model.security"
         :label="t('channels.smtp.security')"
         :options="securityOptions"
-        :description="t('channels.smtp.securityHint')"
       />
       <SwitchField
         v-if="model.security === 'starttls'"
         id="channel-smtp-ignore-starttls"
         v-model="model.ignoreStarttls"
         :label="t('channels.smtp.ignoreStarttls')"
-        :description="t('channels.smtp.ignoreStarttlsHint')"
       />
       <SwitchField
         id="channel-smtp-ignore-tls"
@@ -124,7 +122,6 @@ const securityOptions = computed(() => smtpSecurities.map((value) => ({ value, l
       v-model="model.customSubject"
       autocomplete="off"
       :label="t('channels.smtp.subject')"
-      :description="t('channels.smtp.subjectHint')"
       :error="errorFor('settings.custom_subject')"
     />
     <TextareaField
@@ -133,7 +130,6 @@ const securityOptions = computed(() => smtpSecurities.map((value) => ({ value, l
       code
       :rows="5"
       :label="t('channels.smtp.body')"
-      :description="t('channels.smtp.bodyHint')"
       :error="errorFor('settings.custom_body')"
       described-by="channel-smtp-templates"
     />
@@ -141,7 +137,6 @@ const securityOptions = computed(() => smtpSecurities.map((value) => ({ value, l
       id="channel-smtp-html"
       v-model="model.htmlBody"
       :label="t('channels.smtp.htmlBody')"
-      :description="t('channels.smtp.htmlBodyHint')"
     />
     <TemplateHelp id="channel-smtp-templates" />
     <details class="group grid gap-4">
@@ -157,14 +152,12 @@ const securityOptions = computed(() => smtpSecurities.map((value) => ({ value, l
           :label="t('channels.smtp.headers')"
           :error="errorFor('settings.additional_headers')"
         />
-        <p class="-mt-2 text-xs text-muted">{{ t('channels.smtp.headersHint') }}</p>
         <div class="grid gap-4 sm:grid-cols-2">
           <FormField
             id="channel-smtp-dkim-domain"
             v-model="model.dkimDomain"
             autocomplete="off"
             :label="t('channels.smtp.dkimDomain')"
-            :description="t('channels.smtp.dkimDomainHint')"
             :error="errorFor('settings.dkim_domain')"
           />
           <FormField

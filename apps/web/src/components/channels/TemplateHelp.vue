@@ -36,15 +36,15 @@ const { t } = useI18n()
           v-for="variable in templateVariables"
           :key="variable"
         >
-          <dt><code class="rounded bg-fill px-1.5 py-0.5 font-mono text-xs text-primary">{{ variable }}</code></dt>
+          <dt><code class="rounded bg-fill px-1.5 py-0.5 font-mono text-sm text-primary">{{ variable }}</code></dt>
           <dd class="text-foreground max-sm:mb-1">{{ t(templateVariableHints[variable]) }}</dd>
         </template>
       </dl>
       <div class="grid gap-1">
         <p class="text-muted">{{ t('channels.templates.example') }}</p>
-        <code class="block rounded bg-fill px-2 py-1.5 font-mono text-xs break-all text-primary">{{ templateExample }}</code>
+        <code class="block rounded bg-fill px-2 py-1.5 font-mono text-sm break-all text-primary">{{ templateExample }}</code>
       </div>
-      <p class="text-xs text-muted">{{ t('channels.templates.noMonitor') }}</p>
+      <p class="text-muted">{{ t('channels.templates.noMonitor') }}</p>
     </div>
   </details>
 </template>

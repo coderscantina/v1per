@@ -7,15 +7,16 @@ import type { IconName } from '~/lib/icons'
 import { cn } from '~/lib/utils'
 
 /**
- * A message on a faint wash of its colour with a glowing bar at the left. `color` sets `--tone`;
- * only the bar, the wash and the icon carry it, the text keeps the regular ink.
+ * A message on a faint tint of its colour, edged by a hairline of the same colour. `color` sets
+ * `--tone`; the tint, the edge and the icon carry it. Text is the strongest ink, and muted text
+ * inside turns into that ink at reduced opacity, so it sits on the tint instead of graying out.
  */
 const alertVariants = cva(
-  'relative w-full rounded-r-lg bg-[color-mix(in_oklab,var(--tone)_11%,var(--card))] p-3 pl-4 text-foreground before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-(--tone) before:shadow-[0_0_10px_var(--tone)]',
+  'w-full rounded-control border border-(--tone)/30 bg-(--tone)/8 px-3.5 py-3 text-primary [--muted:color-mix(in_oklab,var(--primary)_72%,transparent)]',
   {
     variants: {
       color: {
-        default: '[--tone:var(--faint)]',
+        default: '[--tone:var(--status-none)]',
         info: '[--tone:var(--info)]',
         destructive: '[--tone:var(--destructive)]',
         success: '[--tone:var(--success)]',
@@ -44,13 +45,13 @@ const props = withDefaults(defineProps<AlertProps>(), {
     :class="cn(alertVariants({ color }), props.class)"
     role="alert"
   >
-    <div class="flex items-start gap-2">
+    <div class="flex items-start gap-2.5">
       <Icon
         v-if="icon"
         :name="icon"
-        class="mt-0.5 size-4.5 shrink-0 text-(--tone)"
+        class="mt-0.5 size-4 shrink-0 text-(--tone)"
       />
-      <div>
+      <div class="min-w-0 select-text">
         <slot />
       </div>
     </div>

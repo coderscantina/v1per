@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FieldMessages from '~/components/FieldMessages.vue'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -19,11 +20,11 @@ const set = (mode: SecretInput['mode']) => {
   model.value = { ...model.value, mode, value: '' }
 }
 const editing = computed(() => !model.value.set || model.value.mode === 'replace')
-const describedBy = computed(() => [`${props.id}-description`, props.error ? `${props.id}-error` : null].filter(Boolean).join(' '))
+const describedBy = computed(() => [editing.value ? `${props.id}-description` : null, props.error ? `${props.id}-error` : null].filter(Boolean).join(' '))
 </script>
 
 <template>
-  <div class="grid gap-1.5">
+  <div class="grid content-start gap-1.5">
     <Label :for="editing ? id : undefined">{{ label }}</Label>
     <div
       v-if="editing"
@@ -91,18 +92,10 @@ const describedBy = computed(() => [`${props.id}-description`, props.error ? `${
         {{ t('monitors.editor.secret.keep') }}
       </Button>
     </div>
-    <p
-      :id="`${id}-description`"
-      class="text-xs text-muted"
-    >
-      {{ t('monitors.editor.secret.sealed') }}
-    </p>
-    <p
-      v-if="error"
-      :id="`${id}-error`"
-      class="text-xs font-medium text-destructive"
-    >
-      {{ error }}
-    </p>
+    <FieldMessages
+      :id="id"
+      :description="editing ? t('monitors.editor.secret.sealed') : undefined"
+      :error="error"
+    />
   </div>
 </template>

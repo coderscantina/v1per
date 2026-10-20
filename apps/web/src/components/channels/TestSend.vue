@@ -123,7 +123,7 @@ const send = () => {
         <p class="text-sm">{{ t('channels.test.delivered') }}</p>
         <p
           v-if="result.detail"
-          class="mt-1 text-xs break-words"
+          class="mt-1 text-sm break-words"
         >
           {{ result.detail }}
         </p>
@@ -136,7 +136,7 @@ const send = () => {
         <p class="text-sm">{{ t('channels.test.failed') }}</p>
         <p
           v-if="result.error"
-          class="mt-1 font-mono text-xs break-words"
+          class="mt-1 font-mono text-sm break-words"
         >
           {{ result.error }}
         </p>

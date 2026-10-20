@@ -52,7 +52,7 @@ const submit = () => create.mutate({ parent: props.parent, name: name.value })
           v-model="name"
           autocomplete="off"
           :label="t('nodes.name')"
-          :description="t('nodes.nameHint', { max: NAME_MAX_CHARS })"
+          :maxlength="NAME_MAX_CHARS"
           :error="fieldMessage(create.error.value, 'name') ?? fieldMessage(create.error.value, 'parent')"
           required
         />

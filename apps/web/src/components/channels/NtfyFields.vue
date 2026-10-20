@@ -47,7 +47,7 @@ const authOptions = computed(() => ntfyAuths.map((value) => ({ value, label: t(a
         v-model="model.priority"
         inputmode="numeric"
         :label="t('channels.ntfy.priority')"
-        :description="t('channels.ntfy.priorityHint')"
+        :placeholder="t('channels.ntfy.priorityHint')"
         :error="errorFor('settings.priority')"
       />
       <FormField
@@ -55,7 +55,7 @@ const authOptions = computed(() => ntfyAuths.map((value) => ({ value, label: t(a
         v-model="model.priorityDown"
         inputmode="numeric"
         :label="t('channels.ntfy.priorityDown')"
-        :description="t('channels.ntfy.priorityHint')"
+        :placeholder="t('channels.ntfy.priorityHint')"
         :error="errorFor('settings.priority_down')"
       />
     </div>

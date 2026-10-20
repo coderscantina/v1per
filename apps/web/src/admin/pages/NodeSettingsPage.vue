@@ -133,7 +133,8 @@ const onDeleted = (result: NodeDeleted) => {
               v-model="name"
               autocomplete="off"
               :label="t('nodes.name')"
-              :description="can(node, 'node.write') ? t('nodes.nameHint', { max: NAME_MAX_CHARS }) : t('nodes.settings.needsAdmin')"
+              :description="can(node, 'node.write') ? undefined : t('nodes.settings.needsAdmin')"
+              :maxlength="NAME_MAX_CHARS"
               :error="fieldMessage(rename.error.value, 'name')"
               :readonly="!can(node, 'node.write')"
               required
@@ -186,7 +187,7 @@ const onDeleted = (result: NodeDeleted) => {
             />
             <div class="grid gap-0.5">
               <Label for="require-two-factor">{{ t('nodes.settings.requireTwoFactor') }}</Label>
-              <p class="text-xs text-muted">
+              <p class="text-sm text-muted">
                 {{
                   !can(node, 'members.manage')
                     ? t('nodes.settings.needsAdmin')
@@ -217,7 +218,7 @@ const onDeleted = (result: NodeDeleted) => {
           </p>
           <p
             v-if="!root && !can(node, 'node.move')"
-            class="text-xs text-muted"
+            class="text-sm text-muted"
           >
             {{ t('nodes.settings.needsOwner') }}
           </p>
@@ -244,7 +245,7 @@ const onDeleted = (result: NodeDeleted) => {
         >
           <p
             v-if="!can(node, 'node.delete')"
-            class="text-xs text-muted"
+            class="text-sm text-muted"
           >
             {{ t('nodes.settings.needsOwner') }}
           </p>

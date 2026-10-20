@@ -89,14 +89,14 @@ const seal = (at: number, sealed: boolean) => update(at, { secret: sealed ? newS
     </div>
     <p
       :id="`${id}-description`"
-      class="text-xs text-muted"
+      class="text-sm text-muted"
     >
       {{ t('monitors.editor.headersHint') }}
     </p>
     <p
       v-if="error"
       :id="`${id}-error`"
-      class="text-xs font-medium text-destructive"
+      class="text-sm font-medium text-destructive"
     >
       {{ error }}
     </p>

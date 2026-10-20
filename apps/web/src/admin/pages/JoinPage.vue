@@ -185,7 +185,7 @@ const signInLink = computed(() => ({
           v-model="name"
           autocomplete="name"
           :label="t('join.name')"
-          :description="t('join.nameHint', { max: NAME_MAX_CHARS })"
+          :maxlength="NAME_MAX_CHARS"
           :error="fieldMessage(accept.error.value, 'account.name')"
           required
         />

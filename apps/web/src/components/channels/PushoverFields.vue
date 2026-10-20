@@ -57,7 +57,7 @@ const { t } = useI18n()
         v-model="model.priority"
         inputmode="numeric"
         :label="t('channels.pushover.priority')"
-        :description="t('channels.pushover.priorityHint')"
+        :placeholder="t('channels.pushover.priorityHint')"
         :error="errorFor('settings.priority')"
       />
       <FormField
@@ -65,6 +65,7 @@ const { t } = useI18n()
         v-model="model.ttl"
         inputmode="numeric"
         :label="t('channels.pushover.ttl')"
+        :suffix="t('units.seconds')"
         :error="errorFor('settings.ttl')"
       />
     </div>

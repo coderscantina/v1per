@@ -22,7 +22,8 @@ import { useMaintenanceDetail, useMaintenancePreview } from '~/composables/useMa
 import { localTimezone, useMonitorTree } from '~/composables/useMonitors'
 import { useCurrentNode, useNodeDetail } from '~/composables/useNodes'
 import { usePageMeta } from '~/composables/usePageMeta'
-import type { MaintenanceResult, MaintenanceStrategy } from '~/generated'
+import { useFormats } from '~/composables/usePreferences'
+import type { MaintenanceResult } from '~/generated'
 import { can } from '~/lib/access'
 import {
   daysOfMonth,
@@ -38,6 +39,7 @@ import {
   weekdays,
   type MaintenanceForm,
 } from '~/lib/maintenance-form'
+import { weekStart } from '~/lib/formats'
 import { useI18n, type MessageKey } from '~/plugins/i18n'
 
 /**
@@ -47,6 +49,7 @@ import { useI18n, type MessageKey } from '~/plugins/i18n'
  * is active.
  */
 const { t, locale } = useI18n()
+const { formats } = useFormats()
 const { fieldMessage, fieldProblem, message } = useErrorMessage()
 const route = useRoute()
 const router = useRouter()
@@ -148,20 +151,15 @@ const reload = async () => {
   save.reset()
 }
 
-const strategyHints: Record<MaintenanceStrategy, MessageKey> = {
-  manual: 'maintenance.strategyHints.manual',
-  single: 'maintenance.strategyHints.single',
-  'recurring-interval': 'maintenance.strategyHints.recurring-interval',
-  'recurring-weekday': 'maintenance.strategyHints.recurring-weekday',
-  'recurring-day-of-month': 'maintenance.strategyHints.recurring-day-of-month',
-  cron: 'maintenance.strategyHints.cron',
-}
 const strategyOptions = computed(() => strategies.map((value) => ({ value, label: t(strategyLabels[value]) })))
 
-/** Weekday names in the reader's language; 7 January 2024 was a Sunday. */
+/** Weekday names in the reader's language from their first day of the week; 7 January 2024 was a Sunday. */
 const weekdayOptions = computed(() => {
   const format = new Intl.DateTimeFormat(locale.value, { weekday: 'long', timeZone: 'UTC' })
-  return weekdays.map((day) => ({ value: String(day), label: format.format(Date.UTC(2024, 0, 7 + day)) }))
+  const first = weekStart(formats.value)
+  return [...weekdays]
+    .sort((a, b) => ((a - first + 7) % 7) - ((b - first + 7) % 7))
+    .map((day) => ({ value: String(day), label: format.format(Date.UTC(2024, 0, 7 + day)) }))
 })
 const pickedWeekdays = computed({
   get: () => form.value.weekdays.map(String),
@@ -258,7 +256,6 @@ const ready = computed(() => node.data.value && (!editing.value || basedOn.value
               v-model="form.strategy"
               :label="t('maintenance.editor.strategy')"
               :options="strategyOptions"
-              :description="t(strategyHints[form.strategy])"
             />
             <div
               v-if="form.strategy === 'single'"
@@ -287,7 +284,7 @@ const ready = computed(() => node.data.value && (!editing.value || basedOn.value
               v-model="form.intervalDay"
               inputmode="numeric"
               :label="t('maintenance.editor.intervalDay')"
-              :description="t('maintenance.editor.intervalDayHint')"
+              :suffix="t('units.days')"
               :error="errorFor('schedule.interval_day')"
               required
             />
@@ -318,7 +315,7 @@ const ready = computed(() => node.data.value && (!editing.value || basedOn.value
                 </div>
                 <p
                   v-if="errorFor('schedule.days_of_month')"
-                  class="text-xs font-medium text-destructive"
+                  class="text-sm font-medium text-destructive"
                 >
                   {{ errorFor('schedule.days_of_month') }}
                 </p>
@@ -344,6 +341,7 @@ const ready = computed(() => node.data.value && (!editing.value || basedOn.value
                 v-model="form.durationMinutes"
                 inputmode="numeric"
                 :label="t('maintenance.editor.duration')"
+                :suffix="t('units.minutes')"
                 :error="errorFor('schedule.duration')"
                 required
               />
@@ -386,7 +384,6 @@ const ready = computed(() => node.data.value && (!editing.value || basedOn.value
                 v-model="form.endDate"
                 type="datetime-local"
                 :label="t('maintenance.editor.rangeEnd')"
-                :description="t('maintenance.editor.rangeHint')"
                 :error="errorFor('schedule.end_date')"
               />
             </div>
@@ -394,7 +391,6 @@ const ready = computed(() => node.data.value && (!editing.value || basedOn.value
               id="maintenance-timezone"
               v-model="form.timezone"
               :label="t('maintenance.editor.timezone')"
-              :description="t('maintenance.editor.timezoneHint')"
               :placeholder="t('maintenance.editor.timezonePlaceholder')"
               :error="errorFor('schedule.timezone')"
             />
@@ -467,7 +463,7 @@ const ready = computed(() => node.data.value && (!editing.value || basedOn.value
         >
           {{ t('maintenance.preview.title') }}
         </h2>
-        <p class="text-xs text-muted">{{ t('maintenance.preview.zone', { zone: previewZone }) }}</p>
+        <p class="text-sm text-muted">{{ t('maintenance.preview.zone', { zone: previewZone }) }}</p>
         <p
           v-if="form.strategy === 'manual'"
           class="text-sm text-muted"

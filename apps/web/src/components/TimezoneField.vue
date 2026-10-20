@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FieldMessages from '~/components/FieldMessages.vue'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 
@@ -25,7 +26,7 @@ const describedBy = computed(() => {
 </script>
 
 <template>
-  <div class="grid gap-1.5">
+  <div class="grid content-start gap-1.5">
     <Label :for="id">{{ label }}</Label>
     <Input
       :id="id"
@@ -44,19 +45,10 @@ const describedBy = computed(() => {
         :value="zone"
       />
     </datalist>
-    <p
-      v-if="description"
-      :id="`${id}-description`"
-      class="text-xs text-muted"
-    >
-      {{ description }}
-    </p>
-    <p
-      v-if="error"
-      :id="`${id}-error`"
-      class="text-xs font-medium text-destructive"
-    >
-      {{ error }}
-    </p>
+    <FieldMessages
+      :id="id"
+      :description="description"
+      :error="error"
+    />
   </div>
 </template>

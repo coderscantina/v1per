@@ -7,6 +7,7 @@ import SettingsSection from '~/components/account/SettingsSection.vue'
 import ChannelPicker from '~/components/channels/ChannelPicker.vue'
 import CommandAlert from '~/components/CommandAlert.vue'
 import FormField from '~/components/FormField.vue'
+import Icon from '~/components/Icon.vue'
 import HeadersEditor from '~/components/monitors/HeadersEditor.vue'
 import ProbePicker from '~/components/monitors/ProbePicker.vue'
 import PushUrl from '~/components/monitors/PushUrl.vue'
@@ -14,19 +15,20 @@ import SecretInputField from '~/components/monitors/SecretInputField.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import SelectField from '~/components/SelectField.vue'
 import SwitchField from '~/components/SwitchField.vue'
+import TextareaField from '~/components/TextareaField.vue'
 import { Alert } from '~/components/ui/alert'
 import { Button } from '~/components/ui/button'
-import { Label } from '~/components/ui/label'
 import { Skeleton } from '~/components/ui/skeleton'
-import { Textarea } from '~/components/ui/textarea'
 import { useAvailableChannels } from '~/composables/useChannels'
+import { useConfirm } from '~/composables/useConfirm'
 import { useErrorMessage } from '~/composables/useErrorMessage'
+import { useItemSections } from '~/composables/useItemSections'
 import { useMonitorDetail, useMonitorsOf } from '~/composables/useMonitors'
 import { useCurrentNode, useNodeDetail } from '~/composables/useNodes'
 import { usePageMeta } from '~/composables/usePageMeta'
 import { useAvailableProbes } from '~/composables/useProbes'
 import type { HttpAuth, IpFamily, MonitorResult, OAuthClientAuth } from '~/generated'
-import { MONITOR_INTERVAL_MIN_SECONDS, MONITOR_TAGS_MAX, PUSH_TOKEN_MAX_CHARS, PUSH_TOKEN_MIN_CHARS } from '~/generated/limits'
+import { PUSH_TOKEN_MAX_CHARS, PUSH_TOKEN_MIN_CHARS } from '~/generated/limits'
 import { can } from '~/lib/access'
 import {
   authMethods,
@@ -55,9 +57,11 @@ import { useI18n, type MessageKey } from '~/plugins/i18n'
 /**
  * Adds a monitor to the node, or edits one. Every type keeps its own fields, so switching type
  * loses nothing typed. The form reads the monitor once; later changes by others surface as a
- * stale revision on save, with a reload.
+ * stale revision on save, with a reload. Saving an edit stays here, in configure mode; a new
+ * monitor opens its page to show its first checks.
  */
 const { t } = useI18n()
+const { confirm } = useConfirm()
 const { fieldMessage, fieldProblem } = useErrorMessage()
 const route = useRoute()
 const router = useRouter()
@@ -136,6 +140,9 @@ const pushTokenError = computed(() =>
     : errorFor('settings.push_token')
 )
 
+const saved = ref(false)
+watch(form, () => (saved.value = false), { deep: true })
+
 const submit = () => {
   submitted.value = true
   if (Object.keys(validate(form.value)).length > 0) {
@@ -143,8 +150,33 @@ const submit = () => {
     return
   }
   save.mutate(form.value, {
-    onSuccess: ({ monitor }) =>
-      void router.push({ name: 'node-monitor', params: { nodeId: monitor.node, monitorId: monitor.id } }),
+    onSuccess: ({ monitor }) => {
+      if (!editing.value) {
+        void router.push({ name: 'node-monitor', params: { nodeId: monitor.node, monitorId: monitor.id } })
+        return
+      }
+      const next = formFromMonitor(monitor)
+      if (next) form.value = next
+      basedOn.value = monitor.revision
+      submitted.value = false
+      void nextTick(() => (saved.value = true))
+    },
+  })
+}
+
+const remove = useMutation({ mutationFn: (monitor: string) => monitorsResource.delete(monitor) })
+const confirmRemove = async () => {
+  const monitor = stored.value
+  if (!monitor) return
+  const ok = await confirm({
+    title: t('monitors.editor.deleteSection'),
+    message: t('monitors.detail.deleteConfirm', { name: monitor.name }),
+    confirmLabel: t('monitors.detail.delete'),
+    variant: 'destructive',
+  })
+  if (!ok) return
+  remove.mutate(monitor.id, {
+    onSuccess: () => void router.replace({ name: 'node-monitors', params: { nodeId: monitor.node } }),
   })
 }
 
@@ -234,18 +266,37 @@ const storedToken = computed(() => {
   return settings?.type === 'push' ? (settings.push_token ?? null) : null
 })
 const ready = computed(() => node.data.value && (!editing.value || basedOn.value !== null))
-const backTo = computed(() =>
-  monitorId.value
-    ? { name: 'node-monitor', params: { nodeId: routeId.value, monitorId: monitorId.value } }
-    : { name: 'node-monitors', params: { nodeId: routeId.value } }
-)
+const backTo = computed(() => ({ name: 'node-monitors', params: { nodeId: routeId.value } }))
+
+/** Empty fields fall back to these on the server, so they show as placeholders. */
+const retryPlaceholder = computed(() => form.value.interval.trim())
+const timeoutPlaceholder = computed(() => {
+  const interval = Number(form.value.interval)
+  return Number.isFinite(interval) && interval > 0 ? String(Math.round(interval * 0.8 * 10) / 10) : ''
+})
+
+const editorSections = computed(() => {
+  if (!ready.value || !manage.value || unsupported.value) return []
+  const type = form.value.type
+  return [
+    { id: 'monitor-basics', label: t('monitors.editor.basics') },
+    ...(type !== 'group' && type !== 'manual'
+      ? [{ id: 'monitor-check', label: type === 'push' ? t('monitors.editor.push') : t('monitors.editor.check') }]
+      : []),
+    ...(sendsRequest(type) ? [{ id: 'monitor-request', label: t('monitors.editor.request') }] : []),
+    { id: 'monitor-schedule', label: t('monitors.editor.schedule') },
+    ...(runsOnProbes(type) ? [{ id: 'monitor-probes', label: t('monitors.editor.probesSection') }] : []),
+    { id: 'monitor-notifications', label: t('monitors.editor.notifications') },
+  ]
+})
+useItemSections(editorSections)
 </script>
 
 <template>
   <div>
     <PageHeader
-      :title="editing ? t('monitors.editor.editTitle') : t('monitors.editor.createTitle')"
-      :description="stored?.name ?? node.data.value?.node.name"
+      :title="editing ? (stored?.name ?? t('monitors.editor.editTitle')) : t('monitors.editor.createTitle')"
+      :description="editing ? t('monitors.editor.editTitle') : node.data.value?.node.name"
     />
 
     <Alert
@@ -285,24 +336,17 @@ const backTo = computed(() =>
     >
       <SettingsPage>
         <SettingsSection
-          id="monitor-type"
-          :title="t('monitors.editor.type')"
-          :description="t('monitors.editor.typeHint')"
+          id="monitor-basics"
+          :title="t('monitors.editor.basics')"
+          :description="t(typeNotes[form.type])"
         >
           <SelectField
             id="monitor-type-select"
             v-model="form.type"
             :label="t('monitors.editor.type')"
             :options="typeOptions"
-            :description="t(typeNotes[form.type])"
             :error="errorFor('settings')"
           />
-        </SettingsSection>
-
-        <SettingsSection
-          id="monitor-basics"
-          :title="t('monitors.editor.basics')"
-        >
           <FormField
             id="monitor-name"
             v-model="form.name"
@@ -310,35 +354,35 @@ const backTo = computed(() =>
             :error="errorFor('name')"
             required
           />
-          <div class="grid gap-1.5">
-            <Label for="monitor-description">{{ t('monitors.editor.description') }}</Label>
-            <Textarea
-              id="monitor-description"
-              v-model="form.description"
-              rows="2"
-              :aria-invalid="errorFor('description') ? 'true' : undefined"
-            />
-            <p
-              v-if="errorFor('description')"
-              class="text-xs font-medium text-destructive"
-            >
-              {{ errorFor('description') }}
-            </p>
-          </div>
-          <FormField
-            id="monitor-tags"
-            v-model="form.tags"
-            :label="t('monitors.editor.tags')"
-            :description="t('monitors.editor.tagsHint', { max: MONITOR_TAGS_MAX })"
-            :error="errorFor('tags')"
+          <TextareaField
+            id="monitor-description"
+            v-model="form.description"
+            :rows="2"
+            :label="t('monitors.editor.description')"
+            :error="errorFor('description')"
           />
-          <SelectField
-            id="monitor-group"
-            v-model="group"
-            :label="t('monitors.editor.group')"
-            :options="groupOptions"
-            :description="t('monitors.editor.groupHint')"
-            :error="errorFor('group')"
+          <div class="grid gap-4 sm:grid-cols-2">
+            <FormField
+              id="monitor-tags"
+              v-model="form.tags"
+              :label="t('monitors.editor.tags')"
+              :placeholder="t('monitors.editor.tagsPlaceholder')"
+              :error="errorFor('tags')"
+            />
+            <SelectField
+              id="monitor-group"
+              v-model="group"
+              :label="t('monitors.editor.group')"
+              :options="groupOptions"
+              :error="errorFor('group')"
+            />
+          </div>
+          <SwitchField
+            v-if="form.type === 'group' || form.type === 'manual'"
+            id="monitor-upside-down"
+            v-model="form.upsideDown"
+            :label="t('monitors.editor.upsideDown')"
+            :description="t('monitors.editor.upsideDownHint')"
           />
         </SettingsSection>
 
@@ -347,7 +391,17 @@ const backTo = computed(() =>
           id="monitor-check"
           :title="form.type === 'push' ? t('monitors.editor.push') : t('monitors.editor.check')"
         >
-          <template v-if="sendsRequest(form.type)">
+          <div
+            v-if="sendsRequest(form.type)"
+            class="grid gap-4 sm:grid-cols-[8rem_minmax(0,1fr)]"
+          >
+            <SelectField
+              id="monitor-method"
+              v-model="form.request.method"
+              :label="t('monitors.editor.method')"
+              :options="methodOptions"
+              :error="errorFor('settings.method')"
+            />
             <FormField
               id="monitor-url"
               v-model="form.request.url"
@@ -357,14 +411,7 @@ const backTo = computed(() =>
               :error="errorFor('settings.url')"
               required
             />
-            <SelectField
-              id="monitor-method"
-              v-model="form.request.method"
-              :label="t('monitors.editor.method')"
-              :options="methodOptions"
-              :error="errorFor('settings.method')"
-            />
-          </template>
+          </div>
           <template v-if="form.type === 'keyword'">
             <FormField
               id="monitor-keyword"
@@ -406,10 +453,13 @@ const backTo = computed(() =>
               id="monitor-retry-only-status"
               v-model="form.retryOnlyOnStatusCodeFailure"
               :label="t('monitors.editor.retryOnlyOnStatusCodeFailure')"
-              :description="t('monitors.editor.retryOnlyOnStatusCodeFailureHint')"
             />
           </template>
-          <template v-if="form.type === 'port' || form.type === 'ping' || form.type === 'dns'">
+          <div
+            v-if="form.type === 'port' || form.type === 'ping' || form.type === 'dns'"
+            class="grid gap-4"
+            :class="form.type === 'port' && 'sm:grid-cols-[minmax(0,1fr)_8rem]'"
+          >
             <FormField
               id="monitor-hostname"
               v-model="form.hostname"
@@ -418,16 +468,16 @@ const backTo = computed(() =>
               autocomplete="off"
               required
             />
-          </template>
-          <FormField
-            v-if="form.type === 'port'"
-            id="monitor-port"
-            v-model="form.port"
-            inputmode="numeric"
-            :label="t('monitors.editor.port')"
-            :error="errorFor('settings.port')"
-            required
-          />
+            <FormField
+              v-if="form.type === 'port'"
+              id="monitor-port"
+              v-model="form.port"
+              inputmode="numeric"
+              :label="t('monitors.editor.port')"
+              :error="errorFor('settings.port')"
+              required
+            />
+          </div>
           <div
             v-if="form.type === 'ping'"
             class="grid gap-4 sm:grid-cols-3"
@@ -444,6 +494,7 @@ const backTo = computed(() =>
               v-model="form.packetSize"
               inputmode="numeric"
               :label="t('monitors.editor.packetSize')"
+              :suffix="t('units.bytes')"
               :error="errorFor('settings.packet_size')"
             />
             <FormField
@@ -451,22 +502,23 @@ const backTo = computed(() =>
               v-model="form.pingTimeout"
               inputmode="decimal"
               :label="t('monitors.editor.pingTimeout')"
+              :suffix="t('units.seconds')"
               :error="errorFor('settings.ping_per_request_timeout')"
             />
           </div>
           <template v-if="form.type === 'dns'">
-            <SelectField
-              id="monitor-dns-type"
-              v-model="form.dnsRecordType"
-              :label="t('monitors.editor.dnsRecordType')"
-              :options="recordOptions"
-            />
-            <div class="grid gap-4 sm:grid-cols-[1fr_8rem]">
+            <div class="grid gap-4 sm:grid-cols-[8rem_minmax(0,1fr)_8rem]">
+              <SelectField
+                id="monitor-dns-type"
+                v-model="form.dnsRecordType"
+                :label="t('monitors.editor.dnsRecordType')"
+                :options="recordOptions"
+              />
               <FormField
                 id="monitor-dns-server"
                 v-model="form.dnsServer"
                 :label="t('monitors.editor.dnsServer')"
-                :description="t('monitors.editor.dnsServerHint')"
+                :placeholder="t('monitors.editor.dnsServerPlaceholder')"
                 :error="errorFor('settings.dns_resolve_server')"
               />
               <FormField
@@ -514,6 +566,12 @@ const backTo = computed(() =>
               {{ t('monitors.editor.newToken') }}
             </Button>
           </template>
+          <SwitchField
+            id="monitor-upside-down"
+            v-model="form.upsideDown"
+            :label="t('monitors.editor.upsideDown')"
+            :description="t('monitors.editor.upsideDownHint')"
+          />
         </SettingsSection>
 
         <SettingsSection
@@ -526,16 +584,14 @@ const backTo = computed(() =>
             v-model="form.request.headers"
             :error="errorFor('settings.headers')"
           />
-          <div class="grid gap-4 sm:grid-cols-[1fr_10rem]">
-            <div class="grid gap-1.5">
-              <Label for="monitor-body">{{ t('monitors.editor.body') }}</Label>
-              <Textarea
-                id="monitor-body"
-                v-model="form.request.body"
-                rows="3"
-                class="font-mono text-xs"
-              />
-            </div>
+          <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem]">
+            <TextareaField
+              id="monitor-body"
+              v-model="form.request.body"
+              :rows="3"
+              :label="t('monitors.editor.body')"
+              code
+            />
             <SelectField
               id="monitor-body-encoding"
               v-model="form.request.bodyEncoding"
@@ -543,12 +599,20 @@ const backTo = computed(() =>
               :options="encodingOptions"
             />
           </div>
-          <SelectField
-            id="monitor-auth"
-            v-model="form.request.authMethod"
-            :label="t('monitors.editor.auth')"
-            :options="authOptions"
-          />
+          <div class="grid gap-4 sm:grid-cols-2">
+            <SelectField
+              id="monitor-auth"
+              v-model="form.request.authMethod"
+              :label="t('monitors.editor.auth')"
+              :options="authOptions"
+            />
+            <SelectField
+              id="monitor-ip-family"
+              v-model="form.request.ipFamily"
+              :label="t('monitors.editor.ipFamily')"
+              :options="ipOptions"
+            />
+          </div>
           <div
             v-if="form.request.authMethod === 'basic'"
             class="grid gap-4 sm:grid-cols-2"
@@ -615,12 +679,12 @@ const backTo = computed(() =>
               :options="clientAuthOptions"
             />
           </template>
-          <div class="grid gap-4 sm:grid-cols-[1fr_10rem]">
+          <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem]">
             <FormField
               id="monitor-accepted"
               v-model="form.request.acceptedStatusCodes"
               :label="t('monitors.editor.acceptedStatusCodes')"
-              :description="t('monitors.editor.acceptedStatusCodesHint')"
+              :placeholder="t('monitors.editor.acceptedPlaceholder')"
               :error="errorFor('settings.accepted_statuscodes')"
             />
             <FormField
@@ -631,17 +695,10 @@ const backTo = computed(() =>
               :error="errorFor('settings.maxredirects')"
             />
           </div>
-          <SelectField
-            id="monitor-ip-family"
-            v-model="form.request.ipFamily"
-            :label="t('monitors.editor.ipFamily')"
-            :options="ipOptions"
-          />
           <SwitchField
             id="monitor-ignore-tls"
             v-model="form.request.ignoreTls"
             :label="t('monitors.editor.ignoreTls')"
-            :description="t('monitors.editor.ignoreTlsHint')"
           />
           <SwitchField
             id="monitor-cache-bust"
@@ -651,9 +708,83 @@ const backTo = computed(() =>
         </SettingsSection>
 
         <SettingsSection
+          id="monitor-schedule"
+          :title="t('monitors.editor.schedule')"
+          :description="t('monitors.editor.scheduleHint')"
+        >
+          <div class="grid gap-4 sm:grid-cols-2">
+            <FormField
+              id="monitor-interval"
+              v-model="form.interval"
+              inputmode="numeric"
+              :label="t('monitors.editor.interval')"
+              :suffix="t('units.seconds')"
+              :error="errorFor('interval')"
+              required
+            />
+            <FormField
+              v-if="checked"
+              id="monitor-timeout"
+              v-model="form.timeout"
+              inputmode="decimal"
+              :label="t('monitors.editor.timeout')"
+              :suffix="t('units.seconds')"
+              :placeholder="timeoutPlaceholder"
+              :error="errorFor('timeout')"
+            />
+            <FormField
+              id="monitor-max-retries"
+              v-model="form.maxRetries"
+              inputmode="numeric"
+              :label="t('monitors.editor.maxRetries')"
+              :error="errorFor('max_retries')"
+            />
+            <FormField
+              id="monitor-retry-interval"
+              v-model="form.retryInterval"
+              inputmode="numeric"
+              :label="t('monitors.editor.retryInterval')"
+              :suffix="t('units.seconds')"
+              :placeholder="retryPlaceholder"
+              :error="errorFor('retry_interval')"
+            />
+            <FormField
+              id="monitor-resend"
+              v-model="form.resendInterval"
+              inputmode="numeric"
+              :label="t('monitors.editor.resendInterval')"
+              :suffix="t('units.checks')"
+              :error="errorFor('resend_interval')"
+            />
+          </div>
+        </SettingsSection>
+
+        <SettingsSection
+          v-if="checked"
+          id="monitor-probes"
+          :title="t('monitors.editor.probesSection')"
+          :description="t('monitors.editor.probesHint')"
+        >
+          <ProbePicker
+            v-model="form.probes"
+            :choices="probeChoices"
+            :error="errorFor('probes')"
+          />
+          <SelectField
+            v-if="quorumApplies(form, probeChoices)"
+            id="monitor-quorum"
+            v-model="form.quorum"
+            class="sm:max-w-[calc(50%-0.5rem)]"
+            :label="t('monitors.editor.quorum')"
+            :error="errorFor('quorum')"
+            :options="quorumOptions"
+          />
+        </SettingsSection>
+
+        <SettingsSection
           id="monitor-notifications"
           :title="t('monitors.editor.notifications')"
-          :description="t('monitors.editor.notificationsHint')"
+          :description="t('monitors.editor.channelsHint')"
         >
           <ChannelPicker
             v-model="form.channels"
@@ -665,83 +796,28 @@ const backTo = computed(() =>
             id="monitor-expiry-notification"
             v-model="form.request.expiryNotification"
             :label="t('monitors.editor.expiryNotification')"
-            :description="form.request.ignoreTls ? t('monitors.editor.expiryNotificationIgnored') : t('monitors.editor.expiryNotificationHint')"
+            :description="form.request.ignoreTls ? t('monitors.editor.expiryNotificationIgnored') : undefined"
           />
         </SettingsSection>
 
         <SettingsSection
-          id="monitor-schedule"
-          :title="t('monitors.editor.schedule')"
+          v-if="editing && stored"
+          id="monitor-delete"
+          :title="t('monitors.editor.deleteSection')"
+          destructive
         >
-          <div class="grid gap-4 sm:grid-cols-2">
-            <FormField
-              id="monitor-interval"
-              v-model="form.interval"
-              inputmode="numeric"
-              :label="t('monitors.editor.interval')"
-              :description="t('monitors.editor.intervalHint', { min: MONITOR_INTERVAL_MIN_SECONDS })"
-              :error="errorFor('interval')"
-              required
-            />
-            <FormField
-              id="monitor-retry-interval"
-              v-model="form.retryInterval"
-              inputmode="numeric"
-              :label="t('monitors.editor.retryInterval')"
-              :description="t('monitors.editor.retryIntervalHint')"
-              :error="errorFor('retry_interval')"
-            />
-            <FormField
-              id="monitor-max-retries"
-              v-model="form.maxRetries"
-              inputmode="numeric"
-              :label="t('monitors.editor.maxRetries')"
-              :description="t('monitors.editor.maxRetriesHint')"
-              :error="errorFor('max_retries')"
-            />
-            <FormField
-              id="monitor-resend"
-              v-model="form.resendInterval"
-              inputmode="numeric"
-              :label="t('monitors.editor.resendInterval')"
-              :description="t('monitors.editor.resendIntervalHint')"
-              :error="errorFor('resend_interval')"
-            />
-            <FormField
-              v-if="checked"
-              id="monitor-timeout"
-              v-model="form.timeout"
-              inputmode="decimal"
-              :label="t('monitors.editor.timeout')"
-              :description="t('monitors.editor.timeoutHint')"
-              :error="errorFor('timeout')"
-            />
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm text-muted">{{ t('monitors.editor.deleteText') }}</p>
+            <Button
+              type="button"
+              variant="destructive"
+              :loading="remove.isPending.value"
+              @click="confirmRemove"
+            >
+              <Icon name="lucide:trash-2" />
+              {{ t('monitors.detail.delete') }}
+            </Button>
           </div>
-          <ProbePicker
-            v-if="checked"
-            v-model="form.probes"
-            :choices="probeChoices"
-            :error="errorFor('probes')"
-          />
-          <div
-            v-if="quorumApplies(form, probeChoices)"
-            class="grid gap-4 sm:grid-cols-2"
-          >
-            <SelectField
-              id="monitor-quorum"
-              v-model="form.quorum"
-              :label="t('monitors.editor.quorum')"
-              :description="t('monitors.editor.quorumHint')"
-              :error="errorFor('quorum')"
-              :options="quorumOptions"
-            />
-          </div>
-          <SwitchField
-            id="monitor-upside-down"
-            v-model="form.upsideDown"
-            :label="t('monitors.editor.upsideDown')"
-            :description="t('monitors.editor.upsideDownHint')"
-          />
         </SettingsSection>
       </SettingsPage>
 
@@ -753,11 +829,18 @@ const backTo = computed(() =>
           <p class="text-sm">{{ t('monitors.editor.invalid') }}</p>
         </Alert>
         <CommandAlert
-          v-else-if="save.error.value"
-          :error="save.error.value"
+          v-else-if="save.error.value || remove.error.value"
+          :error="save.error.value ?? remove.error.value"
           :shown="shownFields"
           @reload="reload"
         />
+        <Alert
+          v-else-if="saved"
+          color="success"
+          role="status"
+        >
+          <p class="text-sm">{{ t('monitors.editor.saved') }}</p>
+        </Alert>
         <div class="flex flex-wrap gap-2">
           <Button
             type="submit"

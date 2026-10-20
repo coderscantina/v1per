@@ -92,7 +92,7 @@ const columns = computed(() => (props.channels ? 6 : 5))
             <span class="truncate font-normal text-foreground" :title="delivery.summary">{{ delivery.summary }}</span>
             <span
               v-if="delivery.error"
-              class="text-xs font-normal break-words whitespace-normal text-destructive"
+              class="text-xs font-normal break-words whitespace-normal text-destructive select-text"
             >{{ delivery.error }}</span>
             <span
               v-else-if="delivery.detail"

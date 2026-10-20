@@ -62,6 +62,5 @@ const contentOptions = computed(() => webhookContentTypes.map((value) => ({ valu
       :label="t('channels.webhook.headers')"
       :error="errorFor('settings.additional_headers')"
     />
-    <p class="-mt-2 text-xs text-muted">{{ t('channels.smtp.headersHint') }}</p>
   </div>
 </template>

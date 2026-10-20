@@ -39,10 +39,12 @@ usePageMeta(() => t('instance.title'))
 
 const settings = useLiveSnapshot({
   key: 'instance-settings',
+  cache: 'instance.settings',
   load: (_, signal) => instanceResource.settings(signal),
 })
 const info = useLiveSnapshot({
   key: 'instance-info',
+  cache: 'instance.info',
   load: (_, signal) => instanceResource.info(signal),
 })
 
@@ -272,8 +274,9 @@ const testArgs = (): InstanceTestSmtpArgs | null => {
               autocomplete="off"
               :label="t('instance.name')"
               :description="
-                settings.data.value.name_fixed ? t('instance.fixed', { variable: 'V1PER_INSTANCE_NAME' }) : t('nodes.nameHint', { max: NAME_MAX_CHARS })
+                settings.data.value.name_fixed ? t('instance.fixed', { variable: 'V1PER_INSTANCE_NAME' }) : undefined
               "
+              :maxlength="NAME_MAX_CHARS"
               :error="fieldMessage(update.error.value, 'name')"
               :readonly="settings.data.value.name_fixed"
               required
@@ -284,8 +287,9 @@ const testArgs = (): InstanceTestSmtpArgs | null => {
               type="url"
               autocomplete="off"
               :label="t('instance.publicUrl')"
+              placeholder="https://status.example.com"
               :description="
-                settings.data.value.public_url_fixed ? t('instance.fixed', { variable: 'V1PER_PUBLIC_URL' }) : t('instance.publicUrlHint')
+                settings.data.value.public_url_fixed ? t('instance.fixed', { variable: 'V1PER_PUBLIC_URL' }) : undefined
               "
               :error="fieldMessage(update.error.value, 'public_url')"
               :readonly="settings.data.value.public_url_fixed"
@@ -331,7 +335,6 @@ const testArgs = (): InstanceTestSmtpArgs | null => {
               id="instance-timezone"
               v-model="timezone"
               :label="t('instance.notifications.timezone')"
-              :description="t('instance.notifications.timezoneHint')"
               :error="fieldMessage(updateNotifications.error.value, 'timezone')"
             />
             <FormField
@@ -340,6 +343,7 @@ const testArgs = (): InstanceTestSmtpArgs | null => {
               inputmode="numeric"
               autocomplete="off"
               :label="t('instance.notifications.expiryDays')"
+              :suffix="t('units.days')"
               :description="t('instance.notifications.expiryDaysHint')"
               :error="(expiryDays !== '' || notificationsDirty ? daysError : null) ?? fieldMessage(updateNotifications.error.value, 'tls_expiry_notify_days')"
             />
@@ -406,14 +410,12 @@ const testArgs = (): InstanceTestSmtpArgs | null => {
               v-model="smtp.security"
               :label="t('channels.smtp.security')"
               :options="securityOptions"
-              :description="t('channels.smtp.securityHint')"
             />
             <SwitchField
               v-if="smtp.security === 'starttls'"
               id="instance-smtp-ignore-starttls"
               v-model="smtp.ignoreStarttls"
               :label="t('channels.smtp.ignoreStarttls')"
-              :description="t('channels.smtp.ignoreStarttlsHint')"
             />
             <SwitchField
               id="instance-smtp-ignore-tls"
@@ -441,7 +443,6 @@ const testArgs = (): InstanceTestSmtpArgs | null => {
               autocomplete="off"
               placeholder="v1per <alerts@example.com>"
               :label="t('channels.smtp.from')"
-              :description="t('instance.smtp.fromHint')"
               :error="smtpError('smtp.from')"
               required
             />

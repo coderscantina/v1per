@@ -22,21 +22,16 @@ const options = computed(() =>
   props.choices.map((choice) => ({
     value: choice.id,
     label: choice.name,
-    hint: [t(probeStatusLabels[choice.status]), choice.own ? null : t('monitors.editor.probeInherited')]
-      .filter((part) => part !== null)
-      .join(' · '),
+    hint: t(probeStatusLabels[choice.status]),
   }))
 )
 </script>
 
 <template>
-  <div class="grid gap-1.5">
-    <CheckboxGroup
+  <CheckboxGroup
       v-model="picked"
       :legend="t('monitors.editor.probes')"
       :options="options"
       :error="error"
     />
-    <p class="text-xs text-muted">{{ t('monitors.editor.probesHint') }}</p>
-  </div>
 </template>

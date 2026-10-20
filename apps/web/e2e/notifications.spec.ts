@@ -152,7 +152,7 @@ test('a down monitor alerts both channels and shows in their delivery logs', asy
   await page.goto(`/n/${ids.node}/monitors/new`)
   await page.getByLabel('Name', { exact: true }).fill('Web API')
   await page.getByLabel('URL', { exact: true }).fill(target.url)
-  await page.getByLabel('Interval in seconds', { exact: true }).fill('20')
+  await page.getByLabel('Interval', { exact: true }).fill('20')
   const picker = page.getByRole('group', { name: 'Channels' })
   // A new monitor starts with the default channels.
   await expect(picker.getByRole('checkbox', { name: /Ops mail/ })).toBeChecked()

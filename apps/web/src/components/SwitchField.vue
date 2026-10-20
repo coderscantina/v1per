@@ -31,7 +31,7 @@ const model = defineModel<boolean>({ required: true })
     <p
       v-if="description"
       :id="`${id}-description`"
-      class="col-start-2 text-xs text-muted"
+      class="col-start-2 text-sm text-pretty text-muted"
     >
       {{ description }}
     </p>
