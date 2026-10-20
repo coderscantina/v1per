@@ -29,6 +29,9 @@ export default defineConfig({
     proxy: {
       '/api': apiTarget,
       '/config.json': apiTarget,
+      // Status pages: the server injects the boot JSON into `status.html` from its `--web-dir`.
+      // Point that at this directory so it serves the dev template, whose module vite then serves.
+      '^/s/': apiTarget,
     },
   },
   build: {
