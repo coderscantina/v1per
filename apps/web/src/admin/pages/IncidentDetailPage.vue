@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { useMutation } from '@tanstack/vue-query'
+import { useNow } from '@vueuse/core'
 
 import { incidentsResource } from '~/api/resources/incidents'
 import { pagesResource } from '~/api/resources/pages'
 import Icon from '~/components/Icon.vue'
 import ImpactLabel from '~/components/incidents/ImpactLabel.vue'
+import IncidentComposer from '~/components/incidents/IncidentComposer.vue'
 import IncidentPublications from '~/components/incidents/IncidentPublications.vue'
 import IncidentStateBadge from '~/components/incidents/IncidentStateBadge.vue'
 import IncidentTimeline from '~/components/incidents/IncidentTimeline.vue'
-import IncidentUpdateForm from '~/components/incidents/IncidentUpdateForm.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import { Alert } from '~/components/ui/alert'
 import { Button } from '~/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu'
 import { EmptyState } from '~/components/ui/empty-state'
-import { Panel } from '~/components/ui/panel'
 import { Skeleton } from '~/components/ui/skeleton'
 import { useConfirm } from '~/composables/useConfirm'
 import { useDateFormat } from '~/composables/useDateFormat'
@@ -24,19 +25,20 @@ import { usePageMeta } from '~/composables/usePageMeta'
 import { useIncidentPublications } from '~/composables/usePages'
 import type { IncidentPublication } from '~/generated'
 import { can } from '~/lib/access'
-import { targetKey } from '~/lib/incidents'
+import { durationParts, targetKey } from '~/lib/incidents'
 import { useI18n } from '~/plugins/i18n'
 
 /**
- * One incident, live: its state and the impact on each affected monitor or static component,
- * the timeline newest first, the status pages it is on, and for members a quick update,
- * resolve, edit, delete and publishing per page. An auto-incident says which monitor opened it
- * and offers triage: update, publish to the pages showing it, or dismiss a false alarm.
+ * One incident as a feed, live: a header with its state, impact, age and what it affects, the
+ * status pages it is on, the composer for the next update, then the updates newest first.
+ * Resolve, edit and delete sit in the header. An auto-incident says which monitor opened it
+ * and offers triage: post an update, publish to the pages showing it, or dismiss a false alarm.
  */
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { message } = useErrorMessage()
 const { confirm } = useConfirm()
-const { dateTime } = useDateFormat()
+const { dateTime, relative } = useDateFormat()
+const now = useNow({ interval: 30_000 })
 const route = useRoute()
 const router = useRouter()
 const { routeId } = useCurrentNode()
@@ -63,6 +65,16 @@ const autoMonitor = computed(() => {
   if (!current || !monitor) return null
   const entry = current.affected.find((target) => target.target.type === 'monitor' && target.target.monitor === monitor)
   return { id: monitor, name: entry?.name ?? '' }
+})
+
+/** "2h 5m" open so far, or how long it lasted once resolved. */
+const duration = computed(() => {
+  const current = incident.value
+  if (!current) return ''
+  const end = current.resolved_at ?? now.value.getTime()
+  return durationParts(end - current.started_at)
+    .map(([unit, value]) => new Intl.NumberFormat(locale.value, { style: 'unit', unit, unitDisplay: 'narrow' }).format(value))
+    .join(' ')
 })
 
 const act = useMutation({ mutationFn: (action: () => Promise<unknown>) => action() })
@@ -99,44 +111,55 @@ const remove = async (dismiss: boolean) => {
     onSuccess: () => void router.replace({ name: 'node-incidents', params: { nodeId: current.node } }),
   })
 }
+
+const composer = useTemplateRef<{ focus: () => void }>('composer')
 </script>
 
 <template>
   <div>
-    <PageHeader
-      :title="incident?.title ?? t('incidents.title')"
-      :description="incident ? (incident.origin === 'auto' ? t('incidents.origins.auto') : t('incidents.origins.manual')) : undefined"
-    >
+    <PageHeader :title="incident?.title ?? t('incidents.title')">
       <template
         v-if="incident && manage"
         #actions
       >
         <Button
           v-if="incident.state !== 'resolved'"
-          variant="fill"
+          variant="ghost"
           :disabled="act.isPending.value"
           @click="resolve"
         >
           <Icon name="lucide:check" />
           {{ t('incidents.resolve') }}
         </Button>
-        <Button
-          as-child
-          variant="fill"
-        >
-          <RouterLink :to="{ name: 'node-incident-edit', params: { nodeId: incident.node, incidentId: incident.id } }">
-            <Icon name="lucide:pencil" />
-            {{ t('incidents.edit') }}
-          </RouterLink>
-        </Button>
-        <Button
-          variant="destructive"
-          :disabled="act.isPending.value"
-          @click="remove(false)"
-        >
-          <Icon name="lucide:trash-2" />
-          {{ t('incidents.delete') }}
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button
+              variant="ghost"
+              size="icon"
+              :aria-label="t('incidents.feed.more')"
+            >
+              <Icon name="lucide:ellipsis" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            class="w-48"
+          >
+            <DropdownMenuItem as-child>
+              <RouterLink :to="{ name: 'node-incident-edit', params: { nodeId: incident.node, incidentId: incident.id } }">
+                <Icon name="lucide:pencil" />
+                {{ t('incidents.edit') }}
+              </RouterLink>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              class="text-destructive focus:text-destructive"
+              @select="remove(false)"
+            >
+              <Icon name="lucide:trash-2" />
+              {{ t('incidents.delete') }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </template>
     </PageHeader>
 
@@ -158,15 +181,15 @@ const remove = async (dismiss: boolean) => {
 
     <div
       v-else-if="!detail || !incident"
-      class="grid max-w-6xl gap-6"
+      class="grid max-w-3xl gap-4"
     >
-      <Skeleton class="h-36 w-full rounded-panel" />
-      <Skeleton class="h-64 w-full rounded-panel" />
+      <Skeleton class="h-28 w-full rounded-panel" />
+      <Skeleton class="h-40 w-full rounded-panel" />
     </div>
 
     <div
       v-else
-      class="grid max-w-6xl gap-6"
+      class="grid max-w-3xl gap-4"
     >
       <Alert
         v-if="act.error.value"
@@ -174,6 +197,59 @@ const remove = async (dismiss: boolean) => {
       >
         <p class="text-sm">{{ message(act.error.value) }}</p>
       </Alert>
+
+      <section
+        class="grid gap-3"
+        :aria-label="t('incidents.status')"
+      >
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted">
+          <IncidentStateBadge :state="incident.state" />
+          <ImpactLabel
+            v-if="incident.impact"
+            :impact="incident.impact"
+          />
+          <span :title="dateTime(incident.started_at)">{{ t('incidents.feed.started', { time: relative(incident.started_at, now.getTime()) }) }}</span>
+          <span>{{ incident.resolved_at ? t('incidents.feed.lasted', { duration }) : t('incidents.feed.openFor', { duration }) }}</span>
+        </div>
+        <ul
+          v-if="detail.affected.length > 0"
+          class="flex flex-wrap gap-1.5"
+          :aria-label="t('incidents.editor.affected')"
+        >
+          <li
+            v-for="entry in detail.affected"
+            :key="targetKey(entry.target)"
+            class="inline-flex h-7 max-w-full items-center gap-2 rounded-md border border-hairline bg-card px-2.5 text-sm text-primary"
+            :data-affected="entry.name"
+          >
+            <Icon
+              :name="entry.target.type === 'monitor' ? 'lucide:activity' : 'lucide:box'"
+              size="13"
+              class="shrink-0 text-muted"
+              aria-hidden="true"
+            />
+            <span class="truncate">{{ entry.name }}</span>
+            <ImpactLabel
+              v-if="entry.impact"
+              :impact="entry.impact"
+            />
+          </li>
+        </ul>
+        <p
+          v-else
+          class="text-sm text-muted"
+        >
+          {{ t('incidents.noAffected') }}
+        </p>
+        <IncidentPublications
+          :publications="publications.data.value"
+          :manage="manage"
+          :pending="publishing.isPending.value"
+          :error="publishing.error.value ?? publications.error.value"
+          @publish="(entry) => publishing.mutate({ entry, publish: true })"
+          @unpublish="(entry) => publishing.mutate({ entry, publish: false })"
+        />
+      </section>
 
       <Alert
         v-if="incident.origin === 'auto'"
@@ -198,9 +274,9 @@ const remove = async (dismiss: boolean) => {
             <Button
               size="sm"
               variant="fill"
-              as-child
+              @click="composer?.focus()"
             >
-              <a href="#incident-update-title">{{ t('incidents.auto.postUpdate') }}</a>
+              {{ t('incidents.auto.postUpdate') }}
             </Button>
             <Button
               v-if="drafts.length > 0"
@@ -224,104 +300,27 @@ const remove = async (dismiss: boolean) => {
         </div>
       </Alert>
 
-      <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-        <Panel
-          id="incident-status"
-          :title="t('incidents.status')"
-        >
-          <div class="grid gap-4">
-            <div class="flex flex-wrap items-center gap-3">
-              <IncidentStateBadge :state="incident.state" />
-              <ImpactLabel
-                v-if="incident.impact"
-                :impact="incident.impact"
-              />
-            </div>
-            <dl class="grid gap-2 text-sm">
-              <div class="grid gap-0.5 sm:grid-cols-[8rem_1fr] sm:gap-4">
-                <dt class="text-muted">{{ t('incidents.columns.started') }}</dt>
-                <dd class="text-primary">{{ dateTime(incident.started_at) }}</dd>
-              </div>
-              <div
-                v-if="incident.resolved_at"
-                class="grid gap-0.5 sm:grid-cols-[8rem_1fr] sm:gap-4"
-              >
-                <dt class="text-muted">{{ t('incidents.resolvedAt') }}</dt>
-                <dd class="text-primary">{{ dateTime(incident.resolved_at) }}</dd>
-              </div>
-            </dl>
-            <div class="grid gap-2 border-t border-divider pt-4">
-              <h3 class="text-sm font-medium text-primary">{{ t('incidents.editor.affected') }}</h3>
-              <ul
-                v-if="detail.affected.length > 0"
-                class="grid gap-2"
-              >
-                <li
-                  v-for="entry in detail.affected"
-                  :key="targetKey(entry.target)"
-                  class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1"
-                  :data-affected="entry.name"
-                >
-                  <span class="inline-flex min-w-0 items-center gap-2 text-sm text-primary">
-                    <Icon
-                      :name="entry.target.type === 'monitor' ? 'lucide:activity' : 'lucide:box'"
-                      size="14"
-                      class="shrink-0 text-muted"
-                      aria-hidden="true"
-                    />
-                    <span class="truncate">{{ entry.name }}</span>
-                  </span>
-                  <ImpactLabel
-                    v-if="entry.impact"
-                    :impact="entry.impact"
-                  />
-                  <span
-                    v-else
-                    class="text-sm text-muted"
-                  >{{ t('incidents.update.noImpact') }}</span>
-                </li>
-              </ul>
-              <p
-                v-else
-                class="text-sm text-muted"
-              >
-                {{ t('incidents.noAffected') }}
-              </p>
-            </div>
-          </div>
-        </Panel>
+      <section
+        v-if="manage"
+        :aria-label="t('incidents.update.title')"
+      >
+        <IncidentComposer
+          ref="composer"
+          :key="incident.id"
+          :node="incident.node"
+          :detail="detail"
+        />
+      </section>
 
-        <Panel
-          v-if="manage"
-          id="incident-update-title"
-          :title="t('incidents.update.title')"
-        >
-          <IncidentUpdateForm
-            :key="incident.id"
-            :detail="detail"
-          />
-        </Panel>
-      </div>
-
-      <IncidentPublications
-        :publications="publications.data.value"
-        :manage="manage"
-        :pending="publishing.isPending.value"
-        :error="publishing.error.value ?? publications.error.value"
-        @publish="(entry) => publishing.mutate({ entry, publish: true })"
-        @unpublish="(entry) => publishing.mutate({ entry, publish: false })"
-      />
-
-      <Panel
-        id="incident-timeline"
-        :title="t('incidents.timeline.title')"
-        :meta="t('incidents.timeline.count', { count: detail.updates.length }, detail.updates.length)"
+      <section
+        class="rounded-panel border border-hairline bg-card px-4.5 py-5 max-sm:px-4"
+        :aria-label="t('incidents.timeline.title')"
       >
         <IncidentTimeline
           :updates="detail.updates"
           :names="names"
         />
-      </Panel>
+      </section>
     </div>
   </div>
 </template>

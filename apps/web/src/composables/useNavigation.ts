@@ -66,7 +66,7 @@ export function useNavigation() {
             labelKey: 'nav.pages',
             icon: 'lucide:globe',
             to: { name: 'node-pages', params },
-            within: ['node-page', 'node-page-layout', 'node-page-access', 'node-page-hostnames', 'node-page-preview'],
+            within: ['node-page', 'node-page-layout', 'node-page-access', 'node-page-hostnames', 'node-page-preview', 'node-page-incidents'],
           },
           { id: 'node-members', labelKey: 'nav.members', icon: 'lucide:users', to: { name: 'node-members', params } },
           { id: 'node-probes', labelKey: 'nav.probes', icon: 'lucide:radio-tower', to: { name: 'node-probes', params } },

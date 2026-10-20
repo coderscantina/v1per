@@ -29,6 +29,14 @@ export const impactFill: Record<Impact, string> = {
   major_outage: 'bg-status-down',
 }
 
+/** The timeline marker per state. A label always goes with it. */
+export const stateFill: Record<IncidentState, string> = {
+  investigating: 'bg-status-down',
+  identified: 'bg-status-partial',
+  monitoring: 'bg-info',
+  resolved: 'bg-status-up',
+}
+
 export const stateLabels: Record<IncidentState, MessageKey> = {
   investigating: 'incidents.states.investigating',
   identified: 'incidents.states.identified',
@@ -59,11 +67,22 @@ export function parseTargetKey(key: TargetKey): Target {
 /** The impact chosen per target, in the order the targets were picked. */
 export type ImpactSelection = Partial<Record<TargetKey, Impact>>
 
-/** Picks or drops targets: newly picked ones start at `DEFAULT_IMPACT`, kept ones keep theirs. */
-export function selectTargets(selection: ImpactSelection, picked: readonly TargetKey[]): ImpactSelection {
+/** Picks or drops targets: newly picked ones start at `impact`, kept ones keep theirs. */
+export function selectTargets(selection: ImpactSelection, picked: readonly TargetKey[], impact: Impact = DEFAULT_IMPACT): ImpactSelection {
   const next: ImpactSelection = {}
-  for (const key of picked) next[key] = selection[key] ?? DEFAULT_IMPACT
+  for (const key of picked) next[key] = selection[key] ?? impact
   return next
+}
+
+/** Every target in `keys` at one impact, as the composer's impact chip sets them. */
+export const allAt = (keys: readonly TargetKey[], impact: Impact): ImpactSelection =>
+  Object.fromEntries(keys.map((key) => [key, impact]))
+
+/** The impact every picked target shares; `undefined` when they differ or none has one. */
+export function sharedImpact(selection: ImpactSelection): Impact | undefined {
+  const values = new Set(Object.values(selection))
+  const [only] = values
+  return values.size === 1 ? only : undefined
 }
 
 /** `incidents.create`'s `impacts`: every picked target once, with its impact. */
@@ -87,4 +106,24 @@ export function changedImpacts(affected: readonly AffectedTarget[], chosen: Impa
     const impact = chosen[targetKey(entry.target)]
     return impact !== undefined && impact !== entry.impact ? [{ target: entry.target, impact }] : []
   })
+}
+
+/** Open incidents first, each group in the order given (newest first from the server). */
+export const openFirst = <T extends { state: IncidentState }>(list: readonly T[]): T[] => [
+  ...list.filter((entry) => entry.state !== 'resolved'),
+  ...list.filter((entry) => entry.state === 'resolved'),
+]
+
+export type DurationUnit = 'day' | 'hour' | 'minute'
+
+/** A span as its two largest whole units, "2 days 3 hours", at least one minute. */
+export function durationParts(ms: number): Array<[DurationUnit, number]> {
+  const minutes = Math.max(1, Math.floor(ms / 60_000))
+  const parts: Array<[DurationUnit, number]> = [
+    ['day', Math.floor(minutes / 1440)],
+    ['hour', Math.floor(minutes / 60) % 24],
+    ['minute', minutes % 60],
+  ]
+  const first = parts.findIndex(([, value]) => value > 0)
+  return parts.slice(first, first + 2).filter(([, value]) => value > 0)
 }

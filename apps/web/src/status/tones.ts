@@ -44,3 +44,11 @@ export const stateLabel: Record<IncidentState, MessageKey> = {
   monitoring: 'state.monitoring',
   resolved: 'state.resolved',
 }
+
+/** The marker color of each incident state on the timeline. */
+export const stateTone: Record<IncidentState, Tone> = {
+  investigating: 'major_outage',
+  identified: 'partial_outage',
+  monitoring: 'maintenance',
+  resolved: 'operational',
+}

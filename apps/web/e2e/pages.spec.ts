@@ -47,7 +47,7 @@ test('a page is created with a monitor and a static component', async ({ browser
   await page.getByRole('combobox', { name: 'Type', exact: true }).click()
   await page.getByRole('option', { name: 'Manual', exact: true }).click()
   await page.getByLabel('Name', { exact: true }).fill('Checkout')
-  await page.getByLabel('Interval in seconds', { exact: true }).fill('20')
+  await page.getByLabel('Interval', { exact: true }).fill('20')
   await page.getByRole('button', { name: 'Add monitor' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Checkout' })).toBeVisible()
   ids.monitor = new URL(page.url()).pathname.split('/')[4] ?? ''
@@ -158,8 +158,10 @@ test('incidents are published to the page, from the detail and from auto-inciden
   await page.goto(`/n/${ids.node}/incidents/new`)
   await page.getByLabel('Title').fill('Payments are slow')
   await page.getByLabel('Message').fill('Card payments take up to a minute.')
-  await page.getByRole('group', { name: 'Affected' }).locator('[data-target="Support"]').getByRole('checkbox').click()
-  await page.getByRole('button', { name: 'Open incident' }).click()
+  await page.getByRole('group', { name: 'Affects' }).getByRole('button', { name: 'Affects', exact: true }).click()
+  await page.getByRole('option', { name: /^Support/ }).click()
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: 'Post', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Payments are slow' })).toBeVisible()
 
   // A manual incident goes to the pages that show what it affects; it can come off and back.
@@ -238,6 +240,10 @@ test('page screens hold up at desktop and phone sizes, light and dark', async ({
       await page.goto(editor('layout'))
       await expect(page.locator('[data-component]')).toHaveCount(2)
       await check('page-layout')
+
+      await page.goto(editor('incidents'))
+      await expect(page.locator('[data-incident="Payments are slow"]')).toBeVisible()
+      await check('page-incidents')
 
       await page.goto(editor('access'))
       await expect(page.locator('[data-token="Client A"]')).toBeVisible()

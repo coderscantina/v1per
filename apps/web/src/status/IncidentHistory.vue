@@ -1,24 +1,26 @@
 <script setup lang="ts">
-import AffectedList from './AffectedList.vue'
-import { formatDuration, formatTime } from './format'
 import type { PageClient } from './client'
+import { formatMonth } from './format'
+import IncidentMeta from './IncidentMeta.vue'
 import { locale, t } from './messages'
 import StatusIcon from './StatusIcon.vue'
 import UpdateTimeline from './UpdateTimeline.vue'
-import { incidentView, type IncidentView } from './view'
+import { byMonth, incidentView, type IncidentView } from './view'
 
 /**
- * Resolved incidents, newest first, read from `incidents.json` ten at a time. A change in
- * `watch` (the snapshot's incidents changed) starts over from the newest page.
+ * Resolved incidents, newest first and grouped by month, read from `incidents.json` ten at a
+ * time. A change in `watch` (the snapshot's incidents changed) starts over from the newest page.
  */
 const props = defineProps<{
   client: PageClient
   names: ReadonlyMap<string, string>
   watch: string
+  now: number
 }>()
 
 const PAGE = 10
 const incidents = shallowRef<IncidentView[]>([])
+const months = computed(() => byMonth(incidents.value))
 const next = ref<string | undefined>(undefined)
 const loaded = ref(false)
 const loading = ref(false)
@@ -63,36 +65,45 @@ watch(() => props.watch, () => load(), { immediate: true })
       v-if="loaded && incidents.length === 0 && next === undefined"
       class="text-sm text-muted"
     >{{ t('incidents.none') }}</p>
-    <ul
+    <div
       v-else-if="incidents.length > 0"
-      class="divide-y divide-divider rounded-panel border border-border bg-card shadow-soft-sm"
+      class="flex flex-col gap-5"
     >
-      <li
-        v-for="incident in incidents"
-        :key="incident.id"
-        :data-incident="incident.title"
+      <div
+        v-for="month in months"
+        :key="month.key"
+        class="flex flex-col gap-2"
       >
-        <details class="group/details">
-          <summary class="flex cursor-pointer list-none items-start gap-3 rounded-panel px-4 py-3 [&::-webkit-details-marker]:hidden">
-            <StatusIcon
-              name="chevron"
-              class="mt-0.5 size-4 shrink-0 -rotate-90 text-muted transition-transform group-open/details:rotate-0"
-            />
-            <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span class="font-medium text-primary">{{ incident.title }}</span>
-              <span class="text-sm text-muted">
-                <time :datetime="new Date(incident.startedAt).toISOString()">{{ formatTime(incident.startedAt, locale) }}</time>
-                <template v-if="incident.resolvedAt !== undefined"> · {{ t('incidents.resolvedAfter', { duration: formatDuration(incident.resolvedAt - incident.startedAt) }) }}</template>
-              </span>
-            </span>
-          </summary>
-          <div class="flex flex-col gap-3 px-4 pb-4 pl-11">
-            <AffectedList :affected="incident.affected" />
-            <UpdateTimeline :updates="incident.updates" />
-          </div>
-        </details>
-      </li>
-    </ul>
+        <h3 class="text-sm font-medium text-muted">{{ formatMonth(month.at, locale) }}</h3>
+        <ul class="divide-y divide-divider rounded-panel border border-border bg-card shadow-soft-sm">
+          <li
+            v-for="incident in month.items"
+            :key="incident.id"
+            :data-incident="incident.title"
+          >
+            <details class="group/details">
+              <summary class="flex cursor-pointer list-none items-start gap-3 rounded-panel px-4 py-3 [&::-webkit-details-marker]:hidden">
+                <StatusIcon
+                  name="chevron"
+                  class="mt-0.5 size-4 shrink-0 -rotate-90 text-muted transition-transform group-open/details:rotate-0"
+                />
+                <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span class="font-medium text-primary">{{ incident.title }}</span>
+                  <IncidentMeta
+                    :incident="incident"
+                    :now="now"
+                    components
+                  />
+                </span>
+              </summary>
+              <div class="px-4 pt-1 pb-4 pl-11">
+                <UpdateTimeline :entries="incident.timeline" />
+              </div>
+            </details>
+          </li>
+        </ul>
+      </div>
+    </div>
     <p
       v-if="failed"
       role="alert"

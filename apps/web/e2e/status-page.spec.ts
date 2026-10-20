@@ -277,8 +277,9 @@ test('a published incident and maintenance arrive on an open page', async ({ bro
   await expect(incident).toContainText('A phone provider outage. Email works.', LIVE_WAIT)
   await expect(incident.getByTestId('incident-state')).toHaveText('Identified')
   await expect(incident.locator('[data-affected="Support"] [data-impact="degraded"]')).toBeVisible()
-  await incident.getByRole('button', { name: 'Show all updates' }).click()
-  await expect(incident.locator('[data-update]')).toHaveCount(1)
+  await expect(incident.locator('[data-update]')).toHaveCount(2)
+  await expect(incident.locator('[data-update]').first()).toHaveAttribute('data-state', 'identified')
+  await expect(incident.locator('[data-update]').first().locator('[data-change="Support"]')).toContainText('Degraded')
   await expect(page.getByTestId('page-status')).toContainText('Degraded performance')
   await expect(componentStatus(page, 'Support')).toHaveText('Degraded')
 

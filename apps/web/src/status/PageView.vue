@@ -14,6 +14,12 @@ import { pageView } from './view'
 const props = defineProps<{ snapshot: PageSnapshot; base: string; client: PageClient }>()
 
 const view = computed(() => pageView(props.snapshot, props.base))
+
+// The clock for "5 minutes ago" and running durations, ticking once a minute.
+const now = ref(Date.now())
+let tick: ReturnType<typeof setInterval> | undefined
+onMounted(() => (tick = setInterval(() => (now.value = Date.now()), 60_000)))
+onBeforeUnmount(() => clearInterval(tick))
 const incidentsKey = computed(() =>
   props.snapshot.incidents.map((incident) => `${incident.id}:${incident.state}:${incident.updates.length}`).join()
 )
@@ -67,6 +73,7 @@ const incidentsKey = computed(() =>
           v-for="incident in view.active"
           :key="incident.id"
           :incident="incident"
+          :now="now"
         />
       </section>
 
@@ -106,6 +113,7 @@ const incidentsKey = computed(() =>
         :client="client"
         :names="view.names"
         :watch="incidentsKey"
+        :now="now"
       />
     </main>
 

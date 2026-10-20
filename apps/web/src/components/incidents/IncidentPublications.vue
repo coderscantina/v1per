@@ -1,20 +1,19 @@
 <script setup lang="ts">
 import Icon from '~/components/Icon.vue'
 import { Alert } from '~/components/ui/alert'
-import { Button } from '~/components/ui/button'
-import { Panel } from '~/components/ui/panel'
-import { Skeleton } from '~/components/ui/skeleton'
 import { useDateFormat } from '~/composables/useDateFormat'
 import { useErrorMessage } from '~/composables/useErrorMessage'
 import type { IncidentPublication, IncidentPublications } from '~/generated'
 import { PAGE_PATH } from '~/generated/limits'
+import { cn } from '~/lib/utils'
 import { useI18n } from '~/plugins/i18n'
 
 /**
- * The status pages that show what an incident affects, or carry it already, each with whether
- * the incident is published there and, for members, a switch to publish or take it down.
+ * The status pages that show what an incident affects, or carry it already, as one row of
+ * chips. For members a chip publishes the incident there or takes it down; others see the pages
+ * it is on. Nothing renders while no page could carry it.
  */
-defineProps<{
+const props = defineProps<{
   publications: IncidentPublications | undefined
   manage: boolean
   pending: boolean
@@ -25,84 +24,86 @@ const emit = defineEmits<{ publish: [page: IncidentPublication]; unpublish: [pag
 const { t } = useI18n()
 const { dateTime } = useDateFormat()
 const { message } = useErrorMessage()
+
+const shown = computed(() =>
+  (props.publications?.pages ?? []).filter((entry) => props.manage || entry.published_at !== undefined)
+)
+const published = (entry: IncidentPublication) => entry.published_at !== undefined
+const status = (entry: IncidentPublication) =>
+  entry.published_at !== undefined
+    ? t('incidents.pages.publishedAt', { date: dateTime(entry.published_at) })
+    : entry.scheduled_at !== undefined
+      ? t('incidents.pages.scheduledAt', { date: dateTime(entry.scheduled_at) })
+      : t('incidents.pages.draft')
+const toggle = (entry: IncidentPublication) => (published(entry) ? emit('unpublish', entry) : emit('publish', entry))
 </script>
 
 <template>
-  <Panel
-    id="incident-pages"
-    :title="t('incidents.pages.title')"
-    :meta="publications ? String(publications.pages.length) : undefined"
-    flush
+  <section
+    v-if="shown.length > 0 || error"
+    class="grid gap-2"
+    :aria-label="t('incidents.pages.title')"
   >
-    <Skeleton
-      v-if="!publications"
-      class="mx-4.5 mb-4.5 h-12"
-    />
-    <ul
-      v-else-if="publications.pages.length > 0"
-      class="divide-y divide-divider border-t border-hairline"
-    >
-      <li
-        v-for="entry in publications.pages"
+    <div class="flex flex-wrap items-center gap-1.5">
+      <span class="mr-1 text-sm text-muted">{{ t('incidents.pages.title') }}</span>
+      <span
+        v-for="entry in shown"
         :key="entry.page"
-        class="flex flex-wrap items-center gap-x-3 gap-y-1 px-4.5 py-2.5"
+        class="inline-flex items-center"
         :data-publication="entry.slug"
-        :data-published="entry.published_at !== undefined"
+        :data-published="published(entry)"
       >
-        <div class="grid min-w-0 flex-1 basis-48 gap-0.5">
-          <a
-            :href="`${PAGE_PATH}${entry.slug}`"
-            target="_blank"
-            rel="noopener"
-            class="inline-flex min-w-0 items-center gap-1.5 truncate rounded-sm text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          >
-            <span class="truncate">{{ entry.title }}</span>
-            <Icon
-              name="lucide:external-link"
-              size="12"
-              class="shrink-0 text-muted"
-              aria-hidden="true"
-            />
-          </a>
-          <span class="text-xs text-muted">
-            {{
-              entry.published_at !== undefined
-                ? t('incidents.pages.publishedAt', { date: dateTime(entry.published_at) })
-                : entry.scheduled_at !== undefined
-                  ? t('incidents.pages.scheduledAt', { date: dateTime(entry.scheduled_at) })
-                  : t('incidents.pages.draft')
-            }}
-          </span>
-        </div>
-        <Button
+        <button
           v-if="manage"
           type="button"
-          size="sm"
-          :variant="entry.published_at !== undefined ? 'ghost' : 'fill'"
-          :disabled="pending"
-          :aria-label="
-            entry.published_at !== undefined
-              ? t('incidents.pages.unpublishFrom', { title: entry.title })
-              : t('incidents.pages.publishTo', { title: entry.title })
+          :class="
+            cn(
+              'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-l-md px-2.5 text-sm font-medium transition-colors duration-200 ease-butter focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50',
+              published(entry) ? 'bg-fill-strong text-primary hover:bg-fill' : 'border border-r-0 border-dashed border-border-strong text-muted hover:text-primary'
+            )
           "
-          @click="entry.published_at !== undefined ? emit('unpublish', entry) : emit('publish', entry)"
+          :disabled="pending"
+          :title="status(entry)"
+          :aria-pressed="published(entry)"
+          :aria-label="published(entry) ? t('incidents.pages.unpublishFrom', { title: entry.title }) : t('incidents.pages.publishTo', { title: entry.title })"
+          @click="toggle(entry)"
         >
-          {{ entry.published_at !== undefined ? t('incidents.pages.unpublish') : t('incidents.pages.publish') }}
-        </Button>
-      </li>
-    </ul>
-    <p
-      v-else
-      class="border-t border-hairline px-4.5 py-6 text-sm text-muted"
-    >
-      {{ t('incidents.pages.none') }}
-    </p>
+          <Icon
+            :name="published(entry) ? 'lucide:check' : entry.scheduled_at !== undefined ? 'lucide:bell' : 'lucide:plus'"
+            size="13"
+            aria-hidden="true"
+          />
+          {{ entry.title }}
+        </button>
+        <span
+          v-else
+          class="inline-flex h-7 items-center rounded-l-md bg-fill px-2.5 text-sm text-primary"
+          :title="status(entry)"
+        >{{ entry.title }}</span>
+        <a
+          :href="`${PAGE_PATH}${entry.slug}`"
+          target="_blank"
+          rel="noopener"
+          :class="
+            cn(
+              'grid h-7 w-7 place-items-center rounded-r-md text-muted transition-colors duration-200 ease-butter hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+              !manage ? 'bg-fill' : published(entry) ? 'bg-fill-strong' : 'border border-dashed border-border-strong'
+            )
+          "
+          :aria-label="t('pages.openNamed', { title: entry.title })"
+        >
+          <Icon
+            name="lucide:external-link"
+            size="12"
+          />
+        </a>
+      </span>
+    </div>
     <Alert
       v-if="error"
       color="destructive"
-      class="m-3 w-auto"
     >
       <p class="text-sm">{{ message(error) }}</p>
     </Alert>
-  </Panel>
+  </section>
 </template>

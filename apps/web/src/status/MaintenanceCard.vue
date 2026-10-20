@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { formatTime } from './format'
+import { formatDuration, formatTime } from './format'
 import { locale, t } from './messages'
 import StatusIcon from './StatusIcon.vue'
 import type { MaintenanceView } from './view'
 
-/** A maintenance under way or coming up, with its window and the components it covers. */
+/** A maintenance under way or coming up, with a meta line of its window, length and components. */
 const props = defineProps<{ maintenance: MaintenanceView }>()
 
 const period = computed(() => {
@@ -16,13 +16,19 @@ const period = computed(() => {
   if (end) return t('maintenance.until', { end })
   return null
 })
+
+const meta = computed(() => {
+  const { startsAt, endsAt, components } = props.maintenance
+  const length = startsAt !== undefined && endsAt !== undefined ? t('maintenance.lasts', { duration: formatDuration(endsAt - startsAt) }) : null
+  return [period.value, length, components.join(', ')].filter(Boolean).join(' · ')
+})
 </script>
 
 <template>
   <article
     data-tone="maintenance"
     :data-maintenance="maintenance.title"
-    class="flex flex-col gap-2 rounded-panel border border-border bg-card p-4 shadow-soft-sm"
+    class="flex flex-col gap-1 rounded-panel border border-border bg-card p-4 shadow-soft-sm"
   >
     <header class="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
       <h3 class="min-w-0 flex-1 font-semibold text-primary">{{ maintenance.title }}</h3>
@@ -35,22 +41,12 @@ const period = computed(() => {
       </span>
     </header>
     <p
-      v-if="period"
+      v-if="meta"
       class="text-sm text-muted"
-    >{{ period }}</p>
+    >{{ meta }}</p>
     <p
       v-if="maintenance.description"
-      class="whitespace-pre-line text-foreground"
+      class="mt-2 whitespace-pre-line text-foreground"
     >{{ maintenance.description }}</p>
-    <ul
-      v-if="maintenance.components.length > 0"
-      class="flex flex-wrap gap-2"
-    >
-      <li
-        v-for="name in maintenance.components"
-        :key="name"
-        class="rounded-md border border-border px-2 py-1 text-sm font-medium text-primary"
-      >{{ name }}</li>
-    </ul>
   </article>
 </template>

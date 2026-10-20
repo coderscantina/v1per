@@ -30,7 +30,8 @@ const en = {
   'incidents.active': 'Active incidents',
   'incidents.affected': 'Affected',
   'incidents.timeline': 'Show all updates',
-  'incidents.hideTimeline': 'Hide updates',
+  'incidents.hideTimeline': 'Show fewer updates',
+  'incidents.updates': 'Updates',
   'incidents.history': 'Past incidents',
   'incidents.none': 'No incidents in the last 90 days.',
   'incidents.more': 'Show more',
@@ -39,6 +40,7 @@ const en = {
   'incidents.retry': 'Try again',
   'incidents.resolvedAfter': 'Resolved after {duration}',
   'incidents.started': 'Started {time}',
+  'incidents.ongoingFor': 'Ongoing for {duration}',
 
   'maintenance.title': 'Maintenance',
   'maintenance.active': 'In progress',
@@ -46,6 +48,7 @@ const en = {
   'maintenance.window': '{start} to {end}',
   'maintenance.from': 'From {start}',
   'maintenance.until': 'Until {end}',
+  'maintenance.lasts': 'Lasts {duration}',
 
   'components.title': 'Components',
   'components.daysAgo': '90 days ago',
@@ -134,7 +137,8 @@ const de: Record<MessageKey, string> = {
   'incidents.active': 'Aktuelle Störungen',
   'incidents.affected': 'Betroffen',
   'incidents.timeline': 'Alle Meldungen zeigen',
-  'incidents.hideTimeline': 'Meldungen ausblenden',
+  'incidents.hideTimeline': 'Weniger Meldungen zeigen',
+  'incidents.updates': 'Meldungen',
   'incidents.history': 'Vergangene Störungen',
   'incidents.none': 'Keine Störungen in den letzten 90 Tagen.',
   'incidents.more': 'Mehr zeigen',
@@ -143,6 +147,7 @@ const de: Record<MessageKey, string> = {
   'incidents.retry': 'Erneut versuchen',
   'incidents.resolvedAfter': 'Behoben nach {duration}',
   'incidents.started': 'Begonnen {time}',
+  'incidents.ongoingFor': 'Läuft seit {duration}',
 
   'maintenance.title': 'Wartung',
   'maintenance.active': 'Läuft',
@@ -150,6 +155,7 @@ const de: Record<MessageKey, string> = {
   'maintenance.window': '{start} bis {end}',
   'maintenance.from': 'Ab {start}',
   'maintenance.until': 'Bis {end}',
+  'maintenance.lasts': 'Dauert {duration}',
 
   'components.title': 'Komponenten',
   'components.daysAgo': 'vor 90 Tagen',

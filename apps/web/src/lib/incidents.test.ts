@@ -2,7 +2,19 @@ import { describe, expect, it } from 'vitest'
 
 import type { AffectedTarget } from '~/generated'
 
-import { changedImpacts, currentImpacts, parseTargetKey, selectTargets, targetKey, toImpacts, worstImpact } from './incidents'
+import {
+  allAt,
+  changedImpacts,
+  currentImpacts,
+  durationParts,
+  openFirst,
+  parseTargetKey,
+  selectTargets,
+  sharedImpact,
+  targetKey,
+  toImpacts,
+  worstImpact,
+} from './incidents'
 
 const affected: AffectedTarget[] = [
   { target: { type: 'monitor', monitor: '3' }, name: 'API', impact: 'major_outage' },
@@ -27,6 +39,16 @@ describe('impact selection', () => {
     ])
   })
 
+  it('starts new targets at the impact the composer shows and reads one shared impact', () => {
+    expect(selectTargets({ 'monitor:3': 'degraded' }, ['monitor:3', 'component:8'], 'partial_outage')).toEqual({
+      'monitor:3': 'degraded',
+      'component:8': 'partial_outage',
+    })
+    expect(sharedImpact(allAt(['monitor:3', 'component:8'], 'degraded'))).toBe('degraded')
+    expect(sharedImpact({ 'monitor:3': 'degraded', 'component:8': 'major_outage' })).toBeUndefined()
+    expect(sharedImpact({})).toBeUndefined()
+  })
+
   it('sends only the impacts an update changes, and none when it resolves', () => {
     const chosen = { ...currentImpacts(affected), 'component:8': 'partial_outage' as const, 'component:9': 'degraded' as const }
     expect(currentImpacts(affected)).toEqual({ 'monitor:3': 'major_outage', 'component:8': 'degraded' })
@@ -41,5 +63,26 @@ describe('impact selection', () => {
     expect(worstImpact(affected.map((entry) => entry.impact))).toBe('major_outage')
     expect(worstImpact(['degraded', undefined, 'operational'])).toBe('degraded')
     expect(worstImpact([])).toBeUndefined()
+  })
+})
+
+describe('incident feed', () => {
+  it('lists open incidents before resolved ones, keeping their order', () => {
+    const list = [
+      { id: 'a', state: 'resolved' as const },
+      { id: 'b', state: 'monitoring' as const },
+      { id: 'c', state: 'resolved' as const },
+      { id: 'd', state: 'investigating' as const },
+    ]
+    expect(openFirst(list).map((entry) => entry.id)).toEqual(['b', 'd', 'a', 'c'])
+  })
+
+  it('reads a span as its two largest units', () => {
+    expect(durationParts(20_000)).toEqual([['minute', 1]])
+    expect(durationParts((2 * 60 + 5) * 60_000)).toEqual([
+      ['hour', 2],
+      ['minute', 5],
+    ])
+    expect(durationParts((3 * 1440 + 30) * 60_000)).toEqual([['day', 3]])
   })
 })

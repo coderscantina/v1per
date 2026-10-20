@@ -1,37 +1,30 @@
 <script setup lang="ts">
-import { useNow } from '@vueuse/core'
-
 import ChoiceGroup from '~/components/ChoiceGroup.vue'
 import Icon from '~/components/Icon.vue'
-import ImpactLabel from '~/components/incidents/ImpactLabel.vue'
-import IncidentStateBadge from '~/components/incidents/IncidentStateBadge.vue'
+import IncidentCard from '~/components/incidents/IncidentCard.vue'
 import FilterSelect from '~/components/monitors/FilterSelect.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import { Alert } from '~/components/ui/alert'
-import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { EmptyState } from '~/components/ui/empty-state'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableNone, TableRow } from '~/components/ui/table'
-import TableEmptyRow from '~/components/ui/TableEmptyRow.vue'
-import TableLoadingRow from '~/components/ui/TableLoadingRow.vue'
-import { useDateFormat } from '~/composables/useDateFormat'
+import { Skeleton } from '~/components/ui/skeleton'
 import { useErrorMessage } from '~/composables/useErrorMessage'
 import { useNodeIncidents, type IncidentFilters } from '~/composables/useIncidents'
 import { useCurrentNode, useNodeDetail } from '~/composables/useNodes'
 import { usePageMeta } from '~/composables/usePageMeta'
 import type { IncidentStatusFilter } from '~/generated'
 import { can } from '~/lib/access'
+import { openFirst } from '~/lib/incidents'
 import { useI18n } from '~/plugins/i18n'
 
 /**
- * A node's incidents, newest first, live: open ones by default, resolved ones or all on
- * request, manual or automatic. Auto-incidents carry a mark until someone edits them. Filters
- * live in the address, so a link can point at the open auto-incidents.
+ * A node's incidents and those below it as a feed of cards, open ones first, then newest first,
+ * live: open ones by default, resolved ones or all on request, manual or automatic.
+ * Auto-incidents carry a mark until someone edits them. Filters live in the address, so a link
+ * can point at the open auto-incidents.
  */
 const { t } = useI18n()
 const { message } = useErrorMessage()
-const { dateTime, relative } = useDateFormat()
-const now = useNow({ interval: 30_000 })
 const route = useRoute()
 const router = useRouter()
 const { routeId } = useCurrentNode()
@@ -58,6 +51,7 @@ const origin = computed({
 })
 
 const filters = computed<IncidentFilters>(() => ({
+  subtree: true,
   status: status.value === 'all' ? undefined : status.value,
   origin: origin.value === 'auto' || origin.value === 'manual' ? origin.value : undefined,
 }))
@@ -66,7 +60,7 @@ const MAX = 100
 const limit = ref(PAGE)
 watch(filters, () => (limit.value = PAGE))
 const incidents = useNodeIncidents(routeId, filters, limit)
-const rows = computed(() => incidents.data.value?.incidents ?? [])
+const rows = computed(() => openFirst(incidents.data.value?.incidents ?? []))
 const more = computed(() => Boolean(incidents.data.value?.next_cursor))
 
 const statusOptions = computed(() => [
@@ -81,7 +75,6 @@ const originOptions = computed(() => [
 
 const loading = computed(() => !incidents.data.value && !incidents.error.value)
 const filtered = computed(() => status.value !== 'open' || origin.value !== '')
-const columns = 6
 </script>
 
 <template>
@@ -97,6 +90,7 @@ const columns = 6
         <Button
           as-child
           variant="accent"
+          size="lg"
         >
           <RouterLink :to="{ name: 'node-incident-new', params: { nodeId: routeId } }">
             <Icon name="lucide:plus" />
@@ -109,13 +103,13 @@ const columns = 6
     <Alert
       v-if="detail.error.value && !node"
       color="destructive"
-      class="max-w-6xl"
+      class="max-w-3xl"
     >
       <p class="text-sm">{{ message(detail.error.value) }}</p>
     </Alert>
     <div
       v-else
-      class="grid max-w-6xl gap-4"
+      class="grid max-w-3xl gap-4"
     >
       <div class="flex flex-wrap items-center gap-2">
         <ChoiceGroup
@@ -131,125 +125,61 @@ const columns = 6
         />
       </div>
 
+      <div
+        v-if="loading"
+        class="grid gap-2.5"
+      >
+        <Skeleton
+          v-for="index in 3"
+          :key="index"
+          class="h-20 w-full rounded-panel"
+        />
+      </div>
+      <Alert
+        v-else-if="incidents.error.value && !incidents.data.value"
+        color="destructive"
+      >
+        <p class="text-sm">{{ message(incidents.error.value) }}</p>
+      </Alert>
       <EmptyState
-        v-if="incidents.data.value && rows.length === 0 && !filtered"
+        v-else-if="rows.length === 0 && !filtered"
         icon="lucide:shield-check"
         :title="t('incidents.empty')"
-        :description="manage ? t('incidents.emptyHint') : t('incidents.emptyReadOnly')"
-      />
-
-      <Table
-        v-else
-        :label="t('incidents.title')"
+        :description="manage ? undefined : t('incidents.emptyReadOnly')"
       >
-        <TableHeader>
-          <TableRow>
-            <TableHead class="w-32">{{ t('incidents.columns.state') }}</TableHead>
-            <TableHead>{{ t('incidents.columns.title') }}</TableHead>
-            <TableHead class="max-sm:hidden">{{ t('incidents.columns.impact') }}</TableHead>
-            <TableHead
-              numeric
-              class="max-md:hidden"
-            >
-              {{ t('incidents.columns.affected') }}
-            </TableHead>
-            <TableHead class="max-md:hidden">{{ t('incidents.columns.started') }}</TableHead>
-            <TableHead>{{ t('incidents.columns.updated') }}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableLoadingRow
-            v-if="loading"
-            :colspan="columns"
-            :rows="3"
+        <Button
+          v-if="manage && routeId"
+          as-child
+          variant="accent"
+        >
+          <RouterLink :to="{ name: 'node-incident-new', params: { nodeId: routeId } }">
+            <Icon name="lucide:plus" />
+            {{ t('incidents.create') }}
+          </RouterLink>
+        </Button>
+      </EmptyState>
+      <p
+        v-else-if="rows.length === 0"
+        class="rounded-panel border border-hairline bg-card px-4.5 py-6 text-center text-sm text-muted"
+      >
+        {{ t('incidents.noMatch') }}
+      </p>
+      <ul
+        v-else
+        class="grid gap-2.5"
+        :aria-label="t('incidents.title')"
+      >
+        <li
+          v-for="incident in rows"
+          :key="incident.id"
+        >
+          <IncidentCard
+            :incident="incident"
+            :node="incident.node"
           />
-          <TableEmptyRow
-            v-else-if="incidents.error.value && !incidents.data.value"
-            :colspan="columns"
-            :label="message(incidents.error.value)"
-          />
-          <TableEmptyRow
-            v-else-if="rows.length === 0"
-            :colspan="columns"
-            :label="t('incidents.noMatch')"
-          />
-          <TableRow
-            v-for="incident in rows"
-            :key="incident.id"
-            :data-incident="incident.title"
-          >
-            <TableCell :label="t('incidents.columns.state')">
-              <IncidentStateBadge :state="incident.state" />
-            </TableCell>
-            <TableCell
-              kind="subject"
-              class="max-w-0 min-w-52"
-            >
-              <div class="grid min-w-0 gap-1">
-                <RouterLink
-                  :to="{ name: 'node-incident', params: { nodeId: incident.node, incidentId: incident.id } }"
-                  class="truncate rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                >
-                  {{ incident.title }}
-                </RouterLink>
-                <div
-                  v-if="incident.origin === 'auto'"
-                  class="flex flex-wrap gap-1"
-                >
-                  <Badge
-                    variant="surface"
-                    size="sm"
-                  >
-                    <Icon
-                      name="lucide:zap"
-                      size="12"
-                      class="mr-1"
-                      aria-hidden="true"
-                    />
-                    {{ t('incidents.origins.auto') }}
-                  </Badge>
-                  <Badge
-                    v-if="incident.edited"
-                    variant="surface"
-                    size="sm"
-                  >
-                    {{ t('incidents.edited') }}
-                  </Badge>
-                </div>
-              </div>
-            </TableCell>
-            <TableCell
-              class="max-sm:hidden"
-              :label="t('incidents.columns.impact')"
-            >
-              <ImpactLabel
-                v-if="incident.impact"
-                :impact="incident.impact"
-              />
-              <TableNone v-else />
-            </TableCell>
-            <TableCell
-              kind="numeric"
-              class="max-md:hidden"
-            >
-              {{ incident.affected }}
-            </TableCell>
-            <TableCell
-              kind="secondary"
-              class="whitespace-nowrap max-md:hidden"
-            >
-              <span :title="dateTime(incident.started_at)">{{ dateTime(incident.started_at) }}</span>
-            </TableCell>
-            <TableCell
-              kind="secondary"
-              class="whitespace-nowrap"
-              :label="t('incidents.columns.updated')"
-            >
-              <span :title="dateTime(incident.updated_at)">{{ relative(incident.updated_at, now.getTime()) }}</span>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
+        </li>
+      </ul>
+
       <div
         v-if="more"
         class="flex items-center gap-3"

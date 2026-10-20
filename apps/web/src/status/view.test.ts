@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import type { PageBar, PageSnapshot, PublicComponent } from '~/generated'
 
-import { formatUptime } from './format'
-import { pageView, worst } from './view'
+import { formatAge, formatUptime } from './format'
+import { byMonth, pageView, worst } from './view'
 
 const day = (index: number): PageBar => ({ day: `2026-07-${String(index + 1).padStart(2, '0')}` })
 
@@ -97,7 +97,17 @@ describe('pageView', () => {
       '/s/acme'
     )
     expect(view.active.map((incident) => incident.id)).toEqual(['open'])
-    expect(view.active[0]?.latest?.message).toBe('Found it.')
+    // Only what each update changed; the hidden component has no name and is left out.
+    expect(view.active[0]?.timeline.map((entry) => [entry.message, entry.changes])).toEqual([
+      ['Found it.', [{ name: 'Email', impact: 'degraded' }]],
+      [
+        'Looking.',
+        [
+          { name: 'API', impact: 'partial_outage' },
+          { name: 'Email', impact: 'major_outage' },
+        ],
+      ],
+    ])
     expect(view.active[0]?.affected).toEqual([
       { name: 'API', impact: 'partial_outage' },
       { name: 'Email', impact: 'degraded' },
@@ -125,6 +135,52 @@ describe('pageView', () => {
     const appearance = { ...snapshot().appearance, logo: '/logo?v=5' }
     expect(pageView(snapshot({ appearance }), '/s/acme').logo).toBe('/s/acme/logo?v=5')
     expect(pageView(snapshot(), '').logo).toBeUndefined()
+  })
+})
+
+describe('timeline changes', () => {
+  it('leaves out an impact an update repeats', () => {
+    const view = pageView(
+      snapshot({
+        groups: [{ id: 'g', name: '', default_open: true, components: [component('c1', 'API')] }],
+        incidents: [
+          {
+            id: 'i',
+            title: 'Slow',
+            state: 'monitoring',
+            started_at: 0,
+            components: ['c1'],
+            updates: [
+              { state: 'monitoring', message: '', created_at: 2, impacts: [{ component: 'c1', impact: 'degraded' }] },
+              { state: 'investigating', message: '', created_at: 1, impacts: [{ component: 'c1', impact: 'degraded' }] },
+            ],
+          },
+        ],
+      }),
+      ''
+    )
+    expect(view.active[0]?.timeline.map((entry) => entry.changes.length)).toEqual([0, 1])
+  })
+})
+
+describe('byMonth', () => {
+  it('groups by start month and merges a month that comes back', () => {
+    const at = (iso: string) => ({ startedAt: Date.parse(iso) })
+    const groups = byMonth([at('2026-10-15T12:00:00'), at('2026-09-20T12:00:00'), at('2026-10-02T12:00:00')])
+    expect(groups.map((group) => [group.key, group.items.length])).toEqual([
+      ['2026-10', 2],
+      ['2026-9', 1],
+    ])
+  })
+})
+
+describe('formatAge', () => {
+  it('names the largest whole unit', () => {
+    const now = Date.parse('2026-10-19T12:00:00Z')
+    expect(formatAge(now - 30_000, now, 'en')).toBe('now')
+    expect(formatAge(now - 5 * 60_000, now, 'en')).toBe('5 minutes ago')
+    expect(formatAge(now - 3 * 86_400_000, now, 'en')).toBe('3 days ago')
+    expect(formatAge(now - 40 * 86_400_000, now, 'en')).toBe('last month')
   })
 })
 

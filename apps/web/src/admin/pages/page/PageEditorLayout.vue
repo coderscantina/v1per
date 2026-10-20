@@ -12,8 +12,8 @@ import { can } from '~/lib/access'
 import { useI18n, type MessageKey } from '~/plugins/i18n'
 
 /**
- * One status page: the links to its settings, layout, access, domains and preview on the left,
- * the open tab on the right. The page is read once here, live, and shared with the tabs.
+ * One status page: the links to its settings, layout, incidents, access, domains and preview on
+ * the left, the open tab on the right. The page is read once here, live, and shared with the tabs.
  */
 const { t } = useI18n()
 const { message } = useErrorMessage()
@@ -39,6 +39,7 @@ watch(page, (current) => {
 const links = [
   { name: 'node-page', labelKey: 'pages.tabs.settings', icon: 'lucide:settings-2' },
   { name: 'node-page-layout', labelKey: 'pages.tabs.layout', icon: 'lucide:layout-list' },
+  { name: 'node-page-incidents', labelKey: 'pages.tabs.incidents', icon: 'lucide:siren' },
   { name: 'node-page-access', labelKey: 'pages.tabs.access', icon: 'lucide:lock' },
   { name: 'node-page-hostnames', labelKey: 'pages.tabs.hostnames', icon: 'lucide:globe' },
   { name: 'node-page-preview', labelKey: 'pages.tabs.preview', icon: 'lucide:eye' },

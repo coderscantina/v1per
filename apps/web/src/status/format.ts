@@ -28,6 +28,38 @@ export function formatTime(at: number, locale: Locale): string {
   }).format(at)
 }
 
+/** A day in the visitor's own timezone, as "Oct 19, 2026". */
+export function formatDate(at: number, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(at)
+}
+
+/** A month heading, as "October 2026". */
+export function formatMonth(at: number, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(at)
+}
+
+const ages: [Intl.RelativeTimeFormatUnit, number][] = [
+  ['year', 365 * 86_400_000],
+  ['month', 30 * 86_400_000],
+  ['week', 7 * 86_400_000],
+  ['day', 86_400_000],
+  ['hour', 3_600_000],
+  ['minute', 60_000],
+]
+
+/** How long ago `at` was, in the largest whole unit, as "3 weeks ago" or "yesterday". */
+export function formatAge(at: number, now: number, locale: Locale): string {
+  const elapsed = Math.max(0, now - at)
+  const format = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
+  for (const [unit, size] of ages) if (elapsed >= size) return format.format(-Math.floor(elapsed / size), unit)
+  return format.format(0, 'second')
+}
+
+/** Whether two moments fall on the same day in the visitor's timezone. */
+export function sameDay(a: number, b: number): boolean {
+  return new Date(a).toDateString() === new Date(b).toDateString()
+}
+
 /** Only the clock time, for "Updated 14:05". */
 export function formatClock(at: number, locale: Locale): string {
   return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(at)

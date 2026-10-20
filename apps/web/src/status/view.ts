@@ -46,6 +46,15 @@ export interface AffectedView {
   impact?: Impact
 }
 
+/** One update on an incident's timeline. */
+export interface TimelineEntry {
+  state: IncidentState
+  message: string
+  at: number
+  /** The named components whose impact this update changed. */
+  changes: AffectedView[]
+}
+
 export interface IncidentView {
   id: string
   title: string
@@ -53,9 +62,16 @@ export interface IncidentView {
   impact?: Impact
   startedAt: number
   resolvedAt?: number
-  latest?: PublicIncidentUpdate
-  updates: PublicIncidentUpdate[]
+  /** Newest first. */
+  timeline: TimelineEntry[]
   affected: AffectedView[]
+}
+
+/** Items of one calendar month in the visitor's timezone; `at` is the first item's start. */
+export interface MonthGroup<T> {
+  key: string
+  at: number
+  items: T[]
 }
 
 export interface MaintenanceView {
@@ -111,6 +127,37 @@ function affected(incident: PublicIncident, names: ReadonlyMap<string, string>):
   })
 }
 
+/**
+ * The updates as timeline entries, newest first. An update's changes are the impacts it set that
+ * differ from what the older updates left, so a repeated impact is not listed again.
+ */
+function timeline(updates: PublicIncidentUpdate[], names: ReadonlyMap<string, string>): TimelineEntry[] {
+  const current = new Map<string, Impact>()
+  const entries = [...updates].reverse().map((update): TimelineEntry => {
+    const changes = update.impacts.flatMap(({ component, impact }) => {
+      const previous = current.get(component)
+      current.set(component, impact)
+      const name = names.get(component)
+      return previous === impact || name === undefined ? [] : [{ name, impact }]
+    })
+    return { state: update.state, message: update.message, at: update.created_at, changes }
+  })
+  return entries.reverse()
+}
+
+/** Groups items by the month they started in, keeping their order. */
+export function byMonth<T extends { startedAt: number }>(items: readonly T[]): MonthGroup<T>[] {
+  const groups = new Map<string, MonthGroup<T>>()
+  for (const item of items) {
+    const date = new Date(item.startedAt)
+    const key = `${date.getFullYear()}-${date.getMonth() + 1}`
+    const group = groups.get(key)
+    if (group) group.items.push(item)
+    else groups.set(key, { key, at: item.startedAt, items: [item] })
+  }
+  return [...groups.values()]
+}
+
 /** An incident as the page draws it, with its components named from `names`. */
 export function incidentView(incident: PublicIncident, names: ReadonlyMap<string, string>): IncidentView {
   return {
@@ -120,8 +167,7 @@ export function incidentView(incident: PublicIncident, names: ReadonlyMap<string
     impact: incident.impact,
     startedAt: incident.started_at,
     resolvedAt: incident.resolved_at,
-    latest: incident.updates[0],
-    updates: incident.updates,
+    timeline: timeline(incident.updates, names),
     affected: affected(incident, names),
   }
 }

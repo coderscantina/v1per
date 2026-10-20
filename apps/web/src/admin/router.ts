@@ -132,6 +132,7 @@ const routes: RouteRecordRaw[] = [
     children: [
       { path: 'settings', name: 'node-page', component: () => import('./pages/page/PageSettingsTab.vue') },
       { path: 'layout', name: 'node-page-layout', component: () => import('./pages/page/PageLayoutTab.vue') },
+      { path: 'incidents', name: 'node-page-incidents', component: () => import('./pages/page/PageIncidentsTab.vue') },
       { path: 'access', name: 'node-page-access', component: () => import('./pages/page/PageAccessTab.vue') },
       { path: 'hostnames', name: 'node-page-hostnames', component: () => import('./pages/page/PageHostnamesTab.vue') },
       { path: 'preview', name: 'node-page-preview', component: () => import('./pages/page/PagePreviewTab.vue') },

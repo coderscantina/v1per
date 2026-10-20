@@ -24,6 +24,13 @@ async function choose(page: Page, label: string, option: string) {
   await page.getByRole('option', { name: option, exact: true }).click()
 }
 
+/** Picks what a new incident affects from the composer's searchable list. */
+async function affects(page: Page, ...names: string[]) {
+  await page.getByRole('group', { name: 'Affects' }).getByRole('button', { name: 'Affects', exact: true }).click()
+  for (const name of names) await page.getByRole('option', { name: new RegExp(`^${name}`) }).click()
+  await page.keyboard.press('Escape')
+}
+
 const statusPanel = (page: Page) => page.getByRole('region', { name: 'Current status' })
 
 test('a static component is added, and a manual monitor going down opens an auto-incident', async ({ browser }) => {
@@ -41,7 +48,7 @@ test('a static component is added, and a manual monitor going down opens an auto
   await page.goto(`/n/${ids.node}/monitors/new`)
   await choose(page, 'Type', 'Manual')
   await page.getByLabel('Name', { exact: true }).fill('Checkout')
-  await page.getByLabel('Interval in seconds', { exact: true }).fill('20')
+  await page.getByLabel('Interval', { exact: true }).fill('20')
   await page.getByRole('button', { name: 'Add monitor' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Checkout' })).toBeVisible()
   ids.monitor = new URL(page.url()).pathname.split('/')[4] ?? ''
@@ -67,18 +74,18 @@ test('a static component is added, and a manual monitor going down opens an auto
 test('an incident is opened, updated with a new impact and resolved', async ({ browser }) => {
   const page = await asAdmin(browser)
   await page.goto(`/n/${ids.node}/incidents`)
-  await page.getByRole('link', { name: 'Open incident' }).first().click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Open incident' })).toBeVisible()
+  await page.getByRole('link', { name: 'New incident' }).first().click()
+  await expect(page.getByRole('heading', { level: 1, name: 'New incident' })).toBeVisible()
 
   await page.getByLabel('Title').fill('Payments are slow')
   await page.getByLabel('Message').fill('Card payments take up to a minute.')
-  const affected = page.getByRole('group', { name: 'Affected' })
-  await affected.locator('[data-target="Checkout"]').getByRole('checkbox').click()
-  await affected.locator('[data-target="Support"]').getByRole('checkbox').click()
-  await expect(affected.getByRole('combobox', { name: 'Impact on Checkout' })).toHaveText(/Major outage/)
-  await affected.getByRole('combobox', { name: 'Impact on Support' }).click()
+  await affects(page, 'Checkout', 'Support')
+  await expect(page.getByRole('button', { name: 'Impact: Major outage' })).toBeVisible()
+  await page.getByRole('button', { name: 'Per target' }).click()
+  await expect(page.getByRole('combobox', { name: 'Impact on Checkout' })).toHaveText(/Major outage/)
+  await page.getByRole('combobox', { name: 'Impact on Support' }).click()
   await page.getByRole('option', { name: 'Partial outage' }).click()
-  await page.getByRole('button', { name: 'Open incident' }).click()
+  await page.getByRole('button', { name: 'Post', exact: true }).click()
 
   await expect(page.getByRole('heading', { level: 1, name: 'Payments are slow' })).toBeVisible()
   ids.incident = new URL(page.url()).pathname.split('/')[4] ?? ''
@@ -89,11 +96,13 @@ test('an incident is opened, updated with a new impact and resolved', async ({ b
   await expect(timeline.locator('[data-update]')).toHaveCount(1)
 
   const update = page.getByRole('region', { name: 'Post an update' })
-  await update.getByRole('radio', { name: 'Identified' }).click()
+  await update.getByRole('button', { name: /^State:/ }).click()
+  await page.getByRole('menuitemradio', { name: 'Identified' }).click()
   await update.getByLabel('Message').fill('The card provider is slow. We switched to the backup.')
+  await update.getByRole('button', { name: 'Per target' }).click()
   await update.getByRole('combobox', { name: 'Impact on Support' }).click()
   await page.getByRole('option', { name: 'Degraded' }).click()
-  await update.getByRole('button', { name: 'Post update' }).click()
+  await update.getByRole('button', { name: 'Post', exact: true }).click()
   await expect(timeline.locator('[data-update]')).toHaveCount(2)
   await expect(timeline.locator('[data-update]').first()).toContainText('The card provider is slow.')
   await expect(status.locator('[data-affected="Support"] [data-impact="degraded"]')).toBeVisible()
@@ -197,8 +206,7 @@ test('incident and maintenance screens hold up at desktop and phone sizes, light
       await check('incident-auto')
 
       await page.goto(`/n/${ids.node}/incidents/new`)
-      await page.getByRole('group', { name: 'Affected' }).locator('[data-target="Support"]').getByRole('checkbox').click()
-      await page.getByRole('group', { name: 'Affected' }).scrollIntoViewIfNeeded()
+      await affects(page, 'Support')
       await check('incident-editor')
 
       await page.goto(`/n/${ids.node}/maintenance`)

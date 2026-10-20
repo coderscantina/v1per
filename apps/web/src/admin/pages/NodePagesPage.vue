@@ -2,6 +2,7 @@
 import Icon from '~/components/Icon.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import CreatePageDialog from '~/components/pages/CreatePageDialog.vue'
+import PagesIncidents from '~/components/pages/PagesIncidents.vue'
 import { Alert } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -18,8 +19,9 @@ import { can } from '~/lib/access'
 import { useI18n } from '~/plugins/i18n'
 
 /**
- * Status pages on a node: title and address, who can open them, custom domains, and a link to
- * the page itself. Admins create pages here; each opens in its editor.
+ * Status pages on a node: the open incidents they may carry, then each page with its title and
+ * address, who can open it, custom domains, and a link to the page itself. Admins create pages
+ * here; each opens in its editor.
  */
 const { t } = useI18n()
 const { message } = useErrorMessage()
@@ -27,6 +29,7 @@ const { routeId } = useCurrentNode()
 const detail = useNodeDetail(routeId)
 const node = computed(() => detail.data.value?.node ?? null)
 const manage = computed(() => can(node.value, 'pages.manage'))
+const manageIncidents = computed(() => can(node.value, 'incidents.manage'))
 usePageMeta(() => t('pages.title'))
 
 const live = useNodePages(routeId)
@@ -66,9 +69,13 @@ const columns = 5
     </Alert>
     <div
       v-else
-      class="grid max-w-5xl gap-4"
+      class="grid max-w-5xl gap-8"
     >
-      <p class="text-sm text-muted">{{ t('pages.intro') }}</p>
+      <PagesIncidents
+        v-if="routeId"
+        :node="routeId"
+        :manage="manageIncidents"
+      />
 
       <EmptyState
         v-if="live.data.value && rows.length === 0"
