@@ -131,6 +131,31 @@ describe('pageView', () => {
     ])
   })
 
+  it('sums up uptime, incidents and the next maintenance', () => {
+    const view = pageView(
+      snapshot({
+        groups: [
+          {
+            id: 'g',
+            name: '',
+            default_open: true,
+            components: [component('c1', 'API', { uptime_90d: 0.99 }), component('c2', 'Email', { uptime_90d: 0.97 }), component('c3', 'New')],
+          },
+        ],
+        incidents: [{ id: 'i1', title: 'Slow', state: 'resolved', started_at: 0, resolved_at: 1, components: [], updates: [] }],
+        maintenance: [
+          { title: 'Later', description: '', active: false, starts_at: 900, components: [] },
+          { title: 'Sooner', description: '', active: false, starts_at: 500, components: [] },
+        ],
+      }),
+      ''
+    )
+    expect(view.figures.uptime).toBeCloseTo(0.98)
+    expect(view.figures.incidents).toBe(1)
+    expect(view.figures.maintenance).toBe(500)
+    expect(pageView(snapshot(), '').figures).toEqual({ uptime: undefined, incidents: 0, maintenance: undefined })
+  })
+
   it('places the logo below the base', () => {
     const appearance = { ...snapshot().appearance, logo: '/logo?v=5' }
     expect(pageView(snapshot({ appearance }), '/s/acme').logo).toBe('/s/acme/logo?v=5')

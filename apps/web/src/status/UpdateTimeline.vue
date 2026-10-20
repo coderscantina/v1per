@@ -33,11 +33,11 @@ function when(index: number): string {
     >
       <span
         v-if="index < entries.length - 1"
-        class="absolute top-3 -bottom-3 left-[0.4375rem] w-px bg-border"
+        class="absolute top-5 -bottom-0.5 left-[0.4375rem] w-px bg-border"
         aria-hidden="true"
       />
       <span
-        class="absolute top-1.5 left-0.5 size-2.5 rounded-full bg-(--tone) ring-4 ring-card"
+        class="absolute top-1.5 left-0.5 size-2.5 rounded-full bg-(--tone)"
         aria-hidden="true"
       />
       <p class="flex flex-wrap items-baseline gap-x-2 text-sm">

@@ -51,7 +51,7 @@ A page can also answer on its own domains, up to 10 per page.
 2. Point the domain's DNS at your reverse proxy.
 3. Add the domain to the proxy so it gets a certificate. See [Reverse proxy and custom domains](install.md#reverse-proxy-and-custom-domains).
 
-v1per picks the page by the `Host` header. A custom domain serves only its page at the root path. The admin app and the API are not reachable on it. A hostname can belong to one page only, and the instance's own public host cannot be claimed.
+V1Per picks the page by the `Host` header. A custom domain serves only its page at the root path. The admin app and the API are not reachable on it. A hostname can belong to one page only, and the instance's own public host cannot be claimed.
 
 ## Branding
 
@@ -92,7 +92,7 @@ An incident has updates with a state (investigating, identified, monitoring, res
 
 Members and up create and update incidents. A manual incident is published to the pages that show its components. Publishing to a page also needs the Member role on the page's node.
 
-The page shows active incidents first, each with its update timeline, and past incidents further down, 10 at a time.
+The page has three views: Status, Maintenance and Incidents. Status shows active incidents first, each with its update timeline. Incidents lists the resolved ones, 10 at a time. Maintenance lists the windows under way and those starting within 14 days.
 
 **Auto-incidents** open when a monitor on the page goes down and resolve when it recovers. Choose per page in the Settings tab:
 
@@ -111,7 +111,7 @@ Each component takes the worst of its monitor status (down is a major outage, pe
 
 ## Nodes, roles and invites
 
-Everything in v1per sits in a tree of nodes, for example your agency at the root, then a node per client, and projects below that.
+Everything in V1Per sits in a tree of nodes, for example your agency at the root, then a node per client, and projects below that.
 
 | Role | Can |
 | --- | --- |
@@ -125,7 +125,7 @@ A role on a node applies to that node and everything below it. Roles only add up
 To invite someone:
 
 1. On the node's Members page, choose invite, enter their email, pick a role and a validity of 1 to 30 days (7 by default).
-2. Copy the link that is shown once and send it to them yourself. v1per sends no invitation email.
+2. Copy the link that is shown once and send it to them yourself. V1Per sends no invitation email.
 3. They open the link and create an account with the invited email, or accept with the account they are signed in with.
 
 You can invite only with roles below your own. Owners can also invite owners. Pending invitations can be revoked.

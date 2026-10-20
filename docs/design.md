@@ -1,6 +1,6 @@
 # Design rules
 
-v1per's admin app follows holocron's Kit and v2 design documents (see [References](README.md#references)). This file holds the rules Mike settled for v1per on top of them. Where they differ, this file wins.
+V1Per's admin app follows holocron's Kit and v2 design documents (see [References](README.md#references)). This file holds the rules Mike settled for V1Per on top of them. Where they differ, this file wins.
 
 ## Forms
 
@@ -39,3 +39,16 @@ Settled on 2026-10-20 after a review of perceived speed.
 - Hovering never changes a box's size. A readout that replaces text on hover sits on one line of fixed height and truncates.
 - A loading block has the height of what it stands for, and the labels of a panel's figures show while their values load.
 - Live snapshots that views reopen pass a `cache` name to `useLiveSnapshot`, so the last data shows at once while the fresh read runs. Sign-out clears them.
+
+## Status page
+
+Settled on 2026-10-20 from three variants, loosely after status.betterstack.com.
+
+- Three views at their own paths below the page's base: Status (`/`), Maintenance (`/maintenance`) and Incidents (`/incidents`). A segmented nav in the header switches them in place with the History API, so the live snapshot stays and links can be shared. Past incidents load only on the Incidents view.
+- The Status view leads with a centered hero: the status icon at 48px, the headline at 24px and "Updated" muted below. Then a row of three figures (90-day uptime, incidents in 90 days, next maintenance), open incidents and maintenance under way, then "System status".
+- Figures follow the [Figures](#figures) rule: the value semibold in the strongest ink, the label 13px and muted below it. A component's 90-day uptime is the bold value on its name row, with "uptime" as the label; phones hide the label.
+- Healthy is quiet. An operational component or group shows only the green check, the word stays for screen readers. Every other state shows icon and word.
+- The bars' time axis ("90 days ago", "Today") is labeled once per card, not per component.
+- An open incident uses the [Tinted surfaces](#tinted-surfaces) rule.
+- The footer reads "Powered by V1Per", with V1Per linking to the repository.
+- Rejected: tabs below the banner with one line per component (the bars got too small on phones), and components always shown with tabs only for incidents and maintenance (the page stayed long; its figures row was kept).

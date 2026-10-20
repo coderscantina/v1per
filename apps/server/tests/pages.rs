@@ -209,6 +209,17 @@ impl Tree {
     }
 }
 
+/// The page's incidents and maintenance views are the same page, so their links can be shared.
+#[tokio::test]
+async fn the_page_views_serve_the_page() {
+    let tree = Tree::new(Harness::new().await).await;
+    for view in ["incidents", "maintenance"] {
+        let page = boot(&get(&tree.harness, &format!("/s/acme/{view}"), None).await);
+        assert_eq!(page["kind"], "page");
+        assert_eq!(page["base"], "/s/acme");
+    }
+}
+
 /// Each access mode admits exactly its visitors, with exactly the fields of their audience.
 #[tokio::test]
 async fn every_access_mode_admits_its_audience_with_its_fields() {
@@ -256,7 +267,7 @@ async fn every_access_mode_admits_its_audience_with_its_fields() {
         .ok(
             &tree.admin,
             "instance.updateSmtp",
-            json!({ "smtp": { "host": "127.0.0.1", "port": sink.port, "from": "v1per <noreply@example.test>" } }),
+            json!({ "smtp": { "host": "127.0.0.1", "port": sink.port, "from": "V1Per <noreply@example.test>" } }),
         )
         .await;
     harness

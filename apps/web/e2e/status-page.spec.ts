@@ -302,8 +302,14 @@ test('a published incident and maintenance arrive on an open page', async ({ bro
   })
   const now = page.locator('[data-maintenance="Website deploy"]')
   await expect(now).toContainText('In progress', LIVE_WAIT)
-  await expect(page.locator('[data-maintenance="Database upgrade"]')).toContainText('Scheduled', LIVE_WAIT)
   await expect(componentStatus(page, 'Website')).toHaveText('Maintenance', LIVE_WAIT)
+  await expect(page.getByTestId('page-figures')).toContainText('Now')
+  // Scheduled windows wait on the maintenance view, which switches without a reload.
+  await expect(page.locator('[data-maintenance="Database upgrade"]')).toHaveCount(0)
+  await page.getByRole('link', { name: 'Maintenance' }).click()
+  await expect(page).toHaveURL(new RegExp(`/s/${publicSlug}/maintenance$`))
+  await expect(page.locator('[data-maintenance="Database upgrade"]')).toContainText('Scheduled', LIVE_WAIT)
+  await expect(page.locator('[data-maintenance="Website deploy"]')).toBeVisible()
   await page.context().close()
 
   for (const [name, viewport] of Object.entries(viewports)) {
@@ -413,6 +419,8 @@ test('resolved incidents load from the server, ten at a time', async ({ browser 
     if (sent.url().includes('/incidents.json')) reads.push(new URL(sent.url()).search)
   })
   await page.goto(`/s/${publicSlug}`)
+  expect(reads).toHaveLength(0)
+  await page.getByRole('link', { name: 'Incidents' }).click()
   const rows = page.locator('[data-incident^="Past incident"]')
   await expect(rows).toHaveCount(10)
   expect(reads).toHaveLength(1)

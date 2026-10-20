@@ -21,6 +21,16 @@ const en = {
   'banner.major_outage': 'Major outage',
   'banner.updated': 'Updated {time}',
 
+  'nav.label': 'Page sections',
+  'nav.status': 'Status',
+  'nav.maintenance': 'Maintenance',
+  'nav.incidents': 'Incidents',
+
+  'figures.uptime': 'Uptime, 90 days',
+  'figures.incidents': 'Incidents, 90 days',
+  'figures.maintenance': 'Next maintenance',
+  'figures.now': 'Now',
+  'figures.none': 'None',
 
   'state.investigating': 'Investigating',
   'state.identified': 'Identified',
@@ -49,11 +59,12 @@ const en = {
   'maintenance.from': 'From {start}',
   'maintenance.until': 'Until {end}',
   'maintenance.lasts': 'Lasts {duration}',
+  'maintenance.none': 'No maintenance in the next 14 days.',
 
-  'components.title': 'Components',
+  'components.title': 'System status',
   'components.daysAgo': '90 days ago',
   'components.today': 'Today',
-  'components.uptime': '{value} uptime',
+  'components.uptime': 'uptime',
   'components.history': 'Last 90 days of {name}',
   'components.toggle': 'Show or hide {name}',
 
@@ -104,7 +115,7 @@ const en = {
   'error.boot': 'This status page could not load.',
 
   'footer.language': 'Language',
-  'footer.poweredBy': 'Powered by v1per',
+  'footer.poweredBy': 'Powered by',
 
   'duration.minutes': '{n} min',
   'duration.hours': '{h} h {m} min',
@@ -128,6 +139,16 @@ const de: Record<MessageKey, string> = {
   'banner.major_outage': 'Größerer Ausfall',
   'banner.updated': 'Aktualisiert {time}',
 
+  'nav.label': 'Bereiche der Seite',
+  'nav.status': 'Status',
+  'nav.maintenance': 'Wartung',
+  'nav.incidents': 'Störungen',
+
+  'figures.uptime': 'Verfügbar, 90 Tage',
+  'figures.incidents': 'Störungen, 90 Tage',
+  'figures.maintenance': 'Nächste Wartung',
+  'figures.now': 'Jetzt',
+  'figures.none': 'Keine',
 
   'state.investigating': 'Wird untersucht',
   'state.identified': 'Ursache gefunden',
@@ -156,11 +177,12 @@ const de: Record<MessageKey, string> = {
   'maintenance.from': 'Ab {start}',
   'maintenance.until': 'Bis {end}',
   'maintenance.lasts': 'Dauert {duration}',
+  'maintenance.none': 'Keine Wartung in den nächsten 14 Tagen.',
 
-  'components.title': 'Komponenten',
+  'components.title': 'Systemstatus',
   'components.daysAgo': 'vor 90 Tagen',
   'components.today': 'Heute',
-  'components.uptime': '{value} verfügbar',
+  'components.uptime': 'verfügbar',
   'components.history': 'Letzte 90 Tage von {name}',
   'components.toggle': '{name} ein- oder ausblenden',
 
@@ -211,7 +233,7 @@ const de: Record<MessageKey, string> = {
   'error.boot': 'Diese Statusseite konnte nicht geladen werden.',
 
   'footer.language': 'Sprache',
-  'footer.poweredBy': 'Betrieben mit v1per',
+  'footer.poweredBy': 'Betrieben mit',
 
   'duration.minutes': '{n} Min.',
   'duration.hours': '{h} Std. {m} Min.',

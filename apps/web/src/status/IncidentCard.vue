@@ -21,14 +21,14 @@ const timelineId = `timeline-${props.incident.id}`
   <article
     :data-incident="incident.title"
     :data-tone="tone"
-    class="flex flex-col gap-4 rounded-panel border border-border bg-card p-4 shadow-soft-sm"
+    class="flex flex-col gap-4 rounded-panel border border-(--tone)/30 bg-(--tone)/8 p-4 text-primary [--muted:color-mix(in_oklab,var(--primary)_72%,transparent)]"
   >
     <header class="flex flex-col gap-1">
       <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
         <h3 class="min-w-0 flex-1 font-semibold text-primary">{{ incident.title }}</h3>
         <span
           v-if="incident.impact"
-          class="inline-flex shrink-0 items-center gap-1.5 text-sm text-foreground"
+          class="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium"
         >
           <StatusIcon
             :name="toneIcon[incident.impact]"

@@ -5,7 +5,10 @@ import StatusIcon from './StatusIcon.vue'
 import { toneIcon, toneLabel } from './tones'
 import type { GroupView } from './view'
 
-/** A named group folds open and shut, open at first as the page says; an unnamed one is a plain card. */
+/**
+ * A named group folds open and shut, open at first as the page says; an unnamed one is a plain
+ * card. The bars' time axis is labeled once, below the last component.
+ */
 defineProps<{ group: GroupView }>()
 </script>
 
@@ -24,13 +27,13 @@ defineProps<{ group: GroupView }>()
       <h3 class="min-w-0 flex-1 truncate font-semibold text-primary">{{ group.name }}</h3>
       <span
         :data-tone="group.status"
-        class="inline-flex shrink-0 items-center gap-1.5 text-sm text-foreground"
+        class="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-primary"
       >
         <StatusIcon
           :name="toneIcon[group.status]"
           class="size-4 text-(--tone)"
         />
-        {{ t(toneLabel[group.status]) }}
+        <span :class="group.status === 'operational' ? 'sr-only' : ''">{{ t(toneLabel[group.status]) }}</span>
       </span>
     </summary>
     <ul class="divide-y divide-divider border-t border-border">
@@ -41,16 +44,32 @@ defineProps<{ group: GroupView }>()
         :nested="true"
       />
     </ul>
+    <p
+      aria-hidden="true"
+      class="flex justify-between px-4 pb-3.5 text-[13px] text-muted"
+    >
+      <span>{{ t('components.daysAgo') }}</span>
+      <span>{{ t('components.today') }}</span>
+    </p>
   </details>
-  <ul
+  <div
     v-else
-    class="divide-y divide-divider rounded-panel border border-border bg-card shadow-soft-sm"
+    class="rounded-panel border border-border bg-card shadow-soft-sm"
   >
-    <ComponentRow
-      v-for="component in group.components"
-      :key="component.id"
-      :component="component"
-      :nested="false"
-    />
-  </ul>
+    <ul class="divide-y divide-divider">
+      <ComponentRow
+        v-for="component in group.components"
+        :key="component.id"
+        :component="component"
+        :nested="false"
+      />
+    </ul>
+    <p
+      aria-hidden="true"
+      class="flex justify-between px-4 pb-3.5 text-[13px] text-muted"
+    >
+      <span>{{ t('components.daysAgo') }}</span>
+      <span>{{ t('components.today') }}</span>
+    </p>
+  </div>
 </template>

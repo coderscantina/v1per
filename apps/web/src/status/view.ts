@@ -83,6 +83,16 @@ export interface MaintenanceView {
   components: string[]
 }
 
+/** The page's headline figures. */
+export interface PageFigures {
+  /** The mean of the components' 90-day uptime; absent when none has data. */
+  uptime?: number
+  /** Incidents open now or resolved within the bars' 90 days. */
+  incidents: number
+  /** When the next maintenance starts: `now` while one is under way, absent when none is planned. */
+  maintenance?: number | 'now'
+}
+
 export interface PageView {
   title: string
   description: string
@@ -96,6 +106,7 @@ export interface PageView {
   /** Component names by ID, to build views of incidents that arrive later. */
   names: ReadonlyMap<string, string>
   maintenance: MaintenanceView[]
+  figures: PageFigures
   generatedAt: number
 }
 
@@ -213,6 +224,21 @@ export function pageView(snapshot: PageSnapshot, base: string): PageView {
     .filter((incident) => incident.state !== 'resolved')
     .map((incident) => incidentView(incident, names))
 
+  const maintenance = snapshot.maintenance
+    .map((window) => ({
+      title: window.title,
+      description: window.description,
+      active: window.active,
+      startsAt: window.starts_at,
+      endsAt: window.ends_at,
+      components: window.components.flatMap((id) => names.get(id) ?? []),
+    }))
+    // Under way first, then by start.
+    .sort((a, b) => Number(b.active) - Number(a.active) || (a.startsAt ?? 0) - (b.startsAt ?? 0))
+
+  const uptimes = groups.flatMap((group) => group.components.flatMap((component) => component.uptime ?? []))
+  const next = maintenance[0]
+
   return {
     title: snapshot.appearance.title,
     description: snapshot.description,
@@ -223,17 +249,12 @@ export function pageView(snapshot: PageSnapshot, base: string): PageView {
     groups,
     active,
     names,
-    maintenance: snapshot.maintenance
-      .map((window) => ({
-        title: window.title,
-        description: window.description,
-        active: window.active,
-        startsAt: window.starts_at,
-        endsAt: window.ends_at,
-        components: window.components.flatMap((id) => names.get(id) ?? []),
-      }))
-      // Under way first, then by start.
-      .sort((a, b) => Number(b.active) - Number(a.active) || (a.startsAt ?? 0) - (b.startsAt ?? 0)),
+    maintenance,
+    figures: {
+      uptime: uptimes.length > 0 ? uptimes.reduce((sum, uptime) => sum + uptime, 0) / uptimes.length : undefined,
+      incidents: snapshot.incidents.length,
+      maintenance: next?.active ? 'now' : next?.startsAt,
+    },
     generatedAt: snapshot.generated_at,
   }
 }

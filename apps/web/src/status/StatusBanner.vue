@@ -6,7 +6,7 @@ import { locale, t, type MessageKey } from './messages'
 import StatusIcon from './StatusIcon.vue'
 import { toneIcon } from './tones'
 
-/** The page's overall status and when it was read. */
+/** The page's overall status and when it was read, centered above everything else. */
 defineProps<{ status: PageStatus; generatedAt: number }>()
 
 const headline: Record<PageStatus, MessageKey> = {
@@ -22,15 +22,13 @@ const headline: Record<PageStatus, MessageKey> = {
   <section
     :data-tone="status"
     data-testid="page-status"
-    class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-panel border border-[color-mix(in_srgb,var(--tone)_35%,var(--border))] bg-[color-mix(in_srgb,var(--tone)_8%,var(--card))] px-5 py-4 shadow-soft-sm"
+    class="flex flex-col items-center gap-2 py-2 text-center sm:py-4"
   >
     <StatusIcon
       :name="toneIcon[status]"
-      class="size-6 shrink-0 text-(--tone)"
+      class="mb-1 size-12 text-(--tone)"
     />
-    <h2 class="min-w-0 flex-1 text-lg font-semibold text-primary">{{ t(headline[status]) }}</h2>
-    <div class="flex w-full items-center gap-3 pl-10 text-sm text-muted sm:w-auto sm:pl-0">
-      <span>{{ t('banner.updated', { time: formatClock(generatedAt, locale) }) }}</span>
-    </div>
+    <h2 class="text-2xl font-semibold tracking-tight text-primary">{{ t(headline[status]) }}</h2>
+    <p class="text-sm text-muted">{{ t('banner.updated', { time: formatClock(generatedAt, locale) }) }}</p>
   </section>
 </template>

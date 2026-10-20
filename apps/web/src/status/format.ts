@@ -33,6 +33,11 @@ export function formatDate(at: number, locale: Locale): string {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(at)
 }
 
+/** A day in the visitor's own timezone without the year, as "Oct 25". */
+export function formatShortDate(at: number, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(at)
+}
+
 /** A month heading, as "October 2026". */
 export function formatMonth(at: number, locale: Locale): string {
   return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(at)

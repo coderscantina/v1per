@@ -19,6 +19,7 @@ All paths are relative to the base. Errors use the admin API's `ApiErrorBody`.
 | --- | --- |
 | `GET {base}` | `status.html` with the [boot JSON](#boot-json) injected |
 | `GET {base}/t/{token}` | The same, opened with a share token |
+| `GET {base}/incidents`, `GET {base}/maintenance` | The same, opened on that view |
 | `GET {base}/access/email?code=` | The same, without using the code; the page app posts `code` to `redeem` once the visitor continues |
 | `GET {base}/snapshot.json` | `PageSnapshot`, or `401 unauthenticated` when the page is closed to the visitor |
 | `GET {base}/incidents.json?cursor=&limit=` | `PageIncidents`, see [incident history](#incident-history) |
@@ -125,7 +126,7 @@ Colors follow the [monitoring contract](../monitoring-contract.md#component-colo
 
 - A component now: the worst of its monitor (down major outage, pending degraded, up operational) and the current impact of open published incidents naming it. Maintenance overrides the monitor but not such an incident. A static component without incidents is operational.
 - A bar: a published incident that touched the component that day wins with its worst impact. Otherwise uptime colors it: 100 % operational, at least 99 % degraded, at least 95 % partial outage, below that major outage, and maintenance when the day was otherwise operational. Days without heartbeats have no status, so a monitor's bars start on its first checked day. A static component is operational from the day it was created; earlier days have no status.
-- Today's bar counts every heartbeat up to now. On the day of a Kuma import, Kuma's daily row is combined with the hours v1per checked after it. This is decision 0008 item 13, still proposed; the rule lives in one function, `bar_status` in `apps/server/src/pages/snapshot.rs`.
+- Today's bar counts every heartbeat up to now. On the day of a Kuma import, Kuma's daily row is combined with the hours V1Per checked after it. This is decision 0008 item 13, still proposed; the rule lives in one function, `bar_status` in `apps/server/src/pages/snapshot.rs`.
 - Day boundaries are local midnights in the page timezone with non-hour offset minutes dropped (decision 0008 item 11), for bars and for the days an incident touched.
 
 Snapshots are cached per page, audience and locale while the page's topic stays at the same head and the heartbeat watermark has not moved, for at most a minute.

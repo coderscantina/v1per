@@ -128,6 +128,8 @@ pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(html))
         .route("/t/{token}", get(html))
+        .route("/incidents", get(html))
+        .route("/maintenance", get(html))
         .route("/access/email", get(html).post(request_link))
         .route("/access/email/redeem", post(redeem))
         .route("/access/password", post(password))
