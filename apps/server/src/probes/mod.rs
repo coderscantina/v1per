@@ -106,22 +106,21 @@ pub(crate) async fn assign(
     Ok(())
 }
 
-/// After `node` moved: unassigns probes from monitors of its subtree that the probes no longer
-/// serve, because the probe's node is not on the monitor's new path.
-pub(crate) async fn prune_moved(conn: &mut SqliteConnection, node: NodeId) -> sqlx::Result<()> {
+/// After `monitors` moved, alone or with their node: unassigns probes they named that no longer
+/// serve them, because the probe's node is not on the monitor's new path.
+pub(crate) async fn prune_moved(
+    conn: &mut SqliteConnection,
+    monitors: &[MonitorId],
+) -> sqlx::Result<()> {
+    let ids: Vec<i64> = monitors.iter().map(|monitor| monitor.get()).collect();
     let rows: Vec<(i64, i64, i64, i64)> = sqlx::query_as(
-        "WITH RECURSIVE moved(id) AS (
-             SELECT ?1
-             UNION ALL
-             SELECT n.id FROM nodes n JOIN moved ON n.parent_id = moved.id
-         )
-         SELECT mp.monitor_id, mp.probe_id, m.node_id, p.node_id
+        "SELECT mp.monitor_id, mp.probe_id, m.node_id, p.node_id
          FROM monitor_probes mp
          JOIN monitors m ON m.id = mp.monitor_id
          JOIN probes p ON p.id = mp.probe_id
-         WHERE m.node_id IN (SELECT id FROM moved) AND p.builtin = 0",
+         WHERE m.id IN (SELECT value FROM json_each(?1)) AND p.builtin = 0",
     )
-    .bind(node.get())
+    .bind(serde_json::to_string(&ids).expect("numbers serialize"))
     .fetch_all(&mut *conn)
     .await?;
     let mut paths: HashMap<i64, Vec<i64>> = HashMap::new();

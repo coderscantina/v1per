@@ -24,9 +24,10 @@ const node = (id: string, name: string, depth: number, parent: string, position 
   capabilities: [...roleCapabilities.admin],
   two_factor_required: false,
 })
-const monitor = (id: string, name: string, on: string, status?: HeartbeatStatus, group?: string): MonitorSummary => ({
+const monitor = (id: string, name: string, on: string, status?: HeartbeatStatus, group?: string, position = 0): MonitorSummary => ({
   id,
   node: on,
+  position,
   name,
   type: 'http',
   active: true,
@@ -84,6 +85,11 @@ describe('monitor tree', () => {
 })
 
 describe('tree rows', () => {
+  it('orders monitors by their place on the node, not by name', () => {
+    const placed = buildMonitorTree(index, [monitor('30', 'alpha', '9', 'up', undefined, 2), monitor('31', 'beta', '9', 'up', undefined, 0), monitor('32', 'gamma', '9', 'up', undefined, 1)])
+    expect(placed.monitorsOn('9').map((entry) => entry.name)).toEqual(['beta', 'gamma', 'alpha'])
+  })
+
   it('shows what is open, children before monitors, with down counts on nodes', () => {
     const rows = treeRows(tree, { ...options, open: new Set([nodeKey('7'), nodeKey('9')]) })
     expect(show(rows)).toEqual(['Autohaus', '  Schmidt', '  Mötormobile', '    group feeds', '  portal'])

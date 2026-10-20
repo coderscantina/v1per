@@ -209,22 +209,21 @@ pub(crate) async fn of_monitor(
     Ok(ids.into_iter().map(ChannelId::new).collect())
 }
 
-/// After `node` moved: drops links from monitors of its subtree to channels that are no
+/// After `monitors` moved, alone or with their node: drops their links to channels that are no
 /// longer on the monitor's path.
-pub(crate) async fn prune_moved(conn: &mut SqliteConnection, node: NodeId) -> sqlx::Result<()> {
+pub(crate) async fn prune_moved(
+    conn: &mut SqliteConnection,
+    monitors: &[MonitorId],
+) -> sqlx::Result<()> {
+    let ids: Vec<i64> = monitors.iter().map(|monitor| monitor.get()).collect();
     let rows: Vec<(i64, i64, i64, i64)> = sqlx::query_as(
-        "WITH RECURSIVE moved(id) AS (
-             SELECT ?1
-             UNION ALL
-             SELECT n.id FROM nodes n JOIN moved ON n.parent_id = moved.id
-         )
-         SELECT mc.monitor_id, mc.channel_id, m.node_id, c.node_id
+        "SELECT mc.monitor_id, mc.channel_id, m.node_id, c.node_id
          FROM monitor_channels mc
          JOIN monitors m ON m.id = mc.monitor_id
          JOIN channels c ON c.id = mc.channel_id
-         WHERE m.node_id IN (SELECT id FROM moved)",
+         WHERE m.id IN (SELECT value FROM json_each(?1))",
     )
-    .bind(node.get())
+    .bind(serde_json::to_string(&ids).expect("numbers serialize"))
     .fetch_all(&mut *conn)
     .await?;
     let mut paths: HashMap<i64, Vec<i64>> = HashMap::new();

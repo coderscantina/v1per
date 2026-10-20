@@ -42,11 +42,22 @@ crate::domain! {
         /// Deletes a monitor with its state. Members of a deleted group leave the group.
         /// Recorded heartbeats stay until retention removes them. Needs `monitors.manage`.
         "monitors.delete" => monitors_delete (Person, key): MonitorArgs => MonitorDeleted;
+        /// Puts a monitor at `position` among the monitors on `node`, counted from 0; past the
+        /// end means last. With another `node` it moves there; `group` replaces its group, and
+        /// leaving it out takes it out of one. Needs `monitors.manage` on the monitor's node and
+        /// on `node`. `group` must be a group monitor on `node` or an ancestor the caller can
+        /// read, and not the monitor or one of its members (`invalid_value` on `group`). A
+        /// moved group takes its members on the same node along, right after it and still in
+        /// the group; members on other nodes stay and leave the group unless `node` is their
+        /// node or an ancestor. Moved monitors lose the probes and channels `node` does not
+        /// offer, and leave maintenances and status pages that no longer reach them.
+        "monitors.move" => monitors_move (Person, key): MonitorsMoveArgs => MonitorResult;
     }
     queries {
         /// The monitors on one node, or with `subtree` on the node and every node below it,
-        /// with their current status, last latency and 24-hour uptime, by name. Needs
-        /// `node.read`. On the `monitors:<id>` topic, with `subtree` on `monitor-tree:<id>`.
+        /// with their current status, last latency and 24-hour uptime, by node and position.
+        /// Needs `node.read`. On the `monitors:<id>` topic, with `subtree` on
+        /// `monitor-tree:<id>`.
         "monitors.list" => monitors_list (Person, key): MonitorsListArgs => MonitorList;
         /// One monitor with its settings, current state and the state on each probe. Secrets
         /// show only whether they are set; the push token only to callers with
@@ -479,6 +490,19 @@ pub struct MonitorArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct MonitorsMoveArgs {
+    pub monitor: MonitorId,
+    /// The node to sit on; its current one to reorder only.
+    pub node: NodeId,
+    /// The group to sit in; absent for none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub group: Option<MonitorId>,
+    /// Place among the monitors on `node`, from 0.
+    pub position: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
 pub struct MonitorsSetManualStatusArgs {
     pub monitor: MonitorId,
     /// Leave out to clear: the monitor is pending until a status is set.
@@ -492,6 +516,8 @@ pub struct MonitorsSetManualStatusArgs {
 pub struct Monitor {
     pub id: MonitorId,
     pub node: NodeId,
+    /// Place among the monitors on its node, from 0.
+    pub position: u32,
     pub name: String,
     pub description: String,
     pub settings: MonitorSettings,
@@ -594,6 +620,8 @@ pub struct MonitorSummary {
     pub id: MonitorId,
     /// The node the monitor sits on.
     pub node: NodeId,
+    /// Place among the monitors on its node, from 0.
+    pub position: u32,
     pub name: String,
     #[serde(rename = "type")]
     pub kind: MonitorType,

@@ -922,6 +922,193 @@ async fn subtree_lists_and_events_name_their_monitor() {
 
 /// A new push token needs 10 characters and must be free; both refusals look alike, and an
 /// imported shorter token may be sent back unchanged.
+/// The names of the monitors on `node`, in list order.
+async fn order(harness: &Harness, cookie: &str, node: &str) -> Vec<String> {
+    harness
+        .query(Some(cookie), "monitors.list", &format!("node={node}"))
+        .await
+        .json()["monitors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|monitor| monitor["name"].as_str().unwrap().to_owned())
+        .collect()
+}
+
+#[tokio::test]
+async fn monitors_reorder_on_their_node() {
+    let harness = Harness::new().await;
+    let admin = harness.session(&harness.admin).await;
+    let root = harness.root().await;
+    let team = harness.node(&admin, &root, "team").await;
+    for name in ["c", "a", "b"] {
+        create(&harness, &admin, &team, http(name, "http://x.test")).await;
+    }
+    // New monitors go last, whatever their name.
+    assert_eq!(order(&harness, &admin, &team).await, ["c", "a", "b"]);
+
+    let listed = harness
+        .query(Some(&admin), "monitors.list", &format!("node={team}"))
+        .await
+        .json();
+    let b = listed["monitors"][2]["id"].as_str().unwrap().to_owned();
+    let moved = harness
+        .ok(
+            &admin,
+            "monitors.move",
+            json!({ "monitor": b, "node": team, "position": 0 }),
+        )
+        .await;
+    assert_eq!(moved["monitor"]["position"], 0);
+    assert_eq!(order(&harness, &admin, &team).await, ["b", "c", "a"]);
+    // Past the end means last.
+    harness
+        .ok(
+            &admin,
+            "monitors.move",
+            json!({ "monitor": b, "node": team, "position": 99 }),
+        )
+        .await;
+    assert_eq!(order(&harness, &admin, &team).await, ["c", "a", "b"]);
+}
+
+#[tokio::test]
+async fn a_moved_group_takes_its_members_and_drops_what_the_new_node_lacks() {
+    let harness = Harness::new().await;
+    let admin = harness.session(&harness.admin).await;
+    let root = harness.root().await;
+    let team = harness.node(&admin, &root, "team").await;
+    let client = harness.node(&admin, &team, "client").await;
+    let other = harness.node(&admin, &root, "other").await;
+    let probe = harness
+        .ok(
+            &admin,
+            "probes.create",
+            json!({ "node": team, "name": "office" }),
+        )
+        .await["probe"]["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let channel = harness
+        .ok(
+            &admin,
+            "channels.create",
+            json!({ "node": team, "name": "ops",
+                    "settings": { "type": "discord", "webhook_url": { "value": "https://discord.test/hook" } } }),
+        )
+        .await["channel"]["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let group = create(
+        &harness,
+        &admin,
+        &team,
+        json!({ "name": "group", "interval": 20, "settings": { "type": "group" } }),
+    )
+    .await;
+    let member = create(
+        &harness,
+        &admin,
+        &team,
+        with(
+            http("member", "http://x.test"),
+            json!({ "group": group, "probes": [probe], "channels": [channel] }),
+        ),
+    )
+    .await;
+    let below = create(
+        &harness,
+        &admin,
+        &client,
+        with(http("below", "http://x.test"), json!({ "group": group })),
+    )
+    .await;
+    create(&harness, &admin, &other, http("first", "http://x.test")).await;
+    create(&harness, &admin, &other, http("last", "http://x.test")).await;
+
+    harness
+        .ok(
+            &admin,
+            "monitors.move",
+            json!({ "monitor": group, "node": other, "position": 1 }),
+        )
+        .await;
+    assert_eq!(
+        order(&harness, &admin, &other).await,
+        ["first", "group", "member", "last"]
+    );
+    let get = |monitor: String| {
+        let (harness, admin) = (&harness, &admin);
+        async move {
+            harness
+                .query(Some(admin), "monitors.get", &format!("monitor={monitor}"))
+                .await
+                .json()["monitor"]
+                .clone()
+        }
+    };
+    let moved = get(member).await;
+    assert_eq!(moved["node"], json!(other));
+    assert_eq!(moved["group"], json!(group));
+    assert_eq!(moved["probes"], json!([]));
+    assert_eq!(moved["channels"], json!([]));
+    // A member on another node no longer reaches the group and leaves it.
+    let left = get(below).await;
+    assert_eq!(left["node"], json!(client));
+    assert!(left["group"].is_null());
+    assert_eq!(order(&harness, &admin, &team).await, Vec::<String>::new());
+}
+
+#[tokio::test]
+async fn moves_refuse_bad_groups_and_nodes_out_of_reach() {
+    let harness = Harness::new().await;
+    let admin = harness.session(&harness.admin).await;
+    let root = harness.root().await;
+    let a = harness.node(&admin, &root, "a").await;
+    let b = harness.node(&admin, &root, "b").await;
+    let group =
+        |name: &str| json!({ "name": name, "interval": 20, "settings": { "type": "group" } });
+    let outer = create(&harness, &admin, &a, group("outer")).await;
+    let inner = create(
+        &harness,
+        &admin,
+        &a,
+        with(group("inner"), json!({ "group": outer })),
+    )
+    .await;
+    let plain = create(&harness, &admin, &a, http("plain", "http://x.test")).await;
+    let on_b = create(&harness, &admin, &b, group("on b")).await;
+
+    for bad in [&outer, &inner, &plain, &on_b] {
+        let refused = harness
+            .run(
+                Some(&admin),
+                "monitors.move",
+                json!({ "monitor": outer, "node": a, "group": bad, "position": 0 }),
+            )
+            .await;
+        assert_eq!(
+            refused.json()["errors"]["group"][0]["code"],
+            "invalid_value",
+            "{bad}"
+        );
+    }
+
+    let member = harness.person("member2").await;
+    let viewer = harness.person("viewer").await;
+    harness.grant(&member, &a, "member").await;
+    harness.grant(&viewer, &a, "viewer").await;
+    let member = harness.session(&member).await;
+    let viewer = harness.session(&viewer).await;
+    let to = |node: &str| json!({ "monitor": plain, "node": node, "position": 0 });
+    let hidden = harness.run(Some(&member), "monitors.move", to(&b)).await;
+    assert_eq!(hidden.code(), "not_found");
+    let forbidden = harness.run(Some(&viewer), "monitors.move", to(&a)).await;
+    assert_eq!(forbidden.code(), "forbidden");
+}
+
 #[tokio::test]
 async fn push_tokens_are_long_unique_and_refused_alike() {
     let harness = Harness::new().await;

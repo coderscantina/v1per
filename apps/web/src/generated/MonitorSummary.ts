@@ -8,7 +8,11 @@ export type MonitorSummary = { id: MonitorId,
 /**
  * The node the monitor sits on.
  */
-node: NodeId, name: string, type: MonitorType, active: boolean, tags: Array<string>, group?: MonitorId, 
+node: NodeId, 
+/**
+ * Place among the monitors on its node, from 0.
+ */
+position: number, name: string, type: MonitorType, active: boolean, tags: Array<string>, group?: MonitorId, 
 /**
  * Absent before the first beat.
  */

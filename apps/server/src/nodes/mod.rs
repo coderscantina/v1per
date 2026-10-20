@@ -167,9 +167,10 @@ impl NodesHandlers for AppState {
         .bind(args.node.get())
         .execute(ctx.conn())
         .await?;
-        crate::probes::prune_moved(ctx.conn(), args.node).await?;
-        crate::notifications::prune_moved(ctx.conn(), args.node).await?;
-        crate::incidents::maintenance::prune_moved(ctx.conn(), args.node).await?;
+        let moved = crate::monitors::on_subtree(ctx.conn(), args.node).await?;
+        crate::probes::prune_moved(ctx.conn(), &moved).await?;
+        crate::notifications::prune_moved(ctx.conn(), &moved).await?;
+        crate::incidents::maintenance::prune_moved(ctx.conn(), &moved).await?;
         crate::pages::prune_moved(ctx).await?;
         crate::incidents::maintenance::refresh_in(ctx).await?;
         renumber(ctx.conn(), from, None).await?;

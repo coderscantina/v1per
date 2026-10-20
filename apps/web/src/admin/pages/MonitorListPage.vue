@@ -18,6 +18,7 @@ import TableLoadingRow from '~/components/ui/TableLoadingRow.vue'
 import { useErrorMessage } from '~/composables/useErrorMessage'
 import { HISTORY_REFRESH_MS, useNodeMonitors } from '~/composables/useMonitors'
 import { useCurrentNode, useNodeDetail } from '~/composables/useNodes'
+import { useFormats } from '~/composables/usePreferences'
 import { usePageMeta } from '~/composables/usePageMeta'
 import type { MonitorType } from '~/generated'
 import { can } from '~/lib/access'
@@ -32,6 +33,7 @@ import {
   typeLabels,
   type Presence,
 } from '~/lib/monitor-status'
+import { monitorTarget } from '~/lib/modes'
 import { pathTo } from '~/lib/node-tree'
 import { useI18n } from '~/plugins/i18n'
 
@@ -39,8 +41,10 @@ import { useI18n } from '~/plugins/i18n'
  * A node's monitors in one compact list, worst status first, live on the node's topic. Child
  * nodes' monitors join with their path when asked, live on the subtree topic. Status, type and
  * tag filters live in the address, so the overview's counts link straight to a filtered list.
+ * A row opens the monitor's editor, staying in configure mode, for those who may change it.
  */
 const { t, locale } = useI18n()
+const { numberLocale } = useFormats()
 const { message } = useErrorMessage()
 const route = useRoute()
 const router = useRouter()
@@ -281,7 +285,7 @@ const columns = 5
             >
               <div class="grid min-w-0 gap-0.5">
                 <RouterLink
-                  :to="{ name: 'node-monitor', params: { nodeId: at, monitorId: monitor.id } }"
+                  :to="monitorTarget(at, monitor.id, 'configure', manage)"
                   class="truncate rounded-sm text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
                   {{ monitor.name }}
@@ -328,7 +332,7 @@ const columns = 5
               class="whitespace-nowrap max-sm:hidden"
               :label="t('monitors.columns.latency')"
             >
-              <template v-if="monitor.latency_ms !== undefined">{{ formatLatency(monitor.latency_ms, locale) }}</template>
+              <template v-if="monitor.latency_ms !== undefined">{{ formatLatency(monitor.latency_ms, numberLocale) }}</template>
               <TableNone v-else />
             </TableCell>
             <TableCell
@@ -344,7 +348,7 @@ const columns = 5
                   :value="monitor.uptime_24h"
                   class="max-sm:hidden"
                 />
-                {{ formatUptime(monitor.uptime_24h, locale) }}
+                {{ formatUptime(monitor.uptime_24h, numberLocale) }}
               </span>
               <TableNone v-else />
             </TableCell>

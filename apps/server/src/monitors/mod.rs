@@ -3,7 +3,8 @@
 //!
 //! Topics: changes and status changes are recorded on the node's `monitors:<id>` topic as
 //! `monitor.created`, `monitor.updated`, `monitor.paused`, `monitor.resumed`,
-//! `monitor.deleted` and `monitor.status_changed`, each with the monitor's ID, and
+//! `monitor.deleted` and `monitor.status_changed`, each with the monitor's ID, `monitor.moved`
+//! with the monitor and its node on both the old and the new node's topics, and
 //! `monitor.probe_changed` with the monitor, the probe and its status when one probe's view of
 //! a monitor changes. Each also goes to the `monitor-tree:<id>` topic of the node and every
 //! ancestor, which subtree lists follow.
@@ -33,7 +34,8 @@ use v1per_protocol::operations::monitors::{
     LatencySeries, ManualStatus, Monitor, MonitorArgs, MonitorDeleted, MonitorDetail,
     MonitorHourlyList, MonitorList, MonitorResult, MonitorSettings, MonitorState, MonitorSummary,
     MonitorType, MonitorUptime, MonitorsCreateArgs, MonitorsHandlers, MonitorsListArgs,
-    MonitorsSetManualStatusArgs, MonitorsUpdateArgs, ProbeState, ScopeTrend, UptimeArgs,
+    MonitorsMoveArgs, MonitorsSetManualStatusArgs, MonitorsUpdateArgs, ProbeState, ScopeTrend,
+    UptimeArgs,
 };
 use v1per_protocol::operations::nodes::NodeArgs;
 use v1per_protocol::registry::Snapshot;
@@ -53,7 +55,7 @@ use crate::state::AppState;
 /// `SELECT <every Row column> FROM monitors`, for `concat!` with a condition.
 macro_rules! select_row {
     () => {
-        "SELECT id, node_id, group_id, name, description, type, settings, interval,
+        "SELECT id, node_id, position, group_id, name, description, type, settings, interval,
                 retry_interval, max_retries, resend_interval, timeout, upside_down, quorum,
                 active, tags, manual_status, revision, created_at, updated_at
          FROM monitors"
@@ -215,6 +217,7 @@ pub(crate) fn runs_on_probes(settings: &MonitorSettings) -> bool {
 struct Row {
     id: i64,
     node_id: i64,
+    position: i64,
     group_id: Option<i64>,
     name: String,
     description: String,
@@ -241,6 +244,7 @@ struct Row {
 struct SummaryRow {
     id: i64,
     node_id: i64,
+    position: i64,
     name: String,
     #[sqlx(rename = "type")]
     kind: String,
@@ -303,6 +307,7 @@ async fn present(
     Ok(Monitor {
         id: row.monitor(),
         node: row.node(),
+        position: row.position as u32,
         name: row.name,
         description: row.description,
         settings,
@@ -540,6 +545,14 @@ async fn readable(ctx: &mut QueryCtx, monitor: MonitorId) -> Result<Topic, ApiEr
 /// `node.read` on `node`; the monitors on it and below.
 async fn monitors_below(ctx: &mut QueryCtx, node: NodeId) -> Result<Vec<MonitorId>, ApiError> {
     ctx.node_scope(node, Capability::NodeRead).await?;
+    Ok(on_subtree(ctx.conn(), node).await?)
+}
+
+/// The monitors on `node` and below.
+pub(crate) async fn on_subtree(
+    conn: &mut SqliteConnection,
+    node: NodeId,
+) -> sqlx::Result<Vec<MonitorId>> {
     let ids: Vec<i64> = sqlx::query_scalar(
         "WITH RECURSIVE below(id) AS (
              SELECT ?1
@@ -549,9 +562,60 @@ async fn monitors_below(ctx: &mut QueryCtx, node: NodeId) -> Result<Vec<MonitorI
          SELECT m.id FROM monitors m WHERE m.node_id IN (SELECT id FROM below)",
     )
     .bind(node.get())
-    .fetch_all(ctx.conn())
+    .fetch_all(conn)
     .await?;
     Ok(ids.into_iter().map(MonitorId::new).collect())
+}
+
+/// `monitor` first, then the members that move with it off `node`: those on `node` in it or in
+/// one of its groups there, in their order.
+async fn with_members_on(
+    conn: &mut SqliteConnection,
+    monitor: MonitorId,
+    node: NodeId,
+) -> sqlx::Result<Vec<MonitorId>> {
+    let ids: Vec<i64> = sqlx::query_scalar(
+        "WITH RECURSIVE moved(id) AS (
+             SELECT ?1
+             UNION
+             SELECT m.id FROM monitors m JOIN moved ON m.group_id = moved.id
+             WHERE m.node_id = ?2
+         )
+         SELECT m.id FROM moved JOIN monitors m ON m.id = moved.id
+         ORDER BY m.id <> ?1, m.position, m.id",
+    )
+    .bind(monitor.get())
+    .bind(node.get())
+    .fetch_all(conn)
+    .await?;
+    Ok(ids.into_iter().map(MonitorId::new).collect())
+}
+
+/// Numbers the monitors on `node` from 0 in their order, with `placed` put together at its
+/// index (past the end means last).
+async fn renumber(
+    conn: &mut SqliteConnection,
+    node: NodeId,
+    placed: Option<(&[MonitorId], u32)>,
+) -> sqlx::Result<()> {
+    let mut monitors: Vec<i64> =
+        sqlx::query_scalar("SELECT id FROM monitors WHERE node_id = ? ORDER BY position, id")
+            .bind(node.get())
+            .fetch_all(&mut *conn)
+            .await?;
+    if let Some((placed, index)) = placed {
+        monitors.retain(|id| !placed.iter().any(|monitor| monitor.get() == *id));
+        let index = (index as usize).min(monitors.len());
+        monitors.splice(index..index, placed.iter().map(|monitor| monitor.get()));
+    }
+    for (position, id) in monitors.into_iter().enumerate() {
+        sqlx::query("UPDATE monitors SET position = ?1 WHERE id = ?2 AND position <> ?1")
+            .bind(position as i64)
+            .bind(id)
+            .execute(&mut *conn)
+            .await?;
+    }
+    Ok(())
 }
 
 impl MonitorsHandlers for AppState {
@@ -571,13 +635,15 @@ impl MonitorsHandlers for AppState {
         }
         let now = ctx.now();
         let id: i64 = sqlx::query_scalar(
-            "INSERT INTO monitors (node_id, group_id, name, description, type, settings, interval,
-                                   retry_interval, max_retries, resend_interval, timeout,
-                                   upside_down, quorum, active, tags, revision, created_at,
-                                   updated_at)
-             VALUES (?, ?, ?, ?, '', '{}', ?, ?, ?, ?, ?, ?, ?, 1, ?, 1, ?, ?)
+            "INSERT INTO monitors (node_id, position, group_id, name, description, type, settings,
+                                   interval, retry_interval, max_retries, resend_interval,
+                                   timeout, upside_down, quorum, active, tags, revision,
+                                   created_at, updated_at)
+             VALUES (?, (SELECT COUNT(*) FROM monitors WHERE node_id = ?), ?, ?, ?, '', '{}', ?,
+                     ?, ?, ?, ?, ?, ?, 1, ?, 1, ?, ?)
              RETURNING id",
         )
+        .bind(args.node.get())
         .bind(args.node.get())
         .bind(group.map(MonitorId::get))
         .bind(&valid.name)
@@ -786,11 +852,120 @@ impl MonitorsHandlers for AppState {
             .bind(args.monitor.get())
             .execute(ctx.conn())
             .await?;
+        renumber(ctx.conn(), row.node(), None).await?;
         maintenance::refresh_in(ctx).await?;
         record(ctx, row.node(), "monitor.deleted", args.monitor).await?;
         Ok(MonitorDeleted {
             monitor: args.monitor,
         })
+    }
+
+    async fn monitors_move(
+        &self,
+        ctx: &mut CommandCtx,
+        args: MonitorsMoveArgs,
+    ) -> Result<MonitorResult, ApiError> {
+        let (row, _) = locate(ctx, args.monitor, Capability::MonitorsManage).await?;
+        let from = row.node();
+        let to = ctx
+            .node_scope(args.node, Capability::MonitorsManage)
+            .await?;
+        if let Some(group) = args.group {
+            check_group(ctx.conn(), &to, group, Some(args.monitor)).await?;
+        }
+        let relocated = from != args.node;
+        let moved = if relocated {
+            with_members_on(ctx.conn(), args.monitor, from).await?
+        } else {
+            vec![args.monitor]
+        };
+        let now = ctx.now();
+        if relocated || row.group_id != args.group.map(MonitorId::get) {
+            sqlx::query(
+                "UPDATE monitors SET node_id = ?, group_id = ?, revision = revision + 1,
+                                     updated_at = ?
+                 WHERE id = ?",
+            )
+            .bind(args.node.get())
+            .bind(args.group.map(MonitorId::get))
+            .bind(now)
+            .bind(args.monitor.get())
+            .execute(ctx.conn())
+            .await?;
+        }
+        let mut detached = Vec::new();
+        if relocated {
+            let ids: Vec<i64> = moved.iter().map(|monitor| monitor.get()).collect();
+            let ids = serde_json::to_string(&ids).map_err(ApiError::internal)?;
+            sqlx::query(
+                "UPDATE monitors SET node_id = ?1, revision = revision + 1, updated_at = ?2
+                 WHERE id IN (SELECT value FROM json_each(?3)) AND id <> ?4",
+            )
+            .bind(args.node.get())
+            .bind(now)
+            .bind(&ids)
+            .bind(args.monitor.get())
+            .execute(ctx.conn())
+            .await?;
+            // Members elsewhere keep the group only while it sits on their node or above.
+            let others: Vec<(i64, i64)> = sqlx::query_as(
+                "SELECT id, node_id FROM monitors
+                 WHERE group_id IN (SELECT value FROM json_each(?1))
+                   AND id NOT IN (SELECT value FROM json_each(?1))",
+            )
+            .bind(&ids)
+            .fetch_all(ctx.conn())
+            .await?;
+            for (member, node) in others {
+                let reaches: Option<i64> =
+                    sqlx::query_scalar(concat!(path_cte!(), "SELECT 1 FROM path WHERE id = ?2"))
+                        .bind(node)
+                        .bind(args.node.get())
+                        .fetch_optional(ctx.conn())
+                        .await?;
+                if reaches.is_none() {
+                    sqlx::query(
+                        "UPDATE monitors SET group_id = NULL, revision = revision + 1,
+                                             updated_at = ?
+                         WHERE id = ?",
+                    )
+                    .bind(now)
+                    .bind(member)
+                    .execute(ctx.conn())
+                    .await?;
+                    detached.push((MonitorId::new(member), NodeId::new(node)));
+                }
+            }
+            probes::prune_moved(ctx.conn(), &moved).await?;
+            notifications::prune_moved(ctx.conn(), &moved).await?;
+            maintenance::prune_moved(ctx.conn(), &moved).await?;
+            pages::prune_moved(ctx).await?;
+            renumber(ctx.conn(), from, None).await?;
+        }
+        renumber(ctx.conn(), args.node, Some((&moved, args.position))).await?;
+        maintenance::refresh_in(ctx).await?;
+        for (member, node) in detached {
+            record(ctx, node, "monitor.updated", member).await?;
+        }
+        // The old node's topics first, so the new node's `monitors:<id>` answers the command.
+        let mut topics = if relocated {
+            event_topics(ctx.conn(), from).await?
+        } else {
+            Vec::new()
+        };
+        for topic in event_topics(ctx.conn(), args.node).await? {
+            if !topics.contains(&topic) {
+                topics.push(topic);
+            }
+        }
+        for monitor in moved {
+            pages::touch_in(ctx, Change::Monitor(monitor)).await?;
+            let payload = json!({ "monitor": monitor, "node": args.node });
+            for topic in &topics {
+                ctx.record(topic, "monitor.moved", payload.clone()).await?;
+            }
+        }
+        answer(ctx, &self.secrets, args.monitor).await
     }
 
     async fn monitors_list(
@@ -803,12 +978,12 @@ impl MonitorsHandlers for AppState {
         macro_rules! summaries {
             ($nodes:literal) => {
                 concat!(
-                    "SELECT m.id, m.node_id, m.name, m.type, m.active, m.tags, m.group_id,
+                    "SELECT m.id, m.node_id, m.position, m.name, m.type, m.active, m.tags, m.group_id,
                             s.status, s.latency_ms, s.beat_at
                      FROM monitors m LEFT JOIN monitor_state s ON s.monitor_id = m.id
                      WHERE m.node_id IN (",
                     $nodes,
-                    ") ORDER BY m.name, m.id"
+                    ") ORDER BY m.node_id, m.position, m.name, m.id"
                 )
             };
         }
@@ -841,6 +1016,7 @@ impl MonitorsHandlers for AppState {
                 Ok(MonitorSummary {
                     id,
                     node: NodeId::new(row.node_id),
+                    position: row.position as u32,
                     name: row.name,
                     kind: from_text(&row.kind).map_err(ApiError::internal)?,
                     active: row.active,

@@ -593,21 +593,21 @@ pub(crate) async fn shown_for(
     Ok(shown)
 }
 
-/// After `node` moved: drops monitors that left the subtree of the maintenances covering them.
-pub(crate) async fn prune_moved(conn: &mut SqliteConnection, node: NodeId) -> sqlx::Result<()> {
+/// After `monitors` moved, alone or with their node: drops them from maintenances whose subtree
+/// they left.
+pub(crate) async fn prune_moved(
+    conn: &mut SqliteConnection,
+    monitors: &[MonitorId],
+) -> sqlx::Result<()> {
+    let ids: Vec<i64> = monitors.iter().map(|monitor| monitor.get()).collect();
     let rows: Vec<(i64, i64, i64, i64)> = sqlx::query_as(
-        "WITH RECURSIVE moved(id) AS (
-             SELECT ?1
-             UNION ALL
-             SELECT n.id FROM nodes n JOIN moved ON n.parent_id = moved.id
-         )
-         SELECT mm.maintenance_id, mm.monitor_id, x.node_id, m.node_id
+        "SELECT mm.maintenance_id, mm.monitor_id, x.node_id, m.node_id
          FROM maintenance_monitors mm
          JOIN maintenances x ON x.id = mm.maintenance_id
          JOIN monitors m ON m.id = mm.monitor_id
-         WHERE m.node_id IN (SELECT id FROM moved)",
+         WHERE m.id IN (SELECT value FROM json_each(?1))",
     )
-    .bind(node.get())
+    .bind(serde_json::to_string(&ids).expect("numbers serialize"))
     .fetch_all(&mut *conn)
     .await?;
     for (maintenance, monitor, owner, monitor_node) in rows {

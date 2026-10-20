@@ -14,6 +14,7 @@ import {
 import { DialogDescription, DialogTitle } from '~/components/ui/dialog'
 import { useColorMode } from '~/composables/useColorMode'
 import { useCommandPalette } from '~/composables/useCommandPalette'
+import { useMode } from '~/composables/useMode'
 import { useNodeMonitors } from '~/composables/useMonitors'
 import { useNavigation } from '~/composables/useNavigation'
 import { useCurrentNode } from '~/composables/useNodes'
@@ -22,6 +23,7 @@ import { useShortcut, useShortcutHelp } from '~/composables/useShortcuts'
 import { useSidebar } from '~/composables/useSidebar'
 import { can } from '~/lib/access'
 import type { IconName } from '~/lib/icons'
+import { monitorTarget } from '~/lib/modes'
 import { formatShortcut } from '~/lib/shortcuts'
 import { presenceLabels, presenceOf } from '~/lib/monitor-status'
 import { useI18n } from '~/plugins/i18n'
@@ -35,6 +37,7 @@ const shortcutHelp = useShortcutHelp()
 const signOut = useSignOut()
 const { items } = useNavigation()
 const { node } = useCurrentNode()
+const { mode } = useMode()
 /** Read only while the palette is open, so a closed palette holds no stream. */
 const monitors = useNodeMonitors(() => (palette.isOpen.value ? (node.value?.id ?? null) : null))
 
@@ -135,7 +138,7 @@ const run = (action: () => void) => {
           v-for="monitor in monitors.data.value?.monitors ?? []"
           :key="monitor.id"
           :value="`${monitor.name} ${monitor.tags.join(' ')} monitor-${monitor.id}`"
-          @select="run(() => router.push({ name: 'node-monitor', params: { nodeId: node?.id, monitorId: monitor.id } }))"
+          @select="run(() => router.push(monitorTarget(monitor.node, monitor.id, mode ?? 'observe', can(node, 'monitors.manage'))))"
         >
           <Icon name="lucide:activity" />
           <span class="min-w-0 flex-1 truncate">{{ monitor.name }}</span>

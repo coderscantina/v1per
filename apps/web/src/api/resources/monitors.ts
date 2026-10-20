@@ -5,6 +5,7 @@ import type {
   MonitorId,
   MonitorsCreateArgs,
   MonitorsListArgs,
+  MonitorsMoveArgs,
   MonitorsSetManualStatusArgs,
   MonitorsUpdateArgs,
   NodeId,
@@ -36,4 +37,5 @@ export const monitorsResource = {
   resume: (monitor: MonitorId) => api.command('monitors.resume', { monitor }),
   setManualStatus: (args: MonitorsSetManualStatusArgs) => api.command('monitors.setManualStatus', args),
   delete: (monitor: MonitorId) => api.command('monitors.delete', { monitor }),
+  move: (args: MonitorsMoveArgs) => api.command('monitors.move', args),
 }

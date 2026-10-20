@@ -597,13 +597,15 @@ async fn write_monitor(
         active = false;
     }
     let id: i64 = sqlx::query_scalar(
-        "INSERT INTO monitors (node_id, name, description, type, settings, interval,
+        "INSERT INTO monitors (node_id, position, name, description, type, settings, interval,
                                retry_interval, max_retries, resend_interval, timeout, upside_down,
                                quorum, active, tags, manual_status, revision, created_at,
                                updated_at)
-         VALUES (?, ?, ?, '', '{}', ?, ?, ?, ?, ?, ?, 'majority', ?, ?, ?, 1, ?, ?)
+         VALUES (?, (SELECT COUNT(*) FROM monitors WHERE node_id = ?), ?, ?, '', '{}', ?, ?, ?,
+                 ?, ?, ?, 'majority', ?, ?, ?, 1, ?, ?)
          RETURNING id",
     )
+    .bind(node.get())
     .bind(node.get())
     .bind(&input.name)
     .bind(&input.description)

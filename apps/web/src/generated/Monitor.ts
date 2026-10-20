@@ -10,7 +10,11 @@ import type { Quorum } from "./Quorum";
 /**
  * A monitor as stored. Intervals are seconds.
  */
-export type Monitor = { id: MonitorId, node: NodeId, name: string, description: string, settings: MonitorSettings, interval: number, retry_interval: number, max_retries: number, resend_interval: number, timeout: number, upside_down: boolean, quorum: Quorum, tags: Array<string>, group?: MonitorId, 
+export type Monitor = { id: MonitorId, node: NodeId, 
+/**
+ * Place among the monitors on its node, from 0.
+ */
+position: number, name: string, description: string, settings: MonitorSettings, interval: number, retry_interval: number, max_retries: number, resend_interval: number, timeout: number, upside_down: boolean, quorum: Quorum, tags: Array<string>, group?: MonitorId, 
 /**
  * The probes that check it; empty for push, group and manual monitors.
  */

@@ -16,8 +16,10 @@ export interface MonitorTree {
   roots: TreeNode[]
   /** Readable children of a node, in order. */
   children: (id: NodeId) => TreeNode[]
-  /** Monitors on a node that are not inside a group there, by name. */
+  /** Monitors on a node that are not inside a group there, in the node's order. */
   monitorsOn: (id: NodeId) => MonitorSummary[]
+  /** Every monitor on a node, groups standing in for it included, in the node's order. */
+  placedOn: (id: NodeId) => MonitorSummary[]
   /** The members of a group monitor. */
   members: (id: MonitorId) => MonitorSummary[]
   /** Every monitor on a node and below. */
@@ -51,6 +53,7 @@ export function buildMonitorTree(index: TreeIndex, monitors: readonly MonitorSum
 
   const byId = new Map(monitors.map((monitor) => [monitor.id, monitor]))
   const own = new Map<NodeId, MonitorSummary[]>()
+  const placed = new Map<NodeId, MonitorSummary[]>()
   const on = new Map<NodeId, MonitorSummary[]>()
   const members = new Map<MonitorId, MonitorSummary[]>()
   const append = <K>(map: Map<K, MonitorSummary[]>, key: K, monitor: MonitorSummary) => {
@@ -62,7 +65,9 @@ export function buildMonitorTree(index: TreeIndex, monitors: readonly MonitorSum
     const name = index.byId.get(monitor.node)?.name
     return monitor.type === 'group' && name !== undefined && fold(monitor.name.trim()) === fold(name.trim())
   }
-  for (const monitor of monitors) {
+  // The server numbers monitors per node; a stable sort keeps the lists' order otherwise.
+  for (const monitor of [...monitors].sort((a, b) => a.position - b.position)) {
+    append(placed, monitor.node, monitor)
     if (standsIn(monitor)) continue
     append(own, monitor.node, monitor)
     const group = monitor.group === undefined ? undefined : byId.get(monitor.group)
@@ -84,6 +89,7 @@ export function buildMonitorTree(index: TreeIndex, monitors: readonly MonitorSum
     roots,
     children: (id) => children.get(id) ?? NONE,
     monitorsOn: (id) => on.get(id) ?? NONE,
+    placedOn: (id) => placed.get(id) ?? NONE,
     members: (id) => members.get(id) ?? NONE,
     below: (id) => below.get(id) ?? NONE,
     rollup: (id) => rollup.get(id) ?? 'unknown',
