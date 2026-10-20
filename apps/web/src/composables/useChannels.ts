@@ -15,6 +15,7 @@ const isChannelChange = (event: LiveEvent) => event.kind.startsWith('channel.') 
 export function useNodeChannels(id: MaybeRefOrGetter<NodeId | null>) {
   return useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'channels.list',
     load: (node, signal) => channelsResource.list(node, signal),
     affects: isChannelChange,
   })
@@ -24,6 +25,7 @@ export function useNodeChannels(id: MaybeRefOrGetter<NodeId | null>) {
 export function useChannel(id: MaybeRefOrGetter<ChannelId | null>) {
   return useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'channels.get',
     load: (channel, signal) => channelsResource.get(channel, signal),
     affects: (event) => isChannelChange(event) && (event.channel === undefined || event.channel === toValue(id)),
   })
@@ -36,6 +38,7 @@ export function useChannel(id: MaybeRefOrGetter<ChannelId | null>) {
 export function useAvailableChannels(id: MaybeRefOrGetter<NodeId | null>) {
   return useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'channels.available',
     load: (node, signal) => channelsResource.available(node, signal),
     affects: isChannelChange,
   })

@@ -18,6 +18,7 @@ export const useNodeTree = createSharedComposable(() => {
   const { account } = useSession()
   const live = useLiveSnapshot({
     key: () => (account.value ? `tree:${account.value.id}` : null),
+    cache: 'nodes.tree',
     load: (_, signal) => nodesResource.tree(signal),
     affects: (event) => event.kind === 'tree.changed',
   })
@@ -83,6 +84,7 @@ const itemSections: Record<string, NodeRouteName> = {
   'node-page-access': 'node-pages',
   'node-page-hostnames': 'node-pages',
   'node-page-preview': 'node-pages',
+  'node-page-incidents': 'node-pages',
 }
 
 /** The section a node switch keeps: the route itself, the list for an item's page, else the overview. */
@@ -136,6 +138,7 @@ export function useNodeDetail(id: MaybeRefOrGetter<NodeId | null>) {
   const tree = useNodeTree()
   const live = useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'nodes.get',
     load: (node, signal) => nodesResource.get(node, signal),
     affects: (event) => event.kind.startsWith('node.'),
   })
@@ -155,6 +158,7 @@ export function useNodeDetail(id: MaybeRefOrGetter<NodeId | null>) {
 export function useNodeMembers(id: MaybeRefOrGetter<NodeId | null>) {
   return useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'members.list',
     load: (node, signal) => membersResource.list(node, signal),
     affects: (event) => event.kind.startsWith('member.') || event.kind === 'members.changed',
   })
@@ -164,6 +168,7 @@ export function useNodeMembers(id: MaybeRefOrGetter<NodeId | null>) {
 export function useNodeInvitations(id: MaybeRefOrGetter<NodeId | null>) {
   return useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'members.invitations',
     load: (node, signal) => membersResource.invitations(node, signal),
     affects: (event) => event.kind.startsWith('invitation.') || event.kind === 'member.joined',
   })

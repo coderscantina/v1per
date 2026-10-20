@@ -30,6 +30,7 @@ export function useNodeIncidents(
       const node = toValue(id)
       return node ? `${node}:${JSON.stringify(toValue(filters))}` : null
     },
+    cache: 'incidents.list',
     load: (_, signal) => incidentsResource.list({ node: toValue(id) ?? '', ...toValue(filters), limit: toValue(limit) }, signal),
     affects: isIncidentEvent,
   })
@@ -44,6 +45,7 @@ export function useNodeIncidents(
 export function useIncidentDetail(id: MaybeRefOrGetter<IncidentId | null>) {
   return useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'incidents.get',
     load: (incident, signal) => incidentsResource.get(incident, signal),
     affects: (event) => isIncidentEvent(event) && (event.incident === undefined || event.incident === toValue(id)),
   })
@@ -61,6 +63,7 @@ export interface TargetOption {
 export function useOpenIncidents(id: MaybeRefOrGetter<NodeId>, limit: number) {
   return useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'incidents.list.subtree.open',
     load: (node, signal) => incidentsResource.list({ node, status: 'open', subtree: true, limit }, signal),
     affects: isIncidentEvent,
   })

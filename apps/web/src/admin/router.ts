@@ -197,3 +197,19 @@ router.beforeEach(async (to) => {
   }
   return true
 })
+
+/**
+ * Loads every page's code while the browser is idle after the first page, so later navigation
+ * never waits on the network for a chunk.
+ */
+void router.isReady().then(() => {
+  const idle = (run: () => void) =>
+    'requestIdleCallback' in window ? window.requestIdleCallback(run, { timeout: 3000 }) : globalThis.setTimeout(run, 1500)
+  idle(() => {
+    for (const route of router.getRoutes()) {
+      for (const component of Object.values(route.components ?? {})) {
+        if (typeof component === 'function') void (component as () => Promise<unknown>)()
+      }
+    }
+  })
+})

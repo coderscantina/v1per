@@ -8,6 +8,8 @@ import { sessionResource } from '~/api/resources/session'
 import type { LoginResult, SessionState } from '~/generated'
 import { queryClient } from '~/plugins/vue-query'
 
+import { clearSnapshots } from './useLive'
+
 const signedOut: SessionState = { account: null, enrollment_only: false }
 
 const sessionQuery = {
@@ -40,6 +42,7 @@ export function useSession() {
 /** Drops every cached result and closes every live stream, so nothing of the previous account stays. */
 export function forgetEverything(): void {
   closeAllLive()
+  clearSnapshots()
   void queryClient.cancelQueries()
   queryClient.clear()
 }

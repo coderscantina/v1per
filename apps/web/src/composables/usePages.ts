@@ -14,6 +14,7 @@ const isPageEvent = (event: LiveEvent) => event.kind.startsWith('page.')
 export function useNodePages(id: MaybeRefOrGetter<NodeId | null>) {
   return useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'pages.list',
     load: (node, signal) => pagesResource.list({ node }, signal),
     affects: isPageEvent,
   })
@@ -23,6 +24,7 @@ export function useNodePages(id: MaybeRefOrGetter<NodeId | null>) {
 export function usePageDetail(id: MaybeRefOrGetter<PageId | null>) {
   return useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'pages.get',
     load: (page, signal) => pagesResource.get(page, signal),
     affects: isPageEvent,
   })
@@ -66,6 +68,7 @@ export function usePagePreview(
 export function usePageCount(id: MaybeRefOrGetter<NodeId | null>) {
   const live = useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'pages.list.subtree',
     load: (node, signal) => pagesResource.list({ node, subtree: true }, signal),
     affects: isPageEvent,
   })

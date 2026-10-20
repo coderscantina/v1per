@@ -815,21 +815,16 @@
   padding-right: env(safe-area-inset-right);
 }
 
-/* A page arriving: a short rise and fade, entry only. Nothing leaves
-   animated, so two pages never overlap and the focus move lands on a page
-   that is already in place. */
+/* A page arriving: a quick fade from most of the way in, entry only. No
+   movement, so nothing shifts while it lands; nothing leaves animated, so two
+   pages never overlap and the focus move lands on a page already in place. */
 .page-enter {
-  animation: page-enter 220ms var(--ease-butter) both;
+  animation: page-enter 90ms ease-out both;
 }
 
 @keyframes page-enter {
   from {
-    opacity: 0;
-    translate: 0 6px;
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
+    opacity: 0.4;
   }
 }
 

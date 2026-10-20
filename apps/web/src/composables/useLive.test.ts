@@ -5,12 +5,12 @@ import { api } from '~/api'
 import { closeAllLive, REOPEN_DELAY_MS } from '~/api/live'
 import type { LiveFrame } from '~/generated'
 
-import { useLiveSnapshot } from './useLive'
+import { clearSnapshots, useLiveSnapshot } from './useLive'
 
 type Snapshot = { revision: number; cursor: string; name: string }
 
 /** Streams the test drives through `emit`, and a `load` whose answers it releases one by one. */
-function setup() {
+function setup(cache?: string) {
   const sinks: Array<(text: string) => void> = []
   const subscribe = vi.spyOn(api, 'subscribe').mockImplementation((_params, data) => {
     sinks.push(data)
@@ -19,7 +19,7 @@ function setup() {
   const pending: Array<(snapshot: Snapshot) => void> = []
   const load = vi.fn(() => new Promise<Snapshot>((resolve) => pending.push(resolve)))
   const scope = effectScope()
-  const live = scope.run(() => useLiveSnapshot({ key: 'instance', load }))!
+  const live = scope.run(() => useLiveSnapshot({ key: 'instance', load, cache }))!
   const settle = async () => {
     for (let i = 0; i < 5; i++) await nextTick()
     vi.advanceTimersByTime(REOPEN_DELAY_MS)
@@ -90,5 +90,21 @@ describe('useLiveSnapshot', () => {
     await settle()
     expect(live.data.value?.cursor).toBe('instance@2')
     scope.stop()
+  })
+
+  it('shows the remembered snapshot of the same kind at once until it is forgotten', async () => {
+    const first = setup('instance.settings')
+    first.answer(3)
+    await first.settle()
+    first.scope.stop()
+
+    const again = setup('instance.settings')
+    expect(again.live.data.value?.name).toBe('r3')
+    again.scope.stop()
+
+    clearSnapshots()
+    const fresh = setup('instance.settings')
+    expect(fresh.live.data.value).toBeNull()
+    fresh.scope.stop()
   })
 })

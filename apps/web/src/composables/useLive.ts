@@ -91,13 +91,23 @@ export function useSubscription(
   return { connected, dropped, resyncing, stop }
 }
 
+/** The latest snapshot of each cached kind and key, shown at once when a view opens again. */
+const snapshots = new Map<string, SnapshotMeta>()
+const SNAPSHOTS_MAX = 200
+
+/** Drops every remembered snapshot, as on sign-out. */
+export function clearSnapshots(): void {
+  snapshots.clear()
+}
+
 /**
  * A live snapshot: reads it, follows the topic its cursor names from that cursor, and reads it again
  * at most once per batch of events that change it. Events at or below the snapshot's revision
  * are already in it. Reads never overlap; events during a read schedule exactly one more. A key
  * change drops the data and starts a new generation, so a late answer for the old key is
  * discarded. The snapshot lives here, not in the query cache: a replay gap is a reset, never a
- * cache miss.
+ * cache miss. With `cache`, the last snapshot of the same kind and key shows at once while the
+ * fresh read runs, so going back to a view does not flash a skeleton.
  */
 export function useLiveSnapshot<T extends SnapshotMeta>(options: {
   /** What is loaded; a change reloads from scratch. */
@@ -105,7 +115,23 @@ export function useLiveSnapshot<T extends SnapshotMeta>(options: {
   load: (key: string, signal: AbortSignal) => Promise<T>
   /** Whether an event changes this snapshot. Every event does by default. */
   affects?: (event: LiveEvent) => boolean
+  /** A name for this kind of snapshot, such as `probes.list`, to remember it across views. */
+  cache?: string
 }) {
+  const cacheKey = (key: string | null) => (options.cache && key ? `${options.cache}:${key}` : null)
+  // Each entry was stored by a reader with the same `cache` name, so it has this reader's type.
+  const remembered = (key: string | null) => {
+    const at = cacheKey(key)
+    return at ? ((snapshots.get(at) as T | undefined) ?? null) : null
+  }
+  const remember = (key: string, value: T) => {
+    const at = cacheKey(key)
+    if (!at) return
+    snapshots.delete(at)
+    snapshots.set(at, value)
+    if (snapshots.size > SNAPSHOTS_MAX) snapshots.delete(snapshots.keys().next().value ?? '')
+  }
+
   const data = shallowRef<T | null>(null)
   const error = shallowRef<unknown>(null)
   const loading = ref(false)
@@ -128,6 +154,7 @@ export function useLiveSnapshot<T extends SnapshotMeta>(options: {
       const result = await options.load(current, controller.signal)
       if (mine !== generation) return
       data.value = result
+      remember(current, result)
       error.value = null
       // Events during the read already scheduled the next one; until it lands the data is stale.
       stale.value = again
@@ -152,7 +179,7 @@ export function useLiveSnapshot<T extends SnapshotMeta>(options: {
       controller?.abort()
       loading.value = false
       again = false
-      data.value = null
+      data.value = remembered(toValue(options.key))
       error.value = null
       void read()
     },

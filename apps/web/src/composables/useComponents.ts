@@ -9,6 +9,7 @@ import { useLiveSnapshot } from './useLive'
 export function useNodeComponents(id: MaybeRefOrGetter<NodeId | null>) {
   return useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'components.list',
     load: (node, signal) => componentsResource.list({ node }, signal),
     affects: (event) => event.kind.startsWith('component.'),
   })
@@ -18,6 +19,7 @@ export function useNodeComponents(id: MaybeRefOrGetter<NodeId | null>) {
 export function useComponentTree(id: MaybeRefOrGetter<NodeId | null>) {
   return useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'components.list.subtree',
     load: (node, signal) => componentsResource.list({ node, subtree: true }, signal),
     affects: (event) => event.kind.startsWith('component.'),
   })

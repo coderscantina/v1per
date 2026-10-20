@@ -14,6 +14,7 @@ const isMaintenanceEvent = (event: LiveEvent) => event.kind.startsWith('maintena
 export function useNodeMaintenance(id: MaybeRefOrGetter<NodeId | null>) {
   return useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'maintenance.list',
     load: (node, signal) => maintenanceResource.list({ node }, signal),
     affects: isMaintenanceEvent,
   })
@@ -23,6 +24,7 @@ export function useNodeMaintenance(id: MaybeRefOrGetter<NodeId | null>) {
 export function useMaintenanceDetail(id: MaybeRefOrGetter<MaintenanceId | null>) {
   return useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'maintenance.get',
     load: (maintenance, signal) => maintenanceResource.get(maintenance, signal),
     affects: (event) => isMaintenanceEvent(event) && (event.maintenance === undefined || event.maintenance === toValue(id)),
   })
@@ -58,6 +60,7 @@ export function useMaintenancePreview(schedule: MaybeRefOrGetter<MaintenanceSche
 export function useMaintenanceSummary(id: MaybeRefOrGetter<NodeId>) {
   return useLiveSnapshot({
     key: () => toValue(id),
+    cache: 'maintenance.list.subtree',
     load: (node, signal) => maintenanceResource.list({ node, subtree: true }, signal),
     affects: isMaintenanceEvent,
   })
