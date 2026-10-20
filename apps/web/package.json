@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@iconify/vue": "5.0.1",
-    "@tanstack/vue-query": "5.102.8",
+    "@tanstack/vue-query": "5.104.3",
     "@vueuse/core": "14.4.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
