@@ -38,7 +38,7 @@ Begin with [milestone 01](milestones/01-contracts-fixtures-and-sources.md). Once
 
 Pinned in [sources/manifest.json](../sources/manifest.json):
 
-- **holocron** at `84fc54ec`: the architecture, UI and workflow template. It is Mike's private repository and not distributable. Agents on Mike's machine read its Kit and UI documents (`docs/kit-implementation.md`, `docs/ux-v2/design.md`) at `~/Development/products/holocron`. The architecture patterns are ported into [contracts/architecture-patterns.md](contracts/architecture-patterns.md). Code copied from it into v1per is relicensed by Mike under AGPL-3.0; keep the Kit notices that holocron keeps.
+- **holocron** at `84fc54ec`: the architecture, UI and workflow template. It is Mike's private repository and not distributable. Agents on Mike's machine read its Kit and UI documents (`docs/kit-implementation.md`, `docs/ux-v2/design.md`) at `~/Development/products/holocron`. The architecture patterns are ported into [contracts/architecture-patterns.md](contracts/architecture-patterns.md). Code copied from it into v1per is relicensed by Mike under AGPL-3.0; keep the Kit notices that holocron keeps. Rules settled for v1per on top of them are in [design.md](design.md).
 - **Uptime Kuma 2.5.0**: the import source and the push URL compatibility target (MIT).
 - **OpenStatus**: a model reference for status pages and incidents (AGPL-3.0). Borrow ideas, not code.
 
