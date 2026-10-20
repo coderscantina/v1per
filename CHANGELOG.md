@@ -5,16 +5,6 @@ Commits follow the [Gitmoji](https://gitmoji.dev/) convention.
 
 ## 26.10.19
 
-Remote probe agents are now their own small program, `v1per-probe`: a static binary of 7 to 8 MB and the `ghcr.io/coderscantina/v1per-probe` image, built on an empty base. An idle agent uses about 8 MiB of memory, half of before, and writes nothing to disk while the server answers. `v1per probe` is gone.
-
-**Upgrading an agent:** check on the Probes page that the probe shows no buffered results, stop the old agent, then start `v1per-probe` with the same token, server and data directory. With docker compose, take the new compose file: its probe service uses the new image. An old compose file's probe service keeps restarting, because the server image no longer has `v1per probe`. The server and its built-in probe are not affected. The new agent does not read the old `buffer.sqlite`. See [Probes](docs/guide/probes.md#upgrade-an-agent-from-v1per-probe).
-
-### Features
-
-- ✨ ship the probe agent as its own small binary
-
-## 26.10.19
-
 The first public release of v1per, in beta. One self-hosted instance monitors every client you look after, with status pages, incidents and remote probes.
 
 - **Node tree and access:** nested nodes for your agency, clients and teams, invitations, roles and two-factor sign-in

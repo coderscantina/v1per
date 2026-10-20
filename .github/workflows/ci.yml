@@ -1,17 +1,22 @@
 name: CI
 
-# Doc-only changes skip CI. The release workflow waits for this run on the release commit.
+# Doc-only changes skip CI. CHANGELOG.md still runs it: a second release on the same day
+# changes only that file, and the release workflow waits for CI on the release commit.
 on:
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
+    paths:
+      - '**'
+      - '!**.md'
+      - '!docs/**'
+      - 'CHANGELOG.md'
   push:
     branches:
       - main
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
+    paths:
+      - '**'
+      - '!**.md'
+      - '!docs/**'
+      - 'CHANGELOG.md'
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}

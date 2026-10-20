@@ -30,7 +30,7 @@ Documentation must not claim a command exists before the code adds it.
 
 - Storage refuses writes below a 4 GiB disk reserve (`crates/storage/src/lib.rs`). e2e and import failures on a nearly full disk are a disk problem first. Rust `target/` directories are the usual cause; parallel worktrees share one `CARGO_TARGET_DIR`.
 - The probe agent is its own binary, `v1per-probe`. `v1per probe` no longer exists.
-- `scripts/release.sh` releases a second time on the same day with a commit that touches only `CHANGELOG.md`. CI ignores Markdown pushes, so `release.yml` waits for a CI run that never starts. Avoid same-day re-releases until the script or workflow handles it.
+- A second `scripts/release.sh` on the same day keeps the version, so its release commit changes only `CHANGELOG.md`. CI runs for that file on purpose, because `release.yml` waits for CI on the release commit. The changelog then has two sections with the same heading, `release.yml` takes the newest, and the `:YY.M.D` image tag moves to the later release.
 
 ## Demo
 

@@ -4,7 +4,7 @@ Updated 2026-10-20. Read by agents at the start of a thread; rewrite it before h
 
 ## Branches
 
-`main` is the only branch, 10 commits ahead of `origin/main` (`58edc2c`) and not pushed. The latest published release is `v26.10.19-ec3e93b`. The release attempt for `58edc2c` (slim probe agent) failed: its release commit only changed `CHANGELOG.md`, CI skipped it, and `release.yml` timed out waiting for CI. The tag was removed. `CHANGELOG.md` now has two `## 26.10.19` sections.
+`main` is the only branch, 12 commits ahead of `origin/main` (`58edc2c`) and not pushed. The latest published release is `v26.10.19-ec3e93b`. The release attempt for `58edc2c` (slim probe agent) failed: its release commit only changed `CHANGELOG.md`, CI skipped it, and `release.yml` timed out waiting for CI. The tag was removed.
 
 ## Recent work
 
@@ -12,10 +12,11 @@ Committed on 2026-10-20 in area commits from three threads (`370b2b8` to the doc
 
 Design rules settled along the way are in [design.md](design.md).
 
-Uncommitted, from the 2026-10-20 status page thread, checked (Rust fmt, clippy, server tests, web typecheck, lint, unit tests, all 50 e2e):
+Also committed on 2026-10-20: `c394f8c` the status page in Status, Maintenance and Incidents views, and `43719a9` the "V1Per" spelling across docs and code.
 
-- Status page redesign after status.betterstack.com: Status, Maintenance and Incidents views at `{base}`, `{base}/maintenance` and `{base}/incidents` (two new server routes in `pages/public.rs`), a centered hero, a figures row, quiet healthy rows, one time axis per card, and "Powered by V1Per" linking to the repository. Rules in [design.md](design.md#status-page).
-- The product name is spelled "V1Per" in prose, UI strings, log and error messages across docs and code. Commands, crate names, env vars, URLs and `CHANGELOG.md` keep `v1per`. The default instance name is now "V1Per".
+Uncommitted, from the 2026-10-20 PWA thread: the admin app installs to the home screen. `apps/web/public` has the manifest, icons from Mike's favicon, and the favicon itself. `apps/web/service-worker.js` is built into `dist/sw.js` by a plugin in `vite.config.ts` that lists the files to precache; it serves the shell offline, sends `/api`, `/config.json` and `/s/` to the network, and only runs in production builds. The theme color follows the color mode. App.vue shows a "you're offline" screen while the first navigation waits for the network. AppBrand draws the V1P logo in the accent color. Rule in [design.md](design.md#brand). Checked: web typecheck, lint, unit tests, all 50 e2e, and a Playwright run against a built server (no installability errors, 138 files precached, offline screen, status pages bypass the worker).
+
+Uncommitted, from the 2026-10-20 release thread: `ci.yml` now runs for `CHANGELOG.md`, so a second release on the same day no longer hangs. The stale `## 26.10.19` probe section is gone from `CHANGELOG.md`; the next release lists the probe again. The AGENTS.md gotcha says how same-day releases behave now. The highlights for the next release are in `/tmp/v1per-release-highlights.md` (it covers the PWA work too). Checked: actionlint and `scripts/release.sh --dry-run`.
 
 ## Running
 
@@ -23,16 +24,16 @@ The review demo, listed in `.demo/pids`: `v1per serve` on 127.0.0.1:8790 (still 
 
 ## Waiting on Mike
 
-- Push `main`. It holds 10 local commits.
+- Push `main`. It holds 12 local commits.
 - Three choices from the UX thread. Each has a recommendation in that thread's final report:
   - Dragging a folder when access changes: confirm, or open the Move dialog.
   - Warn when moving a monitor drops its probes, channels and maintenance windows. Recommendation: yes.
   - Whether API keys may call `monitors.move`.
-- Release the slim probe agent again. First fix the same-day release hang, either in `scripts/release.sh` or by letting CI run on release commits, and merge the duplicate changelog section.
+- Commit the PWA work and the release fix, then release with `scripts/release.sh /tmp/v1per-release-highlights.md`. That also pushes the local commits.
 - Product decisions: 8 open in the [milestone index](milestones/README.md#open-decisions). The Kuma proxies item is settled in practice.
 
 ## Next
 
-1. Push, then fix the release path.
+1. Release 26.10.20.
 2. Bring the milestone index up to date. 03 to 09 have evidence directories but are still listed as in progress with no link.
 3. Milestone 12, the integrated release gate.
