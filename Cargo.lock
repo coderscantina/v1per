@@ -4366,7 +4366,7 @@ dependencies = [
 name = "v1per-kuma-fixture"
 version = "26.10.20"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "bcrypt",
  "brotli",
  "chrono",
@@ -4481,7 +4481,7 @@ dependencies = [
  "anyhow",
  "argon2",
  "axum",
- "base64 0.22.1",
+ "base64 0.23.1",
  "bcrypt",
  "blake3",
  "chacha20poly1305",

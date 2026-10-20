@@ -29,7 +29,7 @@ v1per-storage = { path = "../../crates/storage" }
 anyhow = "1"
 argon2 = "0.6"
 axum.workspace = true
-base64 = "0.22"
+base64 = "0.23"
 # Backup archive checksums, as the storage crate hashes agent batches.
 blake3 = "1.8"
 # Verifies the bcrypt hashes of imported Kuma accounts until their first sign-in replaces them.
