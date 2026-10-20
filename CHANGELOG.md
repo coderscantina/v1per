@@ -3,6 +3,48 @@
 All notable changes to v1per are documented here.
 Commits follow the [Gitmoji](https://gitmoji.dev/) convention.
 
+## 26.10.20
+
+Remote probe agents are now their own small program, `v1per-probe`: a static binary of 7 to 8 MB and the `ghcr.io/coderscantina/v1per-probe` image, built on an empty base. An idle agent uses about 8 MiB of memory, half of before, and writes nothing to disk while the server answers. `v1per probe` is gone.
+
+**Upgrading an agent:** check on the Probes page that the probe shows no buffered results, stop the old agent, then start `v1per-probe` with the same token, server and data directory. With docker compose, take the new compose file: its probe service uses the new image. An old compose file's probe service keeps restarting, because the server image no longer has `v1per probe`. The server and its built-in probe are not affected. The new agent does not read the old `buffer.sqlite`. See [Probes](docs/guide/probes.md#upgrade-an-agent-from-v1per-probe).
+
+- **Monitor page:** one time frame from 1 hour to 90 days drives a History panel with availability bars and response times, probe tiles show each probe's latest checks, and the status block comes in four designs
+- **Status pages:** separate Status, Maintenance and Incidents views, with incidents shown as a timeline
+- **Incidents:** one composer sets what an incident affects and how badly
+- **Tree:** drag monitors and folders to arrange or move them, create folders and rename rows in place
+- **Probes:** set a probe's country, city and provider, and see the platform each agent runs on
+- **Account › Appearance:** theme, accent, language, time zone and number, date, time and week formats
+- **Install the admin app:** add it to the home screen, with an offline screen while the network is away
+- **Faster views:** reopened views show their last data at once while fresh data loads
+
+### Features
+
+- ✨ ship the probe agent as its own small binary
+- ✨ arrange monitors and folders by dragging them in the tree
+- ✨ write incidents in one composer and show them as a timeline
+- ✨ say where each probe runs: country, city and provider
+- ✨ redesign the monitor page around one time frame
+- ✨ set appearance, language and formats on an account page
+- ✨ split the status page into status, maintenance and incident views
+- ✨ install the admin app to the home screen
+
+### Performance
+
+- ⚡️ open views instantly and keep layouts still while they load
+
+### Interface
+
+- 💄 quieter forms that select like a desktop app
+
+### Other changes
+
+- 🙈 ignore demo data and agent worktrees
+- 🔧 serve status pages through the vite dev proxy
+- 📝 track project status and the settled design rules
+- ✏️ spell the product name V1Per
+- 👷 run ci for changelog-only release commits
+
 ## 26.10.19
 
 The first public release of v1per, in beta. One self-hosted instance monitors every client you look after, with status pages, incidents and remote probes.
