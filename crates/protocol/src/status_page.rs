@@ -333,7 +333,7 @@ pub struct PageSlaPeriod {
     pub starts_at: i64,
     /// First instant after the period.
     pub ends_at: i64,
-    /// Missed when a commitment missed, no data when none has data.
+    /// The worst commitment: missed, at risk, on track or met. No data when none has data.
     pub outcome: SlaOutcome,
     /// Absent without an availability target.
     #[serde(default, skip_serializing_if = "Option::is_none")]

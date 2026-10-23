@@ -153,6 +153,7 @@ const en = {
   'footer.language': 'Language',
   'footer.poweredBy': 'Powered by',
 
+  'duration.underMinute': 'under 1 min',
   'duration.minutes': '{n} min',
   'duration.hours': '{h} h {m} min',
   'duration.days': '{d} d {h} h',
@@ -309,6 +310,7 @@ const de: Record<MessageKey, string> = {
   'footer.language': 'Sprache',
   'footer.poweredBy': 'Betrieben mit',
 
+  'duration.underMinute': 'unter 1 Min.',
   'duration.minutes': '{n} Min.',
   'duration.hours': '{h} Std. {m} Min.',
   'duration.days': '{d} T. {h} Std.',

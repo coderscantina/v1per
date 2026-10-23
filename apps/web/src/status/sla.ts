@@ -14,15 +14,8 @@ import type {
 import { formatDuration, formatLatency, formatUptime } from './format'
 import { t, type MessageKey } from './messages'
 
-/**
- * How a commitment or period reads on the page. `at_risk` is a running `on_track` that would
- * miss if the period ended now: 75 % of the downtime budget used, the warning the SLA alerts
- * send, or an average latency above its target.
- */
-export type SlaState = SlaOutcome | 'at_risk'
-
-/** The share of the downtime budget from which a running period reads at risk. */
-export const AT_RISK_BUDGET = 0.75
+/** How a commitment or period reads on the page, as the server states it. */
+export type SlaState = SlaOutcome
 
 export interface AvailabilityView {
   state: SlaState
@@ -82,17 +75,12 @@ export interface SlaView {
 }
 
 function availabilityView(availability: PageSlaAvailability): AvailabilityView {
-  const atRisk = availability.outcome === 'on_track' && (availability.budget_used ?? 0) >= AT_RISK_BUDGET
   return {
-    state: atRisk ? 'at_risk' : availability.outcome,
+    state: availability.outcome,
     target: availability.target,
     actual: availability.actual,
     budgetUsed: availability.budget_used,
   }
-}
-
-function latencyState(outcome: SlaOutcome, actualMs: number | undefined, targetMs: number): SlaState {
-  return outcome === 'on_track' && actualMs !== undefined && actualMs > targetMs ? 'at_risk' : outcome
 }
 
 const impacts = ['major_outage', 'partial_outage', 'degraded'] as const satisfies readonly Impact[]
@@ -113,7 +101,7 @@ function clockView(clock: PageSlaClock): ClockView {
 
 function latencyView(latency: PageSlaLatency): LatencyView {
   return {
-    state: latencyState(latency.outcome, latency.actual_ms, latency.target_ms),
+    state: latency.outcome,
     targetMs: latency.target_ms,
     actualMs: latency.actual_ms,
   }
@@ -123,12 +111,11 @@ function latencyView(latency: PageSlaLatency): LatencyView {
 export function slaPeriodView(period: PageSlaPeriod, names: ReadonlyMap<string, string>): SlaPeriodView {
   const availability = period.availability && availabilityView(period.availability)
   const latency = period.latency && latencyView(period.latency)
-  const atRisk = period.outcome === 'on_track' && (availability?.state === 'at_risk' || latency?.state === 'at_risk')
   return {
     start: period.start,
     startsAt: period.starts_at,
     endsAt: period.ends_at,
-    state: atRisk ? 'at_risk' : period.outcome,
+    state: period.outcome,
     availability,
     latency,
     response: period.response && clockView(period.response),
@@ -142,10 +129,7 @@ export function slaPeriodView(period: PageSlaPeriod, names: ReadonlyMap<string, 
           availability: monitor.availability,
           availabilityState: monitor.availability_outcome,
           latencyMs: monitor.latency_ms,
-          latencyState:
-            monitor.latency_outcome && latency
-              ? latencyState(monitor.latency_outcome, monitor.latency_ms, latency.targetMs)
-              : monitor.latency_outcome,
+          latencyState: monitor.latency_outcome,
         },
       ]
     }),
@@ -188,6 +172,11 @@ export function formatMinutes(minutes: number): string {
   if (minutes >= 1440 && minutes % 1440 === 0) return t('duration.wholeDays', { d: minutes / 1440 })
   if (minutes >= 60 && minutes % 60 === 0) return t('duration.wholeHours', { h: minutes / 60 })
   return formatDuration(minutes * 60_000)
+}
+
+/** An average span in minutes, or "under 1 min" below one minute. */
+export function formatAverage(ms: number): string {
+  return ms < 60_000 ? t('duration.underMinute') : formatMinutes(Math.floor(ms / 60_000))
 }
 
 /** One commitment of a period in a sentence, for the history's popover and labels. */

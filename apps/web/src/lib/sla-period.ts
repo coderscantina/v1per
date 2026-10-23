@@ -14,19 +14,23 @@ export const standingLabels: Record<SlaStanding, MessageKey> = {
   met: 'slas.outcome.met',
   missed: 'slas.outcome.missed',
   on_track: 'slas.outcome.on_track',
+  at_risk: 'slas.outcome.at_risk',
   no_data: 'slas.outcome.no_data',
   running: 'slas.outcome.running',
-  not_counted: 'slas.outcome.not_counted',
+  no_target: 'slas.outcome.no_target',
+  not_needed: 'slas.outcome.not_needed',
 }
 
-/** Badge tones: only a miss is red, and no data stays neutral. */
+/** Badge tones: only a miss is red, at risk is amber, and no data stays neutral. */
 export const standingTones = {
   met: 'success',
   missed: 'destructive',
   on_track: 'secondary',
+  at_risk: 'warning',
   no_data: 'secondary',
   running: 'warning',
-  not_counted: 'secondary',
+  no_target: 'secondary',
+  not_needed: 'secondary',
 } as const satisfies Record<SlaStanding, string>
 
 const MONTHS: Record<SlaPeriodKind, number> = { month: 1, quarter: 3, year: 12 }
@@ -70,9 +74,9 @@ export function todayIn(timeZone: string, now = Date.now()): string {
   return `${part('year')}-${part('month')}-${part('day')}`
 }
 
-/** Whether a monitor's outcome is worth a badge: a result, not the running state or no data. */
-export const settled = (standing: SlaStanding | undefined): standing is 'met' | 'missed' =>
-  standing === 'met' || standing === 'missed'
+/** Whether a monitor's outcome is worth a badge: a result or a warning, not the running state or no data. */
+export const settled = (standing: SlaStanding | undefined): standing is 'met' | 'missed' | 'at_risk' =>
+  standing === 'met' || standing === 'missed' || standing === 'at_risk'
 
 /** A period's name from its first day: "October 2026", "Q4 2026" or "2026". */
 export function periodTitle(kind: SlaPeriodKind, start: string, language: string): string {

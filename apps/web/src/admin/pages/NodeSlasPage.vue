@@ -15,12 +15,13 @@ import { useErrorMessage } from '~/composables/useErrorMessage'
 import { useCurrentNode, useNodeDetail } from '~/composables/useNodes'
 import { usePageMeta } from '~/composables/usePageMeta'
 import { useFormats } from '~/composables/usePreferences'
+import { useSlaFormat } from '~/composables/useSlaFormat'
 import { useNodeSlas } from '~/composables/useSlas'
 import type { Sla } from '~/generated'
 import { can } from '~/lib/access'
 import { formatDate, formatNumber } from '~/lib/formats'
 import { impactLabels } from '~/lib/incidents'
-import { combineLabels, durationParts, periodLabels, slaImpacts } from '~/lib/sla-form'
+import { combineLabels, periodLabels, slaImpacts } from '~/lib/sla-form'
 import { useI18n } from '~/plugins/i18n'
 
 /**
@@ -40,12 +41,7 @@ usePageMeta(() => t('slas.title'))
 
 const live = useNodeSlas(routeId)
 
-const duration = (total: number) => {
-  const { hours, minutes } = durationParts(total)
-  return [hours > 0 ? t('slas.units.hours', { count: hours }) : null, minutes > 0 ? t('slas.units.minutes', { count: minutes }) : null]
-    .filter((part) => part !== null)
-    .join(' ')
-}
+const { minutes: duration } = useSlaFormat()
 
 /** The targets as short lines: availability and latency first, then times per impact. */
 const targets = (sla: Sla): string[] => {

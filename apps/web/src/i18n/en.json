@@ -1726,7 +1726,8 @@
     },
     "units": {
       "hours": "{count} h",
-      "minutes": "{count} min"
+      "minutes": "{count} min",
+      "underMinute": "under 1 min"
     },
     "editor": {
       "createTitle": "Add SLA",
@@ -1795,9 +1796,11 @@
       "met": "Met",
       "missed": "Missed",
       "on_track": "On track",
+      "at_risk": "At risk",
       "no_data": "No data",
       "running": "Running",
-      "not_counted": "Not counted"
+      "no_target": "No target",
+      "not_needed": "Not needed"
     },
     "view": {
       "period": "Period",
@@ -1820,6 +1823,7 @@
       "budgetUsed": "{value} of the downtime budget used",
       "withinTarget": "{met} of {counted} within target",
       "noneCounted": "No incidents",
+      "latencyAtEnd": "The target is judged when the period ends.",
       "average": "Average {time}",
       "monitors": "Monitors",
       "monitor": "Monitor",

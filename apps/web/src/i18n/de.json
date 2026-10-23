@@ -1726,7 +1726,8 @@
     },
     "units": {
       "hours": "{count} h",
-      "minutes": "{count} min"
+      "minutes": "{count} min",
+      "underMinute": "unter 1 min"
     },
     "editor": {
       "createTitle": "SLA anlegen",
@@ -1795,9 +1796,11 @@
       "met": "Erreicht",
       "missed": "Verfehlt",
       "on_track": "Im Plan",
+      "at_risk": "Gefährdet",
       "no_data": "Keine Daten",
       "running": "Läuft",
-      "not_counted": "Nicht gezählt"
+      "no_target": "Kein Ziel",
+      "not_needed": "Nicht nötig"
     },
     "view": {
       "period": "Zeitraum",
@@ -1820,6 +1823,7 @@
       "budgetUsed": "{value} des Ausfallbudgets verbraucht",
       "withinTarget": "{met} von {counted} im Ziel",
       "noneCounted": "Keine Vorfälle",
+      "latencyAtEnd": "Das Ziel wird beim Ende der Periode beurteilt.",
       "average": "Im Mittel {time}",
       "monitors": "Monitore",
       "monitor": "Monitor",

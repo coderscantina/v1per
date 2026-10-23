@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { SlaPeriod } from '~/generated'
 
-import { csvFileName, highestLatency, periodStarts, periodTitle, slaPeriodCsv, todayIn, toCsv } from './sla-period'
+import { csvFileName, highestLatency, settled, standingLabels, standingTones, periodStarts, periodTitle, slaPeriodCsv, todayIn, toCsv } from './sla-period'
 
 const period: SlaPeriod = {
   sla: '7',
@@ -53,6 +53,15 @@ describe('sla periods', () => {
   it('takes the highest average latency', () => {
     expect(highestLatency(period)).toBe(212.34)
     expect(highestLatency({ monitors: [] })).toBeNull()
+  })
+})
+
+describe('standings', () => {
+  it('tells at risk, no target and not needed apart', () => {
+    expect(standingTones.at_risk).toBe('warning')
+    expect(settled('at_risk')).toBe(true)
+    expect(settled('on_track')).toBe(false)
+    expect(new Set([standingLabels.no_target, standingLabels.not_needed, standingLabels.at_risk]).size).toBe(3)
   })
 })
 

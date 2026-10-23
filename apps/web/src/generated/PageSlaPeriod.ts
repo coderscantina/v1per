@@ -22,7 +22,7 @@ starts_at: number,
  */
 ends_at: number, 
 /**
- * Missed when a commitment missed, no data when none has data.
+ * The worst commitment: missed, at risk, on track or met. No data when none has data.
  */
 outcome: SlaOutcome, 
 /**
