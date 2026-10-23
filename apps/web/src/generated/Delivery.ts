@@ -12,7 +12,11 @@ export type Delivery = { id: DeliveryId,
 /**
  * Absent for a test of an unsaved form.
  */
-channel?: ChannelId, event: DeliveryEvent, monitor?: MonitorId, 
+channel?: ChannelId, event: DeliveryEvent, 
+/**
+ * The monitor the message is about; for SLA events only a per-monitor breach has one.
+ */
+monitor?: MonitorId, 
 /**
  * Kuma's message line, such as `[API] [🔴 Down] timeout`.
  */

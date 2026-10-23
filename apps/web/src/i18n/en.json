@@ -1166,7 +1166,12 @@
         "monitor_up": "Up",
         "certificate_expiry": "Certificate",
         "probe_offline": "Probe offline",
-        "test": "Test"
+        "test": "Test",
+        "sla_budget_warning": "SLA budget",
+        "sla_availability_breach": "SLA availability",
+        "sla_response_missed": "SLA response",
+        "sla_resolution_missed": "SLA resolution",
+        "sla_latency_breach": "SLA latency"
       }
     }
   },

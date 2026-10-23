@@ -57,6 +57,11 @@ export const deliveryEventLabels: Record<DeliveryEvent, MessageKey> = {
   certificate_expiry: 'channels.deliveries.events.certificate_expiry',
   probe_offline: 'channels.deliveries.events.probe_offline',
   test: 'channels.deliveries.events.test',
+  sla_budget_warning: 'channels.deliveries.events.sla_budget_warning',
+  sla_availability_breach: 'channels.deliveries.events.sla_availability_breach',
+  sla_response_missed: 'channels.deliveries.events.sla_response_missed',
+  sla_resolution_missed: 'channels.deliveries.events.sla_resolution_missed',
+  sla_latency_breach: 'channels.deliveries.events.sla_latency_breach',
 }
 
 export const templateVariableHints: Record<TemplateVariable, MessageKey> = {

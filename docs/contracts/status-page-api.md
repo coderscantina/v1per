@@ -89,6 +89,7 @@ type PageSnapshot = {
   groups: { id; name; default_open; components: PublicComponent[] }[]
   incidents: PublicIncident[] // newest first
   maintenance: PublicMaintenance[]
+  slas: PageSla[] // in the page's order
   cursor: string // page:{id}@{seq}, for the stream
   generated_at: number
 }
@@ -112,6 +113,38 @@ type PublicIncident = {
 }
 
 type PublicMaintenance = { title; description; active: boolean; starts_at?; ends_at?; components: PageComponentId[] }
+
+type PageSla = {
+  name: string
+  timezone: string // IANA zone of the periods
+  period: 'month' | 'quarter' | 'year'
+  combine: 'each' | 'any_down'
+  current?: PageSlaPeriod // the running period, absent before the contract starts
+  history: PageSlaPeriod[] // up to 12 frozen periods, newest first
+}
+
+type SlaOutcome = 'met' | 'missed' | 'on_track' | 'no_data'
+
+type PageSlaPeriod = {
+  start: string // YYYY-MM-DD, first day in the SLA's timezone
+  starts_at: number
+  ends_at: number // first instant after the period
+  outcome: SlaOutcome // missed when a commitment missed, no data when none has data
+  availability?: { target: number; outcome: SlaOutcome; actual?: number; budget_used?: number } // percent; budget share, 1 is all
+  latency?: { target_ms: number; outcome: SlaOutcome; actual_ms?: number } // highest monitor average
+  response?: PageSlaClock
+  resolution?: PageSlaClock
+  monitors?: { component: PageComponentId; availability?; availability_outcome?; latency_ms?; latency_outcome? }[] // internal only
+}
+
+type PageSlaClock = {
+  targets: { major_outage?: number; partial_outage?: number; degraded?: number } // business minutes
+  outcome: SlaOutcome
+  counted: number // incidents that met or missed the target
+  met: number
+  within_target?: number // met / counted, absent while none is counted
+  average_ms?: number // business milliseconds
+}
 ```
 
 Rules:
@@ -121,6 +154,9 @@ Rules:
 - Only incidents published to the page appear, open ones and those resolved within the 90 days, at most 100, and only with the page's visible components. An incident naming none of them is left out. Older ones are in the [incident history](#incident-history).
 - An auto-incident's title is rendered in the snapshot's locale from the component's page name ("API is down", "API ist ausgefallen") until a person changes the title. Updates the server wrote for an auto-incident are replaced by a generic text in the locale, because check messages can name hosts.
 - Maintenance shows while under way or when a window starts within 14 days, with the visible components it covers.
+- `slas` lists the SLAs selected with `pages.updateSlas`, per the [monitoring contract](../monitoring-contract.md#slas). Each period carries the targets it was computed with. Counts and averages include incidents that were never published, drafts too, but no incident, its title or its ID appears. No SLA ID, covered monitor list, channel or person appears either.
+- The `internal` audience also gets `monitors` per period: the covered monitors the page shows, named by their page component. A covered monitor not on the page is only in the aggregates.
+- A closed period appears in `history` once it is frozen, an hour after it closes. The running period is computed at most once a minute per SLA, so its numbers can lag that long behind the snapshot.
 
 Colors follow the [monitoring contract](../monitoring-contract.md#component-color-and-page-status):
 
@@ -133,7 +169,7 @@ Snapshots are cached per page, audience and locale while the page's topic stays 
 
 ## Stream
 
-`GET {base}/events` sends the frames of `/api/subscribe` (`subscribed`, `events`, `resync`, `expired`) for the page's one topic `page:{id}`, without their `topic` field. Subscribe from the snapshot's `cursor`. Event kinds are `page.updated` (settings, access, layout, hostnames, logo), `page.status_changed` (a shown monitor, component or maintenance), `page.incident_changed` (publication or a published incident) and `page.deleted`; each carries only `seq` and `kind`. A frame means: read `snapshot.json` again.
+`GET {base}/events` sends the frames of `/api/subscribe` (`subscribed`, `events`, `resync`, `expired`) for the page's one topic `page:{id}`, without their `topic` field. Subscribe from the snapshot's `cursor`. Event kinds are `page.updated` (settings, access, layout, hostnames, logo, SLA selection), `page.status_changed` (a shown monitor, component or maintenance, a shown SLA's terms, or one of its periods frozen or recomputed), `page.incident_changed` (publication or a published incident) and `page.deleted`; each carries only `seq` and `kind`. A frame means: read `snapshot.json` again.
 
 A wake is followed by a 250 ms pause before reading, so a burst of changes arrives as one frame. Access is checked when the stream opens (`401 unauthenticated` when closed), before every frame and every 5 seconds while idle. When it is gone the stream sends `resync` with reason `unavailable` and ends; the app then reloads the page, which shows the gate. A foreign `Origin` is refused.
 

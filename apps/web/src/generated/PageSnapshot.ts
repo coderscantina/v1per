@@ -2,6 +2,7 @@
 import type { Locale } from "./Locale";
 import type { PageAppearance } from "./PageAppearance";
 import type { PageAudience } from "./PageAudience";
+import type { PageSla } from "./PageSla";
 import type { PageStatus } from "./PageStatus";
 import type { PublicGroup } from "./PublicGroup";
 import type { PublicIncident } from "./PublicIncident";
@@ -32,6 +33,10 @@ incidents: Array<PublicIncident>,
  * Maintenance under way or starting within 14 days.
  */
 maintenance: Array<PublicMaintenance>, 
+/**
+ * The SLAs the page shows, in the page's order.
+ */
+slas: Array<PageSla>, 
 /**
  * `page:<id>@<seq>`: subscribe to `<base>/events` from here to follow the snapshot.
  */

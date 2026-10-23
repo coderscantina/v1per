@@ -15,7 +15,9 @@ mod outbox;
 
 pub(crate) use certificates::check as check_certificates;
 pub use outbox::run;
-pub(crate) use outbox::{Beat, ProbePayload, queue_beat, queue_probe_offline, queue_test};
+pub(crate) use outbox::{
+    Beat, ProbePayload, queue_beat, queue_probe_offline, queue_sla, queue_test,
+};
 use outbox::{queue_sample_test, sample_payload};
 
 use std::collections::HashMap;

@@ -1,6 +1,6 @@
 //! The notification outbox (decision 0005). Whatever causes a message writes one row per active
 //! channel in its own transaction: the evaluator with the transition, the certificate check,
-//! the probe sweep, a test command. The row holds the event as it was then, without secrets.
+//! the probe sweep, the SLA job, a test command. The row holds the event as it was then, without secrets.
 //!
 //! One worker sends them, at most [`CONCURRENCY`] at once and per channel oldest first, so an
 //! up never overtakes the down before it. A failure the provider may get over is retried
@@ -21,7 +21,7 @@ use tokio::sync::watch;
 use tokio::task::JoinSet;
 use v1per_notify::{self as notify, ChannelConfig, SendContext};
 use v1per_protocol::envelope::Topic;
-use v1per_protocol::ids::{ChannelId, DeliveryId, MonitorId, NodeId};
+use v1per_protocol::ids::{ChannelId, DeliveryId, MonitorId, NodeId, SlaId};
 use v1per_protocol::operations::channels::TestSample;
 use v1per_protocol::operations::monitors::MonitorSettings;
 use v1per_storage::Status;
@@ -47,6 +47,7 @@ pub(crate) enum Payload {
     MonitorUp(BeatPayload),
     CertificateExpiry(CertificatePayload),
     ProbeOffline(ProbePayload),
+    Sla(notify::SlaAlert),
     Test { channel_name: String },
 }
 
@@ -115,6 +116,13 @@ impl Payload {
             Payload::MonitorUp(_) => "monitor_up",
             Payload::CertificateExpiry(_) => "certificate_expiry",
             Payload::ProbeOffline(_) => "probe_offline",
+            Payload::Sla(alert) => match alert.kind {
+                notify::SlaAlertKind::BudgetWarning { .. } => "sla_budget_warning",
+                notify::SlaAlertKind::AvailabilityBreach { .. } => "sla_availability_breach",
+                notify::SlaAlertKind::ResponseMissed { .. } => "sla_response_missed",
+                notify::SlaAlertKind::ResolutionMissed { .. } => "sla_resolution_missed",
+                notify::SlaAlertKind::LatencyBreach { .. } => "sla_latency_breach",
+            },
             Payload::Test { .. } => "test",
         }
     }
@@ -181,6 +189,7 @@ impl Payload {
                 last_seen: time(probe.last_seen),
                 timezone,
             }),
+            Payload::Sla(alert) => notify::Event::Sla(alert.clone()),
             Payload::Test { channel_name } => notify::Event::Test {
                 channel_name: channel_name.clone(),
             },
@@ -195,13 +204,20 @@ struct Recipient {
     node_id: i64,
 }
 
+/// What an outbox row is about, besides its event.
+#[derive(Default)]
+struct About {
+    monitor: Option<MonitorId>,
+    transition: Option<i64>,
+    sla: Option<SlaId>,
+}
+
 /// Writes one pending row per recipient and records `channel.delivery` on each channel's
 /// node. Returns the topics to wake.
 async fn queue(
     conn: &mut SqliteConnection,
     recipients: &[Recipient],
-    monitor: Option<MonitorId>,
-    transition: Option<i64>,
+    about: About,
     payload: &Payload,
     now: i64,
 ) -> sqlx::Result<Vec<Topic>> {
@@ -215,14 +231,15 @@ async fn queue(
     for recipient in recipients {
         let id: i64 = sqlx::query_scalar(
             "INSERT INTO notification_outbox (node_id, channel_id, event, monitor_id,
-                 transition_id, payload, summary, state, next_attempt_at, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?) RETURNING id",
+                 transition_id, sla_id, payload, summary, state, next_attempt_at, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?) RETURNING id",
         )
         .bind(recipient.node_id)
         .bind(recipient.id)
         .bind(payload.event_name())
-        .bind(monitor.map(MonitorId::get))
-        .bind(transition)
+        .bind(about.monitor.map(MonitorId::get))
+        .bind(about.transition)
+        .bind(about.sla.map(SlaId::get))
         .bind(&json)
         .bind(&summary)
         .bind(now)
@@ -309,15 +326,12 @@ pub(crate) async fn queue_beat(
     } else {
         Payload::MonitorDown(beat_payload)
     };
-    queue(
-        conn,
-        &recipients,
-        Some(beat.monitor),
-        Some(beat.transition),
-        &payload,
-        now,
-    )
-    .await
+    let about = About {
+        monitor: Some(beat.monitor),
+        transition: Some(beat.transition),
+        sla: None,
+    };
+    queue(conn, &recipients, about, &payload, now).await
 }
 
 /// Queues a certificate expiry message for the monitor's channels; false when it has none.
@@ -329,7 +343,11 @@ pub(crate) async fn queue_certificate(
 ) -> sqlx::Result<(bool, Vec<Topic>)> {
     let recipients = monitor_channels(conn, monitor).await?;
     let payload = Payload::CertificateExpiry(certificate);
-    let topics = queue(conn, &recipients, Some(monitor), None, &payload, now).await?;
+    let about = About {
+        monitor: Some(monitor),
+        ..About::default()
+    };
+    let topics = queue(conn, &recipients, about, &payload, now).await?;
     Ok((!recipients.is_empty(), topics))
 }
 
@@ -346,15 +364,32 @@ pub(crate) async fn queue_probe_offline(
     .bind(node.get())
     .fetch_all(&mut *conn)
     .await?;
-    queue(
-        conn,
-        &recipients,
-        None,
-        None,
-        &Payload::ProbeOffline(probe),
-        now,
+    let payload = Payload::ProbeOffline(probe);
+    queue(conn, &recipients, About::default(), &payload, now).await
+}
+
+/// Queues an SLA alert for the SLA's active channels. `monitor` names the monitor of a
+/// per-monitor breach.
+pub(crate) async fn queue_sla(
+    conn: &mut SqliteConnection,
+    sla: SlaId,
+    monitor: Option<MonitorId>,
+    alert: notify::SlaAlert,
+    now: i64,
+) -> sqlx::Result<Vec<Topic>> {
+    let recipients: Vec<Recipient> = sqlx::query_as(
+        "SELECT c.id, c.node_id FROM sla_channels sc JOIN channels c ON c.id = sc.channel_id
+         WHERE sc.sla_id = ? AND c.active = 1 ORDER BY c.id",
     )
-    .await
+    .bind(sla.get())
+    .fetch_all(&mut *conn)
+    .await?;
+    let about = About {
+        monitor,
+        sla: Some(sla),
+        ..About::default()
+    };
+    queue(conn, &recipients, about, &Payload::Sla(alert), now).await
 }
 
 /// Queues a test of `config` (Kuma JSON) on `node`, in the log of `channel` when it is saved.

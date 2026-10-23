@@ -1166,7 +1166,12 @@
         "monitor_up": "Erholt",
         "certificate_expiry": "Zertifikat",
         "probe_offline": "Probe offline",
-        "test": "Test"
+        "test": "Test",
+        "sla_budget_warning": "SLA-Budget",
+        "sla_availability_breach": "SLA-Verfügbarkeit",
+        "sla_response_missed": "SLA-Reaktionszeit",
+        "sla_resolution_missed": "SLA-Lösungszeit",
+        "sla_latency_breach": "SLA-Latenz"
       }
     }
   },

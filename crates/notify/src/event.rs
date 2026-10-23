@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc};
 use chrono_tz::Tz;
 
 use crate::js::Js;
+use crate::sla::SlaAlert;
 
 /// Something to tell a channel about.
 #[derive(Clone, Debug)]
@@ -14,6 +15,8 @@ pub enum Event {
     DomainExpiry(DomainExpiry),
     /// V1Per only: Kuma has a single check location.
     ProbeOffline(ProbeOffline),
+    /// V1Per only: an SLA warning or breach.
+    Sla(SlaAlert),
     /// The channel dialog's test button. Kuma applies email templates to it.
     Test {
         channel_name: String,
@@ -182,6 +185,7 @@ impl Event {
                 local_time(&probe.last_seen, probe.timezone),
                 probe.timezone.name()
             )),
+            Self::Sla(alert) => Notice::general(alert.message()),
             Self::Test { channel_name } => Notice::general(format!("{channel_name} Testing")),
         }
     }

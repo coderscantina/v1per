@@ -122,7 +122,7 @@ fn outcome(closed: bool, missed: bool, has_data: bool) -> SlaOutcome {
 }
 
 /// The SLA's outcome from its parts: missed when one missed, no data when none has data.
-fn combined(outcomes: impl IntoIterator<Item = SlaOutcome>, closed: bool) -> SlaOutcome {
+pub(crate) fn combined(outcomes: impl IntoIterator<Item = SlaOutcome>, closed: bool) -> SlaOutcome {
     let mut has_data = false;
     for part in outcomes {
         match part {
