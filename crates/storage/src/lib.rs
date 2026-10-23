@@ -32,8 +32,8 @@ pub use failpoint::BOUNDARIES as FAILPOINTS;
 pub use failpoint::fail_disk;
 pub use heartbeats::{HEARTBEAT_SCHEMA, KumaStat};
 pub use queries::{
-    Counts, DayBar, HeartbeatCursor, HeartbeatPage, Hourly, ImportedRows, Latency, LatencyPoint,
-    Resolution, Series, TrendBucket, UptimeWindow,
+    Counts, DayBar, DownMinutes, HeartbeatCursor, HeartbeatPage, Hourly, ImportedRows, Latency,
+    LatencyPoint, PeriodTotals, Resolution, Series, TrendBucket, UptimeWindow,
 };
 pub use reader::{Read, ReadError, Snapshot};
 pub use record::{BatchId, Heartbeat, INBOX_FORMAT, MonitorId, MonitorStatus, ProbeId, Status};
@@ -469,6 +469,33 @@ impl Storage {
     ) -> Result<Read<BTreeMap<MonitorId, Counts>>, ReadError> {
         let monitors = monitors.to_vec();
         self.read(move |s| queries::uptime(s.connection(), &monitors, series, window, now_ms))
+            .await
+    }
+
+    /// Monitor-series totals per monitor over `[from_ms, to_ms)`, whose edges are whole UTC
+    /// hours, with the uptime a status page shows for the same range. A Kuma day row counts
+    /// whole when its UTC day starts in the range (see [`PeriodTotals`]).
+    pub async fn period_totals(
+        &self,
+        monitors: &[MonitorId],
+        from_ms: i64,
+        to_ms: i64,
+    ) -> Result<Read<BTreeMap<MonitorId, PeriodTotals>>, ReadError> {
+        let monitors = monitors.to_vec();
+        self.read(move |s| queries::period_totals(s.connection(), &monitors, from_ms, to_ms))
+            .await
+    }
+
+    /// Minutes in `[from_ms, to_ms)` where any of `monitors` has an up or down beat, and where
+    /// any has a down or pending beat, each minute counted once.
+    pub async fn down_minutes(
+        &self,
+        monitors: &[MonitorId],
+        from_ms: i64,
+        to_ms: i64,
+    ) -> Result<Read<DownMinutes>, ReadError> {
+        let monitors = monitors.to_vec();
+        self.read(move |s| queries::down_minutes(s.connection(), &monitors, from_ms, to_ms))
             .await
     }
 
