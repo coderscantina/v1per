@@ -1,10 +1,16 @@
 //! SLAs (decision 0012, milestone 14): `slas.*`, the checks behind `pages.updateSlas`, and
-//! keeping an SLA's monitors and channels in reach when nodes or monitors move.
+//! keeping an SLA's monitors and channels in reach when nodes or monitors move. Periods are
+//! computed in [`period`]; [`run`] tallies days and freezes periods in the background, which
+//! is one query per tick on an install without SLAs.
 //!
 //! Reading needs `node.read` on the SLA's node. Writes need Admin through a grant on a strict
 //! ancestor, or the instance admin (`NodeScope::require_admin_above`), so a client Admin on
-//! the SLA's own node reads only. Nothing here runs in the background: an install without
-//! SLAs does no SLA work.
+//! the SLA's own node reads only.
+
+mod job;
+pub mod period;
+
+pub use job::{catch_up, run};
 
 use chrono::{NaiveDate, NaiveTime, Timelike};
 use chrono_tz::Tz;
@@ -15,7 +21,7 @@ use v1per_protocol::envelope::Topic;
 use v1per_protocol::errors::FieldErrorCode;
 use v1per_protocol::ids::{ChannelId, MonitorId, NodeId, PageId, SlaId};
 use v1per_protocol::operations::slas::{
-    Sla, SlaArgs, SlaDeleted, SlaDetail, SlaHours, SlaInput, SlaList, SlaPeriodArgs,
+    Sla, SlaArgs, SlaDeleted, SlaDetail, SlaHours, SlaInput, SlaList, SlaPeriod, SlaPeriodArgs,
     SlaPeriodResult, SlaResult, SlaTimeTarget, SlaTimeTargets, SlasCreateArgs, SlasHandlers,
     SlasListArgs, SlasUpdateArgs,
 };
@@ -688,8 +694,8 @@ impl SlasHandlers for AppState {
         Ok(SlaDeleted { sla: args.sla })
     }
 
-    /// Authorizes like the finished command, then answers `not_found` like an operation that
-    /// does not exist yet: period computation lands with the next part of milestone 14.
+    /// `required` on `start` without it, `invalid_value` for a period that is not frozen
+    /// yet: it ended less than an hour ago or is still running.
     async fn slas_recompute(
         &self,
         ctx: &mut CommandCtx,
@@ -697,7 +703,47 @@ impl SlasHandlers for AppState {
     ) -> Result<SlaPeriodResult, ApiError> {
         let row = load(ctx.conn(), args.sla).await?;
         writable(ctx, row.node()).await?;
-        Err(ApiError::not_found())
+        let Some(start) = args.start.as_deref() else {
+            return Err(FieldErrors::one("start", FieldErrorCode::Required, None));
+        };
+        let sla = present(ctx.conn(), row).await?;
+        let now = ctx.now();
+        let calendar = period::calendar(&sla.terms)?;
+        let due = period::resolve(&calendar, Some(start), now)?;
+        if due.ends_at.timestamp_millis() + period::FREEZE_DELAY_MS > now {
+            return Err(FieldErrors::one(
+                "start",
+                FieldErrorCode::InvalidValue,
+                None,
+            ));
+        }
+        let mut result = period::compute(ctx.conn(), &self.storage, &sla, &due, now).await?;
+        result.frozen_at = Some(now);
+        sqlx::query(
+            "INSERT INTO sla_periods (sla_id, start, starts_at, ends_at, result, frozen_at)
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON CONFLICT (sla_id, start) DO UPDATE SET starts_at = excluded.starts_at,
+                 ends_at = excluded.ends_at, result = excluded.result,
+                 frozen_at = excluded.frozen_at",
+        )
+        .bind(sla.id.get())
+        .bind(&result.start)
+        .bind(result.starts_at)
+        .bind(result.ends_at)
+        .bind(serde_json::to_string(&result).map_err(ApiError::internal)?)
+        .bind(now)
+        .execute(ctx.conn())
+        .await?;
+        touch_pages(ctx, sla.id).await?;
+        record_tree_ctx(
+            ctx,
+            Topic::slas,
+            sla.node,
+            "sla.period_frozen",
+            json!({ "sla": sla.id, "start": result.start }),
+        )
+        .await?;
+        Ok(SlaPeriodResult { period: result })
     }
 
     async fn slas_list(
@@ -745,15 +791,34 @@ impl SlasHandlers for AppState {
         })
     }
 
-    /// Authorizes like the finished query, then answers `not_found` like an operation that
-    /// does not exist yet: period computation lands with the next part of milestone 14.
+    /// The stored result of a frozen period, a computation as of now otherwise.
     async fn slas_period(
         &self,
         ctx: &mut QueryCtx,
         args: SlaPeriodArgs,
     ) -> Result<Snapshot<SlaPeriodResult>, ApiError> {
         let row = load(ctx.conn(), args.sla).await?;
-        ctx.node_scope(row.node(), Capability::NodeRead).await?;
-        Err(ApiError::not_found())
+        let node = row.node();
+        ctx.node_scope(node, Capability::NodeRead).await?;
+        let sla = present(ctx.conn(), row).await?;
+        let now = self.clock.now_ms();
+        let calendar = period::calendar(&sla.terms)?;
+        let due = period::resolve(&calendar, args.start.as_deref(), now)?;
+        let frozen: Option<String> =
+            sqlx::query_scalar("SELECT result FROM sla_periods WHERE sla_id = ? AND start = ?")
+                .bind(sla.id.get())
+                .bind(due.first_day.format(DATE).to_string())
+                .fetch_optional(ctx.conn())
+                .await?;
+        let period = match frozen {
+            Some(result) => {
+                serde_json::from_str::<SlaPeriod>(&result).map_err(ApiError::internal)?
+            }
+            None => period::compute(ctx.conn(), &self.storage, &sla, &due, now).await?,
+        };
+        Ok(Snapshot {
+            topic: Topic::slas(node),
+            data: SlaPeriodResult { period },
+        })
     }
 }

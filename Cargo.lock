@@ -4517,6 +4517,7 @@ dependencies = [
  "v1per-notify",
  "v1per-probe-core",
  "v1per-protocol",
+ "v1per-sla",
  "v1per-storage",
 ]
 
