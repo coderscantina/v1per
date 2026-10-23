@@ -366,13 +366,15 @@ async fn incidents(
     sla: &Sla,
     clock: &Clock,
     period: &Period,
+    unsettled_after: Option<i64>,
     now: DateTime<Utc>,
 ) -> Result<Vec<SlaIncidentStanding>, ApiError> {
     let covered: Vec<i64> = sla.terms.monitors.iter().map(|m| m.get()).collect();
     let covered_json = json_ids(&covered);
     let rows: Vec<IncidentRow> = sqlx::query_as(
         "SELECT i.id, i.title, i.started_at, i.resolved_at, i.auto_monitor_id FROM incidents i
-         WHERE i.started_at >= ?2 AND i.started_at < ?3 AND EXISTS (
+         WHERE i.started_at >= ?2 AND i.started_at < ?3
+           AND (?4 IS NULL OR i.resolved_at IS NULL OR i.resolved_at > ?4) AND EXISTS (
              SELECT 1 FROM incident_targets t
              WHERE t.incident_id = i.id AND t.monitor_id IN (SELECT value FROM json_each(?1)))
          ORDER BY i.started_at, i.id",
@@ -380,6 +382,7 @@ async fn incidents(
     .bind(&covered_json)
     .bind(period.starts_at.timestamp_millis())
     .bind(period.ends_at.timestamp_millis())
+    .bind(unsettled_after)
     .fetch_all(&mut *conn)
     .await?;
     if rows.is_empty() {
@@ -547,7 +550,7 @@ pub(crate) async fn compute(
         .map(|_| combined(standings.iter().filter_map(|m| m.latency_outcome), closed));
 
     let clock = business_clock(terms, calendar.zone);
-    let incidents = incidents(conn, sla, &clock, period, instant(now)).await?;
+    let incidents = incidents(conn, sla, &clock, period, None, instant(now)).await?;
     let impacts = [
         terms.times.major_outage,
         terms.times.partial_outage,
@@ -574,6 +577,35 @@ pub(crate) async fn compute(
         response,
         resolution,
         monitors: standings,
+        incidents,
+    })
+}
+
+/// The incidents of the frozen `period` that were open at `frozen_at` or resolved after it,
+/// with their clocks at `now`, in a period holding nothing else. Their missed clocks give the
+/// signals the frozen result could not, as the same `sla_alerts` keys the running period used.
+pub(crate) async fn late_clocks(
+    conn: &mut SqliteConnection,
+    sla: &Sla,
+    period: &Period,
+    frozen_at: i64,
+    now: i64,
+) -> Result<SlaPeriod, ApiError> {
+    let terms = &sla.terms;
+    let clock = business_clock(terms, calendar(terms)?.zone);
+    let incidents = incidents(conn, sla, &clock, period, Some(frozen_at), instant(now)).await?;
+    Ok(SlaPeriod {
+        sla: sla.id,
+        start: period.first_day.format(DATE).to_string(),
+        starts_at: period.starts_at.timestamp_millis(),
+        ends_at: period.ends_at.timestamp_millis(),
+        frozen_at: Some(frozen_at),
+        terms: terms.clone(),
+        availability: None,
+        latency: None,
+        response: None,
+        resolution: None,
+        monitors: Vec::new(),
         incidents,
     })
 }

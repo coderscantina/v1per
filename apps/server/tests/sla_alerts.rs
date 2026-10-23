@@ -150,18 +150,29 @@ impl Fixture {
     /// An auto-incident on `api` since 07:00 UTC, open, without a human update and published
     /// nowhere, so a draft.
     async fn draft_incident(&self) -> i64 {
+        self.incident("2026-10-23T07:00:00Z", None).await
+    }
+
+    /// An auto-incident on `api` from `started` to `resolved`, without a human update.
+    async fn incident(&self, started: &str, resolved: Option<&str>) -> i64 {
         let db = &self.harness.state.db.writer;
         let monitor: i64 = self.monitors[0].parse().unwrap();
-        let started = ms("2026-10-23T07:00:00Z");
+        let started = ms(started);
         let id: i64 = sqlx::query_scalar(
             "INSERT INTO incidents (node_id, title, state, auto, auto_monitor_id, started_at,
-                 revision, updated_at)
-             VALUES (?, ?, 'investigating', 1, ?, ?, 1, ?) RETURNING id",
+                 resolved_at, revision, updated_at)
+             VALUES (?, ?, ?, 1, ?, ?, ?, 1, ?) RETURNING id",
         )
         .bind(self.client.parse::<i64>().unwrap())
         .bind(INCIDENT_TITLE)
+        .bind(if resolved.is_some() {
+            "resolved"
+        } else {
+            "investigating"
+        })
         .bind(monitor)
         .bind(started)
+        .bind(resolved.map(ms))
         .bind(started)
         .fetch_one(db)
         .await
@@ -298,6 +309,55 @@ async fn each_alert_is_queued_once_per_period_across_a_restart() {
         .await
         .unwrap();
     assert_eq!(rows, 4);
+}
+
+/// A response deadline that falls after the period froze is still alerted once it passes, and
+/// a restarted server does not alert it again.
+#[tokio::test]
+async fn a_response_deadline_after_the_freeze_is_alerted_once() {
+    let f = Fixture::manual().await;
+    f.sla(
+        "Acme hosting",
+        json!({ "times": { "major_outage": { "response_minutes": 120 } } }),
+    )
+    .await;
+    f.incident("2026-10-31T22:30:00Z", None).await;
+
+    f.catch_up(OCTOBER_FROZEN).await;
+    assert!(f.outbox().await.is_empty());
+
+    f.catch_up("2026-11-01T01:00:00Z").await;
+    let events: Vec<String> = f.outbox().await.into_iter().map(|row| row.0).collect();
+    assert_eq!(events, ["sla_response_missed"]);
+
+    let Fixture { harness, .. } = f;
+    let background = harness.start();
+    let harness = harness.restart(background).await;
+    v1per_server::slas::catch_up(&harness.state, ms("2026-11-01T02:00:00Z"))
+        .await
+        .unwrap();
+    let rows: i64 = sqlx::query_scalar("SELECT count(*) FROM notification_outbox")
+        .fetch_one(&harness.state.db.reader)
+        .await
+        .unwrap();
+    assert_eq!(rows, 1);
+}
+
+/// An incident of a frozen period that resolves within its target sends nothing.
+#[tokio::test]
+async fn an_incident_resolved_in_time_after_the_freeze_sends_nothing() {
+    let f = Fixture::manual().await;
+    f.sla(
+        "Acme hosting",
+        json!({ "times": { "major_outage": { "response_minutes": 120, "resolution_minutes": 240 } } }),
+    )
+    .await;
+    f.incident("2026-10-31T22:30:00Z", Some("2026-11-01T00:20:00Z"))
+        .await;
+
+    f.catch_up(OCTOBER_FROZEN).await;
+    f.catch_up("2026-11-01T06:00:00Z").await;
+    assert!(f.outbox().await.is_empty());
 }
 
 /// A per-monitor breach names its monitor; every SLA row names the SLA and no transition.
