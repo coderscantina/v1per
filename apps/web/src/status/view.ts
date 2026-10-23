@@ -9,6 +9,8 @@ import type {
   PublicIncidentUpdate,
 } from '~/generated'
 
+import { slaView, type SlaView } from './sla'
+
 /** A status as the page paints it: one of the page statuses, or `none` for a day or monitor without data. */
 export type Tone = PageStatus | 'none'
 
@@ -106,6 +108,8 @@ export interface PageView {
   /** Component names by ID, to build views of incidents that arrive later. */
   names: ReadonlyMap<string, string>
   maintenance: MaintenanceView[]
+  /** The SLAs the page shows, in the page's order. */
+  slas: SlaView[]
   figures: PageFigures
   generatedAt: number
 }
@@ -250,6 +254,7 @@ export function pageView(snapshot: PageSnapshot, base: string): PageView {
     active,
     names,
     maintenance,
+    slas: snapshot.slas.map((sla) => slaView(sla, names)),
     figures: {
       uptime: uptimes.length > 0 ? uptimes.reduce((sum, uptime) => sum + uptime, 0) / uptimes.length : undefined,
       incidents: snapshot.incidents.length,

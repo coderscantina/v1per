@@ -1,7 +1,8 @@
-import type { HeartbeatStatus, IncidentState } from '~/generated'
+import type { HeartbeatStatus, IncidentState, SlaPeriodKind } from '~/generated'
 
 import type { MessageKey } from './messages'
 import type { IconName } from './icons'
+import type { SlaState } from './sla'
 import type { Tone } from './view'
 
 /** The icon and word that go with each color, so color is never the only signal. */
@@ -51,4 +52,35 @@ export const stateTone: Record<IncidentState, Tone> = {
   identified: 'partial_outage',
   monitoring: 'maintenance',
   resolved: 'operational',
+}
+
+/** SLA states in page colors: kept and on track read healthy, no data reads absent, never missed. */
+export const slaTone: Record<SlaState, Tone> = {
+  met: 'operational',
+  on_track: 'operational',
+  at_risk: 'degraded',
+  missed: 'major_outage',
+  no_data: 'none',
+}
+
+export const slaIcon: Record<SlaState, IconName> = {
+  met: 'check',
+  on_track: 'check',
+  at_risk: 'alert',
+  missed: 'down',
+  no_data: 'minus',
+}
+
+export const slaLabel: Record<SlaState, MessageKey> = {
+  met: 'sla.state.met',
+  on_track: 'sla.state.on_track',
+  at_risk: 'sla.state.at_risk',
+  missed: 'sla.state.missed',
+  no_data: 'sla.state.no_data',
+}
+
+export const periodKindLabel: Record<SlaPeriodKind, MessageKey> = {
+  month: 'sla.period.month',
+  quarter: 'sla.period.quarter',
+  year: 'sla.period.year',
 }
