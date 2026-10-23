@@ -72,7 +72,7 @@ CREATE INDEX sla_channels_channel ON sla_channels (channel_id, sla_id);
 -- The `any_down` service timeline per closed day in the SLA's timezone: minutes in which a
 -- covered monitor had an up or down beat, and those in which one was down or pending. Written
 -- once the day ends, so it outlives the minute rollups it was read from. A day without minute
--- rollups has no row.
+-- rollups gets a row with no counted minutes, which reads as no data.
 CREATE TABLE sla_tallies (
     sla_id          INTEGER NOT NULL REFERENCES slas (id) ON DELETE CASCADE,
     day             TEXT NOT NULL,
