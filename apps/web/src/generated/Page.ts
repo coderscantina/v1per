@@ -14,7 +14,7 @@ export type Page = { id: PageId, node: NodeId, access: PageAccess, hostnames: Ar
  */
 path: string, 
 /**
- * Rises with every change to settings, access, layout, hostnames or logo. Pass it as
+ * Rises with every change to settings, access, layout, SLAs, hostnames or logo. Pass it as
  * `expected_revision`.
  */
 revision: number, created_at: number, updated_at: number, 

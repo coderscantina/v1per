@@ -15,6 +15,7 @@ pub mod monitors;
 pub mod nodes;
 pub mod pages;
 pub mod probes;
+pub mod slas;
 pub mod two_factor;
 
 crate::registry::domains!(
@@ -33,5 +34,6 @@ crate::registry::domains!(
     nodes::NodesHandlers,
     pages::PagesHandlers,
     probes::ProbesHandlers,
+    slas::SlasHandlers,
     two_factor::TwoFactorHandlers,
 );

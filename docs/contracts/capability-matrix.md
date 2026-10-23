@@ -8,6 +8,7 @@ Milestone 04 finalizes the role meaning proposed in [0001](../decisions/0001-nod
 - The effective role on a node is the highest grant on the node or any ancestor. Grants only add; there are no deny rules.
 - The instance admin acts as owner of the root, so as owner everywhere.
 - Every node-scoped operation resolves a `NodeScope` first. A node the caller cannot read answers `not_found`, byte for byte like a node that does not exist. A readable node without the needed capability answers `forbidden`.
+- SLA writes are the one rule that looks at where a grant sits, not only at the effective role: they need Admin through a grant above the SLA's node ([0012](../decisions/0012-slas.md)).
 - Checks run in a fixed order: scope (`not_found`), capability (`forbidden`), rank (`forbidden`), fresh login (`reauthentication_required`), expected revision (`stale_revision`). A refusal never says more than the caller may know.
 
 ## Roles and capabilities
@@ -74,6 +75,9 @@ Capabilities without an operation yet are the contract for the milestones named 
 | `components.create`, `components.update`, `components.delete` | `pages.manage` on the component's node                              | admin and up                   |
 | `pages.list`, `pages.get`, `pages.preview` | `node.read` on the page's node                                                    | viewer and up                  |
 | `pages.create`, `pages.update`, `pages.updateAccess`, `pages.updateLayout`, `pages.claimHostname`, `pages.releaseHostname`, `pages.removeLogo`, `pages.delete`, `pages.createShareToken`, `pages.revokeShareToken`, logo upload | `pages.manage` on the page's node; layout targets on that node or below | admin and up |
+| `slas.list`, `slas.get`, `slas.period` | `node.read` on the SLA's node                                                             | viewer and up                  |
+| `slas.create`, `slas.update`, `slas.delete`, `slas.recompute` | Admin or Owner through a grant on a strict ancestor of the SLA's node, or the instance admin. A grant on the node itself does not count, so a client Admin there reads only; `monitors` on the node or below, `channels` on the node or an ancestor | admin and up on an ancestor |
+| `pages.updateSlas`                     | `pages.manage` on the page's node; each SLA on that node or below                         | admin and up                   |
 | `incidents.publications`               | `node.read` on the incident's node; lists only pages on nodes the caller reads            | viewer and up                  |
 | `incidents.publish`, `incidents.unpublish` | `incidents.manage` on the incident's node and on the page's node; publishing needs the page to show one of the incident's targets | member and up |
 | `incidents.create` (publication)       | Publishes to the pages showing a target on whose node the author has `incidents.manage`  | member and up                  |

@@ -12,8 +12,8 @@
 //!
 //! Topics: `instance` needs any signed-in person, `user:<id>` that person, `node:<id>`,
 //! `members:<id>`, `monitors:<id>`, `monitor-tree:<id>`, `probes:<id>`, `channels:<id>`,
-//! `incidents:<id>`, `maintenance:<id>`, `components:<id>` and `pages:<id>` a scope on the
-//! node (a person's or an API key's), and `page:<id>` one on the page's node. An
+//! `incidents:<id>`, `maintenance:<id>`, `components:<id>`, `pages:<id>` and `slas:<id>` a
+//! scope on the node (a person's or an API key's), and `page:<id>` one on the page's node. An
 //! enrollment-only session follows only its own topic. A node the caller cannot read answers
 //! like an unknown one, and one refused topic refuses the whole request; anything that does
 //! not parse, a repeated topic or more than 32 topics is `malformed_request`. `EventSource`
@@ -115,7 +115,7 @@ fn topic(name: &str) -> Option<(Topic, Audience)> {
         }
         Some((
             kind @ ("node" | "members" | "monitors" | "monitor-tree" | "probes" | "channels"
-            | "incidents" | "maintenance" | "components" | "pages"),
+            | "incidents" | "maintenance" | "components" | "pages" | "slas"),
             id,
         )) if id.bytes().all(|b| b.is_ascii_digit()) => {
             let node: NodeId = id.parse().ok()?;
@@ -129,6 +129,7 @@ fn topic(name: &str) -> Option<(Topic, Audience)> {
                 "maintenance" => Topic::maintenance(node),
                 "components" => Topic::components(node),
                 "pages" => Topic::pages(node),
+                "slas" => Topic::slas(node),
                 _ => Topic::monitors(node),
             };
             (topic, Audience::Node(node))
