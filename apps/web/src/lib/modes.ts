@@ -17,6 +17,7 @@ export const configureSections = [
   'node-channels',
   'node-probes',
   'node-maintenance',
+  'node-slas',
   'node-members',
   'node-settings',
 ] as const

@@ -97,6 +97,19 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./pages/MaintenanceEditorPage.vue'),
     meta: { mode: 'configure' },
   },
+  { path: '/n/:nodeId(\\d+)/slas', name: 'node-slas', component: () => import('./pages/NodeSlasPage.vue'), meta: { mode: 'configure' } },
+  {
+    path: '/n/:nodeId(\\d+)/slas/new',
+    name: 'node-sla-new',
+    component: () => import('./pages/SlaEditorPage.vue'),
+    meta: { mode: 'configure' },
+  },
+  {
+    path: '/n/:nodeId(\\d+)/slas/:slaId(\\d+)/edit',
+    name: 'node-sla-edit',
+    component: () => import('./pages/SlaEditorPage.vue'),
+    meta: { mode: 'configure' },
+  },
   { path: '/n/:nodeId(\\d+)/channels', name: 'node-channels', component: () => import('./pages/NodeChannelsPage.vue'), meta: { mode: 'configure' } },
   {
     path: '/n/:nodeId(\\d+)/channels/new',
@@ -133,6 +146,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'settings', name: 'node-page', component: () => import('./pages/page/PageSettingsTab.vue') },
       { path: 'layout', name: 'node-page-layout', component: () => import('./pages/page/PageLayoutTab.vue') },
       { path: 'incidents', name: 'node-page-incidents', component: () => import('./pages/page/PageIncidentsTab.vue') },
+      { path: 'slas', name: 'node-page-slas', component: () => import('./pages/page/PageSlasTab.vue') },
       { path: 'access', name: 'node-page-access', component: () => import('./pages/page/PageAccessTab.vue') },
       { path: 'hostnames', name: 'node-page-hostnames', component: () => import('./pages/page/PageHostnamesTab.vue') },
       { path: 'preview', name: 'node-page-preview', component: () => import('./pages/page/PagePreviewTab.vue') },

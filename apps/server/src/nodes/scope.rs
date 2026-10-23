@@ -181,8 +181,19 @@ pub(crate) async fn person(
         readable,
         role,
         above,
-        capabilities: role.capabilities().to_vec(),
+        capabilities: person_capabilities(role, above),
     })
+}
+
+/// A person's capabilities from their effective role and the highest role granted on a strict
+/// ancestor (owner for the instance admin): the role's set, plus `slas.manage` for Admin or
+/// Owner above the node. The rule of [`NodeScope::require_admin_above`].
+pub(crate) fn person_capabilities(role: Role, above: Option<Role>) -> Vec<Capability> {
+    let mut capabilities = role.capabilities().to_vec();
+    if above.is_some_and(|above| above.rank() >= Role::Admin.rank()) {
+        capabilities.push(Capability::SlasManage);
+    }
+    capabilities
 }
 
 /// A role as stored. Anything else is a broken row, so `internal`.

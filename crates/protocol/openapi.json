@@ -8096,6 +8096,11 @@
             "type": "string",
             "const": "node.delete",
             "description": "Delete the node and, with confirmation, its subtree."
+          },
+          {
+            "type": "string",
+            "const": "slas.manage",
+            "description": "Create, change, delete and recompute SLAs (decision 0012). Not part of any role: it\nneeds Admin or Owner through a grant on a strict ancestor, or the instance admin."
           }
         ],
         "description": "What a node scope allows. A closed set: every node-scoped operation names one."

@@ -28,4 +28,5 @@ export const capabilityLabels: Record<Capability, MessageKey> = {
   'members.manage': 'capabilities.membersManage',
   'node.move': 'capabilities.nodeMove',
   'node.delete': 'capabilities.nodeDelete',
+  'slas.manage': 'slas.capability',
 }

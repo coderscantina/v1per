@@ -2,7 +2,8 @@
 //!
 //! A grant gives one [`Role`] on a node and its whole subtree. The effective role on a node is
 //! the highest grant on it or any ancestor; the instance admin acts as owner of the root. The
-//! server derives the [`Capability`] set from the effective role; the browser only displays it.
+//! server derives the [`Capability`] set from the effective role, plus `slas.manage` from where
+//! the grants sit; the browser only displays it.
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -49,6 +50,10 @@ pub enum Capability {
     /// Delete the node and, with confirmation, its subtree.
     #[serde(rename = "node.delete")]
     NodeDelete,
+    /// Create, change, delete and recompute SLAs (decision 0012). Not part of any role: it
+    /// needs Admin or Owner through a grant on a strict ancestor, or the instance admin.
+    #[serde(rename = "slas.manage")]
+    SlasManage,
 }
 
 impl Role {
@@ -125,7 +130,7 @@ impl Role {
 }
 
 impl Capability {
-    pub const ALL: [Capability; 11] = [
+    pub const ALL: [Capability; 12] = [
         Capability::NodeRead,
         Capability::MonitorsManage,
         Capability::IncidentsManage,
@@ -137,14 +142,18 @@ impl Capability {
         Capability::MembersManage,
         Capability::NodeMove,
         Capability::NodeDelete,
+        Capability::SlasManage,
     ];
 
-    /// Whether an API key may hold it. Who may access a node and whether the node exists stay
-    /// with people.
+    /// Whether an API key may hold it. Who may access a node, whether the node exists and what
+    /// it is held to by SLAs stay with people.
     pub const fn key_grantable(self) -> bool {
         !matches!(
             self,
-            Capability::MembersManage | Capability::NodeMove | Capability::NodeDelete
+            Capability::MembersManage
+                | Capability::NodeMove
+                | Capability::NodeDelete
+                | Capability::SlasManage
         )
     }
 
@@ -161,6 +170,7 @@ impl Capability {
             Capability::MembersManage => "members.manage",
             Capability::NodeMove => "node.move",
             Capability::NodeDelete => "node.delete",
+            Capability::SlasManage => "slas.manage",
         }
     }
 }
