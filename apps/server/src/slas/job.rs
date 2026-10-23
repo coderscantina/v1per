@@ -33,6 +33,8 @@ const BUSY_MS: i64 = 1_000;
 const RETRY_MS: i64 = 60_000;
 /// Days tallied per tick, each one minute rollup read.
 const TALLIES_PER_TICK: usize = 31;
+/// How long after its freeze a period is still checked for clocks that ran out late.
+const LATE_CLOCK_DAYS: i64 = 90;
 /// Periods frozen per tick, each a full period computation.
 const FREEZES_PER_TICK: usize = 3;
 
@@ -105,6 +107,7 @@ pub async fn catch_up(state: &AppState, now: i64) -> anyhow::Result<bool> {
     if !more {
         for (sla, calendar) in running {
             check_running(state, &sla, &calendar, now).await?;
+            check_late_clocks(state, &sla, &calendar, now).await?;
         }
     }
     Ok(more)
@@ -138,6 +141,46 @@ async fn check_running(
     let topics = alert(&mut tx, sla, &result, &signals, now).await?;
     tx.commit().await?;
     publish(state, &topics);
+    Ok(())
+}
+
+/// Queues the missed response and resolution clocks of incidents that were still open when
+/// their period froze. Periods frozen within [`LATE_CLOCK_DAYS`] are checked, and not those
+/// that closed before the SLA existed.
+async fn check_late_clocks(
+    state: &AppState,
+    sla: &Sla,
+    calendar: &PeriodCalendar,
+    now: i64,
+) -> anyhow::Result<()> {
+    let frozen: Vec<(i64, i64)> = sqlx::query_as(
+        "SELECT starts_at, frozen_at FROM sla_periods
+         WHERE sla_id = ? AND frozen_at > ? AND ends_at > ? ORDER BY starts_at",
+    )
+    .bind(sla.id.get())
+    .bind(now - LATE_CLOCK_DAYS * 86_400_000)
+    .bind(sla.created_at)
+    .fetch_all(&state.db.reader)
+    .await?;
+    for (starts_at, frozen_at) in frozen {
+        let Some(due) = calendar.containing(period::instant(starts_at)) else {
+            continue;
+        };
+        let result = {
+            let mut conn = state.db.reader.acquire().await?;
+            period::late_clocks(&mut conn, sla, &due, frozen_at, now)
+                .await
+                .map_err(failed)?
+        };
+        let signals = period::signals(&result);
+        if signals.is_empty() {
+            continue;
+        }
+        let mut tx = state.db.writer.begin_with("BEGIN IMMEDIATE").await?;
+        let topics = alert(&mut tx, sla, &result, &signals, now).await?;
+        tx.commit().await?;
+        publish(state, &topics);
+    }
     Ok(())
 }
 
