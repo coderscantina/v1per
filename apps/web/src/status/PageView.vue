@@ -10,6 +10,7 @@ import MaintenanceCard from './MaintenanceCard.vue'
 import { t } from './messages'
 import PageFigures from './PageFigures.vue'
 import { usePageRoute, viewLabel, views } from './route'
+import SlaCard from './SlaCard.vue'
 import StatusBanner from './StatusBanner.vue'
 import { pageView } from './view'
 
@@ -122,6 +123,22 @@ const incidentsKey = computed(() =>
             v-for="group in view.groups"
             :key="group.id"
             :group="group"
+          />
+        </section>
+
+        <section
+          v-if="view.slas.length > 0"
+          aria-labelledby="slas"
+          class="flex flex-col gap-3"
+        >
+          <h2
+            id="slas"
+            class="text-lg font-semibold text-primary"
+          >{{ t('sla.title') }}</h2>
+          <SlaCard
+            v-for="(sla, index) in view.slas"
+            :key="index"
+            :sla="sla"
           />
         </section>
       </template>
