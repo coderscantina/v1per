@@ -23,6 +23,7 @@ function snapshot(extra: Partial<PageSnapshot> = {}): PageSnapshot {
     groups: [],
     incidents: [],
     maintenance: [],
+    slas: [],
     cursor: 'page:1@0',
     generated_at: 0,
     ...extra,

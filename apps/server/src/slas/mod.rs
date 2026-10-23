@@ -1,16 +1,20 @@
 //! SLAs (decision 0012, milestone 14): `slas.*`, the checks behind `pages.updateSlas`, and
 //! keeping an SLA's monitors and channels in reach when nodes or monitors move. Periods are
-//! computed in [`period`]; [`run`] tallies days and freezes periods in the background, which
-//! is one query per tick on an install without SLAs.
+//! computed in [`period`]; [`run`] tallies days, freezes periods and sends alerts in the
+//! background, which is one query per tick on an install without SLAs. [`page`] builds the
+//! status page section.
 //!
 //! Reading needs `node.read` on the SLA's node. Writes need Admin through a grant on a strict
 //! ancestor, or the instance admin (`NodeScope::require_admin_above`), so a client Admin on
 //! the SLA's own node reads only.
 
 mod job;
+mod page;
 pub mod period;
 
 pub use job::{catch_up, run};
+pub use page::RunningCache;
+pub(crate) use page::for_page;
 
 use chrono::{NaiveDate, NaiveTime, Timelike};
 use chrono_tz::Tz;

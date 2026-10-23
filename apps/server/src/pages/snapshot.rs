@@ -2,9 +2,10 @@
 //!
 //! A snapshot reads the control database in one read transaction and the heartbeat store in
 //! its own snapshot. Public audiences get status, bars, uptime, published incidents and
-//! maintenance of the components not marked internal; the internal audience also gets every
-//! component, hourly response times and per-probe status. Monitor, component, node and person
-//! IDs, monitor targets and check messages never enter a snapshot.
+//! maintenance of the components not marked internal, and the aggregates of the SLAs the page
+//! shows; the internal audience also gets every component, hourly response times, per-probe
+//! status and per-monitor SLA rows. Monitor, component, node, person and SLA IDs, monitor
+//! targets, check messages and SLA incidents never enter a snapshot.
 
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex};
@@ -498,6 +499,7 @@ async fn build(
         Vec::new()
     };
     tx.rollback().await?;
+    let slas = crate::slas::for_page(state, page.page(), &shown.by_monitor, internal, now).await?;
 
     let storage_ids: Vec<storage::MonitorId> = monitors
         .iter()
@@ -674,6 +676,7 @@ async fn build(
         groups,
         incidents: published.into_iter().map(|p| p.incident).collect(),
         maintenance,
+        slas,
         cursor: Topic::page(page.page()).cursor(head),
         generated_at: now,
     })

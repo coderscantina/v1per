@@ -9414,7 +9414,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The monitor the message is about; for SLA events only a per-monitor breach has one."
           },
           "summary": {
             "type": "string",
@@ -9477,13 +9478,42 @@
         "description": "One message for one channel in the notification outbox."
       },
       "DeliveryEvent": {
-        "type": "string",
-        "enum": [
-          "monitor_down",
-          "monitor_up",
-          "certificate_expiry",
-          "probe_offline",
-          "test"
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "monitor_down",
+              "monitor_up",
+              "certificate_expiry",
+              "probe_offline",
+              "test"
+            ]
+          },
+          {
+            "type": "string",
+            "const": "sla_budget_warning",
+            "description": "75 % of an SLA's downtime budget used in a period."
+          },
+          {
+            "type": "string",
+            "const": "sla_availability_breach",
+            "description": "An SLA's availability target missed, by the service or one monitor."
+          },
+          {
+            "type": "string",
+            "const": "sla_response_missed",
+            "description": "An incident under an SLA without a response by its deadline."
+          },
+          {
+            "type": "string",
+            "const": "sla_resolution_missed",
+            "description": "An incident under an SLA not resolved by its deadline."
+          },
+          {
+            "type": "string",
+            "const": "sla_latency_breach",
+            "description": "A monitor's average latency above an SLA's target at period close."
+          }
         ]
       },
       "MonitorId": {
@@ -15714,6 +15744,13 @@
             },
             "description": "Maintenance under way or starting within 14 days."
           },
+          "slas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PageSla"
+            },
+            "description": "The SLAs the page shows, in the page's order."
+          },
           "cursor": {
             "type": "string",
             "description": "`page:<id>@<seq>`: subscribe to `<base>/events` from here to follow the snapshot."
@@ -15734,6 +15771,7 @@
           "groups",
           "incidents",
           "maintenance",
+          "slas",
           "cursor",
           "generated_at"
         ],
@@ -16111,6 +16149,359 @@
           "active",
           "components"
         ]
+      },
+      "PageSla": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA zone the periods are counted in."
+          },
+          "period": {
+            "$ref": "#/components/schemas/SlaPeriodKind"
+          },
+          "combine": {
+            "$ref": "#/components/schemas/SlaCombine"
+          },
+          "current": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageSlaPeriod"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The running period, as of the snapshot; absent before the contract starts."
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PageSlaPeriod"
+            },
+            "description": "Up to 12 closed periods, newest first. A period is listed once frozen, an hour after\nit closes."
+          }
+        },
+        "required": [
+          "name",
+          "timezone",
+          "period",
+          "combine",
+          "history"
+        ],
+        "description": "An SLA as a page shows it: targets and aggregates per period, never an incident or a\nmonitor the page does not show."
+      },
+      "SlaPeriodKind": {
+        "type": "string",
+        "enum": [
+          "month",
+          "quarter",
+          "year"
+        ],
+        "description": "How long one period lasts, in the SLA's timezone."
+      },
+      "SlaCombine": {
+        "oneOf": [
+          {
+            "type": "string",
+            "const": "each",
+            "description": "To every covered monitor on its own; the SLA misses when any monitor misses."
+          },
+          {
+            "type": "string",
+            "const": "any_down",
+            "description": "To one service timeline: a minute is down when any covered monitor is down in it."
+          }
+        ],
+        "description": "How the availability target applies to several monitors."
+      },
+      "PageSlaPeriod": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "description": "`YYYY-MM-DD`, the first day in the SLA's timezone."
+          },
+          "starts_at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "First instant of the period."
+          },
+          "ends_at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "First instant after the period."
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/SlaOutcome",
+            "description": "Missed when a commitment missed, no data when none has data."
+          },
+          "availability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageSlaAvailability"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absent without an availability target."
+          },
+          "latency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageSlaLatency"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absent without a latency target."
+          },
+          "response": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageSlaClock"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absent without a response target."
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageSlaClock"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absent without a resolution target."
+          },
+          "monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PageSlaMonitor"
+            },
+            "description": "Per covered monitor the page shows, by its page component. `internal` audience only."
+          }
+        },
+        "required": [
+          "start",
+          "starts_at",
+          "ends_at",
+          "outcome"
+        ],
+        "description": "One period against the targets it was computed with."
+      },
+      "SlaOutcome": {
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "met",
+              "missed"
+            ]
+          },
+          {
+            "type": "string",
+            "const": "on_track",
+            "description": "The period is running and the commitment is not missed yet."
+          },
+          {
+            "type": "string",
+            "const": "no_data",
+            "description": "The data cannot support it, such as `any_down` days without minute rollups."
+          }
+        ],
+        "description": "How a commitment stands."
+      },
+      "PageSlaAvailability": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "number",
+            "format": "double",
+            "description": "In percent."
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/SlaOutcome"
+          },
+          "actual": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "In percent: the service in `any_down` mode, the lowest monitor in `each` mode. Absent:\nno data."
+          },
+          "budget_used": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Share of the downtime budget used, 1 being all of it."
+          }
+        },
+        "required": [
+          "target",
+          "outcome"
+        ]
+      },
+      "PageSlaLatency": {
+        "type": "object",
+        "properties": {
+          "target_ms": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Average over up beats, in milliseconds."
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/SlaOutcome"
+          },
+          "actual_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "The highest monitor average, in milliseconds. Absent: no data."
+          }
+        },
+        "required": [
+          "target_ms",
+          "outcome"
+        ]
+      },
+      "PageSlaClock": {
+        "type": "object",
+        "properties": {
+          "targets": {
+            "$ref": "#/components/schemas/PageSlaTargets"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/SlaOutcome"
+          },
+          "counted": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Incidents that met or missed the target."
+          },
+          "met": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "within_target": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "`met / counted`; absent while none is counted."
+          },
+          "average_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Average business milliseconds of the counted incidents."
+          }
+        },
+        "required": [
+          "targets",
+          "outcome",
+          "counted",
+          "met"
+        ],
+        "description": "Response or resolution times of the incidents that started in the period."
+      },
+      "PageSlaTargets": {
+        "type": "object",
+        "properties": {
+          "major_outage": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0
+          },
+          "partial_outage": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0
+          },
+          "degraded": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0
+          }
+        },
+        "description": "Business minutes per worst impact; absent: no target for that impact."
+      },
+      "PageSlaMonitor": {
+        "type": "object",
+        "properties": {
+          "component": {
+            "$ref": "#/components/schemas/PageComponentId"
+          },
+          "availability": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "In percent. Absent: no data."
+          },
+          "availability_outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SlaOutcome"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "In `each` mode against the availability target."
+          },
+          "latency_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "latency_outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SlaOutcome"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "component"
+        ],
+        "description": "One covered monitor, named by the page component that shows it."
       },
       "ShareTokenArgs": {
         "type": "object",
@@ -16625,30 +17016,6 @@
         ],
         "description": "What `slas.create` and `slas.update` set."
       },
-      "SlaPeriodKind": {
-        "type": "string",
-        "enum": [
-          "month",
-          "quarter",
-          "year"
-        ],
-        "description": "How long one period lasts, in the SLA's timezone."
-      },
-      "SlaCombine": {
-        "oneOf": [
-          {
-            "type": "string",
-            "const": "each",
-            "description": "To every covered monitor on its own; the SLA misses when any monitor misses."
-          },
-          {
-            "type": "string",
-            "const": "any_down",
-            "description": "To one service timeline: a minute is down when any covered monitor is down in it."
-          }
-        ],
-        "description": "How the availability target applies to several monitors."
-      },
       "SlaTimeTargets": {
         "type": "object",
         "properties": {
@@ -17147,28 +17514,6 @@
           "outcome"
         ],
         "description": "The availability commitment over the period."
-      },
-      "SlaOutcome": {
-        "oneOf": [
-          {
-            "type": "string",
-            "enum": [
-              "met",
-              "missed"
-            ]
-          },
-          {
-            "type": "string",
-            "const": "on_track",
-            "description": "The period is running and the commitment is not missed yet."
-          },
-          {
-            "type": "string",
-            "const": "no_data",
-            "description": "The data cannot support it, such as `any_down` days without minute rollups."
-          }
-        ],
-        "description": "How a commitment stands."
       },
       "SlaClockSummary": {
         "type": "object",

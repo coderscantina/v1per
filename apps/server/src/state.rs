@@ -62,6 +62,8 @@ pub struct Inner {
     /// Sign-in links per recipient address.
     pub page_mails: RateLimiter,
     pub page_snapshots: SnapshotCache,
+    /// Running SLA periods as status pages last computed them.
+    pub running_slas: crate::slas::RunningCache,
     /// `instance.testSmtp` per person.
     pub smtp_tests: RateLimiter,
 }
@@ -96,6 +98,7 @@ impl AppState {
             page_attempts: RateLimiter::per_minute(PAGE_ACCESS_ATTEMPTS_PER_MINUTE),
             page_mails: RateLimiter::per_minute(PAGE_MAILS_PER_MINUTE),
             page_snapshots: SnapshotCache::default(),
+            running_slas: crate::slas::RunningCache::default(),
             smtp_tests: RateLimiter::per_minute(SMTP_TESTS_PER_MINUTE),
         }))
     }
