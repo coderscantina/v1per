@@ -1,6 +1,6 @@
 // Adapted from Kit (f447e797, MIT): resources/js/composables/useColorMode.ts.
 import { createSharedComposable } from '@vueuse/core'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, onScopeDispose, ref, watchEffect } from 'vue'
 
 export const colorModes = ['light', 'dark', 'system'] as const
 
@@ -31,8 +31,11 @@ const useColorModeBase = () => {
     prefersDark.value = event.matches
   })
 
-  const resolved = computed<Exclude<ColorMode, 'system'>>(() =>
-    mode.value === 'system' ? (prefersDark.value ? 'dark' : 'light') : mode.value
+  /** A mode a page sets for as long as it shows, such as light for a printable report. */
+  const forced = ref<Exclude<ColorMode, 'system'> | null>(null)
+
+  const resolved = computed<Exclude<ColorMode, 'system'>>(
+    () => forced.value ?? (mode.value === 'system' ? (prefersDark.value ? 'dark' : 'light') : mode.value)
   )
   const isDark = computed(() => resolved.value === 'dark')
 
@@ -53,7 +56,15 @@ const useColorModeBase = () => {
     }
   }
 
-  return { mode, resolved, isDark, setMode, colorModes }
+  /** Shows `next` until the scope that called it ends, without changing the reader's choice. */
+  const forceInScope = (next: Exclude<ColorMode, 'system'>): void => {
+    forced.value = next
+    onScopeDispose(() => {
+      forced.value = null
+    })
+  }
+
+  return { mode, resolved, isDark, setMode, forceInScope, colorModes }
 }
 
 /** One source of truth: several toggles on screen stay in step. */

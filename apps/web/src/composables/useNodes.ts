@@ -79,6 +79,8 @@ const itemSections: Record<string, NodeRouteName> = {
   'node-maintenance-edit': 'node-maintenance',
   'node-sla-new': 'node-slas',
   'node-sla-edit': 'node-slas',
+  'node-sla': 'node-slas',
+  'node-sla-report': 'node-slas',
   'node-channel': 'node-channels',
   'node-channel-new': 'node-channels',
   'node-channel-edit': 'node-channels',
