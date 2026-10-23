@@ -1,7 +1,7 @@
 import type { SlaOutcome, SlaPeriod, SlaTimeTarget } from '~/generated'
 import { formatNumber } from '~/lib/formats'
-import { durationParts, impactLabels } from '~/lib/incidents'
-import { slaImpacts } from '~/lib/sla-form'
+import { impactLabels } from '~/lib/incidents'
+import { durationParts, slaImpacts } from '~/lib/sla-form'
 import { highestLatency, periodTitle } from '~/lib/sla-period'
 import { useI18n } from '~/plugins/i18n'
 
@@ -36,11 +36,15 @@ export function useSlaFormat() {
   const percent = (value: number) => `${formatNumber(numberLocale.value, value, { maximumFractionDigits: 3 })} %`
   const share = (fraction: number) => `${formatNumber(numberLocale.value, fraction * 100, { maximumFractionDigits: 0 })} %`
   const ms = (value: number) => `${formatNumber(numberLocale.value, value, { maximumFractionDigits: 0 })} ms`
-  /** A span as its two largest units, "1h 25m". */
-  const duration = (span: number) =>
-    durationParts(span)
-      .map(([unit, value]) => new Intl.NumberFormat(locale.value, { style: 'unit', unit, unitDisplay: 'narrow' }).format(value))
+  /** Whole minutes as "4 h" or "1 h 30 min", as the SLA list shows them. */
+  const minutes = (total: number) => {
+    const parts = durationParts(total)
+    return [parts.hours > 0 ? t('slas.units.hours', { count: parts.hours }) : null, parts.minutes > 0 ? t('slas.units.minutes', { count: parts.minutes }) : null]
+      .filter((part) => part !== null)
       .join(' ')
+  }
+  /** A span in milliseconds as whole minutes, or "under 1 min" below one minute. */
+  const duration = (span: number) => (span < 60_000 ? t('slas.units.underMinute') : minutes(Math.floor(span / 60_000)))
 
   const title = (period: Pick<SlaPeriod, 'start' | 'terms'>) => periodTitle(period.terms.period, period.start, locale.value)
   /** First and last day in the SLA's timezone. */
@@ -55,8 +59,8 @@ export function useSlaFormat() {
   const timeTargets = (period: SlaPeriod, clock: keyof SlaTimeTarget) =>
     slaImpacts
       .flatMap((impact) => {
-        const minutes = period.terms.times?.[impact]?.[clock]
-        return minutes === undefined ? [] : [`${t(impactLabels[impact])} ${duration(minutes * 60_000)}`]
+        const target = period.terms.times?.[impact]?.[clock]
+        return target === undefined ? [] : [`${t(impactLabels[impact])} ${duration(target * 60_000)}`]
       })
       .join(' · ')
 
@@ -81,7 +85,7 @@ export function useSlaFormat() {
         label: t('slas.view.latency'),
         target: ms(terms.latency_ms),
         actual: highest === null ? null : ms(highest),
-        notes: [t('slas.view.highest')],
+        notes: [t('slas.view.highest'), ...(period.ends_at > Date.now() ? [t('slas.view.latencyAtEnd')] : [])],
         outcome: latency,
       })
     }
@@ -105,5 +109,5 @@ export function useSlaFormat() {
     return rows
   }
 
-  return { percent, share, ms, duration, title, range, commitments }
+  return { percent, share, ms, minutes, duration, title, range, commitments }
 }

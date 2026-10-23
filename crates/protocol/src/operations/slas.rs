@@ -224,7 +224,11 @@ pub enum SlaOutcome {
     Missed,
     /// The period is running and the commitment is not missed yet.
     OnTrack,
-    /// The data cannot support it, such as `any_down` days without minute rollups.
+    /// The period is running and the commitment is close to missing: 75 % of the downtime
+    /// budget used, or the average latency above its target (judged missed only at close).
+    AtRisk,
+    /// The data cannot support it, such as `any_down` days without minute rollups, or a period
+    /// in which no covered monitor has data and no incident counted.
     NoData,
 }
 
@@ -265,8 +269,10 @@ pub enum SlaClockOutcome {
     Missed,
     /// Open and before its deadline.
     Running,
-    /// No target for the incident's impact, or a response the resolution made unnecessary.
-    NotCounted,
+    /// No target for the incident's impact.
+    NoTarget,
+    /// Resolved within the target without a response from a person.
+    NotNeeded,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { PageSla, PageSlaPeriod } from '~/generated'
 
-import { formatMinutes, formatPeriod, periodLines, slaPeriodView, slaView } from './sla'
+import { formatAverage, formatMinutes, formatPeriod, periodLines, slaPeriodView, slaView } from './sla'
 
 function period(extra: Partial<PageSlaPeriod> = {}): PageSlaPeriod {
   return { start: '2026-10-01', starts_at: 0, ends_at: 1, outcome: 'on_track', ...extra }
@@ -11,15 +11,19 @@ function period(extra: Partial<PageSlaPeriod> = {}): PageSlaPeriod {
 const names = new Map([['c1', 'API']])
 
 describe('slaPeriodView', () => {
-  it('reads a running period at risk from 75 % of the budget or a latency above target', () => {
-    const budget = slaPeriodView(period({ availability: { target: 99.9, outcome: 'on_track', actual: 99.93, budget_used: 0.75 } }), names)
-    expect([budget.state, budget.availability?.state]).toEqual(['at_risk', 'at_risk'])
+  it('takes at risk from the server and derives nothing from the figures', () => {
+    const risky = slaPeriodView(
+      period({
+        outcome: 'at_risk',
+        availability: { target: 99.9, outcome: 'at_risk', actual: 99.93, budget_used: 0.75 },
+        latency: { target_ms: 300, outcome: 'at_risk', actual_ms: 340 },
+      }),
+      names
+    )
+    expect([risky.state, risky.availability?.state, risky.latency?.state]).toEqual(['at_risk', 'at_risk', 'at_risk'])
 
-    const calm = slaPeriodView(period({ availability: { target: 99.9, outcome: 'on_track', actual: 99.99, budget_used: 0.1 } }), names)
-    expect(calm.state).toBe('on_track')
-
-    const slow = slaPeriodView(period({ latency: { target_ms: 300, outcome: 'on_track', actual_ms: 340 } }), names)
-    expect([slow.state, slow.latency?.state]).toEqual(['at_risk', 'at_risk'])
+    const calm = slaPeriodView(period({ availability: { target: 99.9, outcome: 'on_track', actual: 99.99, budget_used: 0.9 } }), names)
+    expect([calm.state, calm.availability?.state]).toEqual(['on_track', 'on_track'])
   })
 
   it('keeps a miss and no data as the server says, never turning no data into a miss', () => {
@@ -77,5 +81,7 @@ describe('formatting', () => {
     expect(formatMinutes(240)).toBe('4 h')
     expect(formatMinutes(90)).toBe('1 h 30 min')
     expect(formatMinutes(2880)).toBe('2 d')
+    expect(formatAverage(45_000)).toBe('under 1 min')
+    expect(formatAverage(90_000)).toBe('1 min')
   })
 })

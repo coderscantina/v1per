@@ -123,13 +123,13 @@ type PageSla = {
   history: PageSlaPeriod[] // up to 12 frozen periods, newest first
 }
 
-type SlaOutcome = 'met' | 'missed' | 'on_track' | 'no_data'
+type SlaOutcome = 'met' | 'missed' | 'on_track' | 'at_risk' | 'no_data' // at_risk: running only
 
 type PageSlaPeriod = {
   start: string // YYYY-MM-DD, first day in the SLA's timezone
   starts_at: number
   ends_at: number // first instant after the period
-  outcome: SlaOutcome // missed when a commitment missed, no data when none has data
+  outcome: SlaOutcome // the worst commitment: missed, at_risk, on_track, met; no_data when none has data
   availability?: { target: number; outcome: SlaOutcome; actual?: number; budget_used?: number } // percent; budget share, 1 is all
   latency?: { target_ms: number; outcome: SlaOutcome; actual_ms?: number } // highest monitor average
   response?: PageSlaClock
@@ -156,6 +156,7 @@ Rules:
 - Maintenance shows while under way or when a window starts within 14 days, with the visible components it covers.
 - `slas` lists the SLAs selected with `pages.updateSlas`, per the [monitoring contract](../monitoring-contract.md#slas). Each period carries the targets it was computed with. Counts and averages include incidents that were never published, drafts too, but no incident, its title or its ID appears. No SLA ID, covered monitor list, channel or person appears either.
 - The `internal` audience also gets `monitors` per period: the covered monitors the page shows, named by their page component. A covered monitor not on the page is only in the aggregates.
+- `at_risk` is the server's call on a running period: 75 % of the downtime budget used and not exceeded, or an average latency above its target. Clients show it and derive nothing from the figures. A period in which no covered monitor has data and no incident started is `no_data`, for the response and resolution clocks too.
 - A closed period appears in `history` once it is frozen, an hour after it closes. The running period is computed at most once a minute per SLA, so its numbers can lag that long behind the snapshot.
 
 Colors follow the [monitoring contract](../monitoring-contract.md#component-color-and-page-status):

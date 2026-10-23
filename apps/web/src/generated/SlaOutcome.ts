@@ -3,4 +3,4 @@
 /**
  * How a commitment stands.
  */
-export type SlaOutcome = "met" | "missed" | "on_track" | "no_data";
+export type SlaOutcome = "met" | "missed" | "on_track" | "at_risk" | "no_data";

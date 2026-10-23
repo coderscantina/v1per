@@ -3,4 +3,4 @@
 /**
  * How one incident clock stands.
  */
-export type SlaClockOutcome = "met" | "missed" | "running" | "not_counted";
+export type SlaClockOutcome = "met" | "missed" | "running" | "no_target" | "not_needed";

@@ -16237,7 +16237,7 @@
           },
           "outcome": {
             "$ref": "#/components/schemas/SlaOutcome",
-            "description": "Missed when a commitment missed, no data when none has data."
+            "description": "The worst commitment: missed, at risk, on track or met. No data when none has data."
           },
           "availability": {
             "anyOf": [
@@ -16315,8 +16315,13 @@
           },
           {
             "type": "string",
+            "const": "at_risk",
+            "description": "The period is running and the commitment is close to missing: 75 % of the downtime\nbudget used, or the average latency above its target (judged missed only at close)."
+          },
+          {
+            "type": "string",
             "const": "no_data",
-            "description": "The data cannot support it, such as `any_down` days without minute rollups."
+            "description": "The data cannot support it, such as `any_down` days without minute rollups, or a period\nin which no covered monitor has data and no incident counted."
           }
         ],
         "description": "How a commitment stands."
@@ -17694,8 +17699,13 @@
           },
           {
             "type": "string",
-            "const": "not_counted",
-            "description": "No target for the incident's impact, or a response the resolution made unnecessary."
+            "const": "no_target",
+            "description": "No target for the incident's impact."
+          },
+          {
+            "type": "string",
+            "const": "not_needed",
+            "description": "Resolved within the target without a response from a person."
           }
         ],
         "description": "How one incident clock stands."

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { formatLatency, formatUptime } from './format'
 import { locale, t, type MessageKey } from './messages'
-import { formatMinutes, formatPeriod, formatShare, formatTarget, type ClockView, type SlaView } from './sla'
+import { formatAverage, formatMinutes, formatPeriod, formatShare, formatTarget, type ClockView, type SlaView } from './sla'
 import SlaHistory from './SlaHistory.vue'
 import SlaState from './SlaState.vue'
 import { periodKindLabel, slaTone, toneLabel } from './tones'
@@ -26,7 +26,7 @@ const clocks = computed(() => {
 
 function clockSummary(clock: ClockView): string {
   const parts = [t('sla.clock.counted', { met: clock.met, counted: clock.counted })]
-  if (clock.averageMs !== undefined) parts.push(t('sla.clock.average', { duration: formatMinutes(Math.max(1, Math.round(clock.averageMs / 60_000))) }))
+  if (clock.averageMs !== undefined) parts.push(t('sla.clock.average', { duration: formatAverage(clock.averageMs) }))
   return parts.join(' · ')
 }
 

@@ -108,30 +108,39 @@ fn business_clock(terms: &SlaInput, zone: Tz) -> Clock {
     BusinessHours::new(zone, ranges, holidays).map_or(Clock::AllHours, Clock::Business)
 }
 
-/// How a commitment stands from whether it missed and has data.
-fn outcome(closed: bool, missed: bool, has_data: bool) -> SlaOutcome {
+/// How a commitment stands from whether it missed, is at risk (running periods only) and has
+/// data.
+fn outcome(closed: bool, missed: bool, at_risk: bool, has_data: bool) -> SlaOutcome {
     if missed {
         SlaOutcome::Missed
     } else if !has_data {
         SlaOutcome::NoData
     } else if closed {
         SlaOutcome::Met
+    } else if at_risk {
+        SlaOutcome::AtRisk
     } else {
         SlaOutcome::OnTrack
     }
 }
 
-/// The SLA's outcome from its parts: missed when one missed, no data when none has data.
+/// The SLA's outcome from its parts, the worst one: missed, at risk, on track or met. No data
+/// when none has data.
 pub(crate) fn combined(outcomes: impl IntoIterator<Item = SlaOutcome>, closed: bool) -> SlaOutcome {
     let mut has_data = false;
+    let mut at_risk = false;
     for part in outcomes {
         match part {
             SlaOutcome::Missed => return SlaOutcome::Missed,
+            SlaOutcome::AtRisk => {
+                at_risk = true;
+                has_data = true;
+            }
             SlaOutcome::NoData => {}
             SlaOutcome::Met | SlaOutcome::OnTrack => has_data = true,
         }
     }
-    outcome(closed, false, has_data)
+    outcome(closed, false, at_risk, has_data)
 }
 
 /// Counted and down minutes of the service over the period up to `now`: the tallies of closed
@@ -261,13 +270,13 @@ fn response_clock(
     minutes: Option<u32>,
     now: DateTime<Utc>,
 ) -> SlaClock {
-    let not_counted = SlaClock {
-        outcome: SlaClockOutcome::NotCounted,
+    let silent = |outcome| SlaClock {
+        outcome,
         elapsed_ms: None,
         deadline: None,
     };
     let Some(minutes) = minutes else {
-        return not_counted;
+        return silent(SlaClockOutcome::NoTarget);
     };
     let target = TimeDelta::minutes(i64::from(minutes));
     match rules::response(times, target, clock, now) {
@@ -290,7 +299,7 @@ fn response_clock(
             elapsed_ms: so_far(clock, times, now),
             deadline: Some(deadline.timestamp_millis()),
         },
-        rules::Response::NotNeeded => not_counted,
+        rules::Response::NotNeeded => silent(SlaClockOutcome::NotNeeded),
     }
 }
 
@@ -302,7 +311,7 @@ fn resolution_clock(
 ) -> SlaClock {
     let Some(minutes) = minutes else {
         return SlaClock {
-            outcome: SlaClockOutcome::NotCounted,
+            outcome: SlaClockOutcome::NoTarget,
             elapsed_ms: None,
             deadline: None,
         };
@@ -327,8 +336,13 @@ fn resolution_clock(
     }
 }
 
-/// The clocks that met or missed their target, and how the commitment stands.
-fn clock_summary<'a>(clocks: impl Iterator<Item = &'a SlaClock>, closed: bool) -> SlaClockSummary {
+/// The clocks that met or missed their target, and how the commitment stands. `no_data`: no
+/// covered monitor has data and no incident started, so there is nothing to judge.
+fn clock_summary<'a>(
+    clocks: impl Iterator<Item = &'a SlaClock>,
+    closed: bool,
+    no_data: bool,
+) -> SlaClockSummary {
     let (mut counted, mut met, mut total, mut timed, mut running) = (0, 0, 0, 0, false);
     for clock in clocks {
         match clock.outcome {
@@ -338,7 +352,7 @@ fn clock_summary<'a>(clocks: impl Iterator<Item = &'a SlaClock>, closed: bool) -
                 running = true;
                 continue;
             }
-            SlaClockOutcome::NotCounted => continue,
+            SlaClockOutcome::NoTarget | SlaClockOutcome::NotNeeded => continue,
         }
         counted += 1;
         if let Some(elapsed) = clock.elapsed_ms {
@@ -348,6 +362,8 @@ fn clock_summary<'a>(clocks: impl Iterator<Item = &'a SlaClock>, closed: bool) -
     }
     let outcome = if met < counted {
         SlaOutcome::Missed
+    } else if no_data {
+        SlaOutcome::NoData
     } else if closed && !running {
         SlaOutcome::Met
     } else {
@@ -489,8 +505,9 @@ pub(crate) async fn compute(
                     DowntimeBudget::new(target, period.length(), BudgetBasis::Beats { interval });
                 let missed = budget.state(totals.down) == BudgetState::Exceeded
                     || closed && rules::below_target(availability, target);
+                let at_risk = !closed && budget.state(totals.down) == BudgetState::Warning;
                 (
-                    Some(outcome(closed, missed, availability.is_some())),
+                    Some(outcome(closed, missed, at_risk, availability.is_some())),
                     budget.share_used(totals.down),
                 )
             }
@@ -502,7 +519,8 @@ pub(crate) async fn compute(
             .flatten();
         let latency_outcome = terms.latency_ms.filter(|_| has_latency).map(|target| {
             let missed = closed && rules::latency_breached(latency, f64::from(target));
-            outcome(closed, missed, latency.is_some())
+            let at_risk = !closed && rules::latency_breached(latency, f64::from(target));
+            outcome(closed, missed, at_risk, latency.is_some())
         });
         standings.push(SlaMonitorStanding {
             monitor: MonitorId::new(monitor.id),
@@ -538,8 +556,9 @@ pub(crate) async fn compute(
             let budget = DowntimeBudget::new(target, period.length(), BudgetBasis::Minutes);
             let missed = budget.state(down) == BudgetState::Exceeded
                 || closed && rules::below_target(actual, target);
+            let at_risk = !closed && budget.state(down) == BudgetState::Warning;
             Some(SlaAvailabilityStanding {
-                outcome: outcome(closed, missed, actual.is_some()),
+                outcome: outcome(closed, missed, at_risk, actual.is_some()),
                 actual: actual.map(|ratio| ratio * 100.0),
                 budget_used: budget.share_used(down),
             })
@@ -551,6 +570,9 @@ pub(crate) async fn compute(
 
     let clock = business_clock(terms, calendar.zone);
     let incidents = incidents(conn, sla, &clock, period, None, instant(now)).await?;
+    let has_data = standings.iter().any(|m| m.availability.is_some())
+        || availability.is_some_and(|a| a.actual.is_some());
+    let no_data = !has_data && incidents.is_empty();
     let impacts = [
         terms.times.major_outage,
         terms.times.partial_outage,
@@ -559,11 +581,11 @@ pub(crate) async fn compute(
     let response = impacts
         .iter()
         .any(|t| t.response_minutes.is_some())
-        .then(|| clock_summary(incidents.iter().map(|i| &i.response), closed));
+        .then(|| clock_summary(incidents.iter().map(|i| &i.response), closed, no_data));
     let resolution = impacts
         .iter()
         .any(|t| t.resolution_minutes.is_some())
-        .then(|| clock_summary(incidents.iter().map(|i| &i.resolution), closed));
+        .then(|| clock_summary(incidents.iter().map(|i| &i.resolution), closed, no_data));
 
     Ok(SlaPeriod {
         sla: sla.id,

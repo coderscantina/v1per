@@ -355,6 +355,101 @@ async fn a_frozen_period_changes_only_through_recompute() {
     assert_eq!(f.period(&sla, Some("2026-09-01")).await, recomputed);
 }
 
+/// A running period is at risk once 75 % of the downtime budget is used and not yet exceeded:
+/// 99 % over October at one beat a minute allows 446 down beats.
+#[tokio::test]
+async fn a_running_period_is_at_risk_from_three_quarters_of_the_budget() {
+    let f = Fixture::new().await;
+    let sla = f
+        .sla(json!({ "start_date": "2026-10-01", "availability": 99.0, "monitors": [f.monitors[0]] }))
+        .await;
+    let start = ms("2026-10-05T00:00:00Z");
+    let down = |from: i64, count: i64| {
+        (from..from + count).map(move |i| (start + i * MINUTE_MS, Status::Down))
+    };
+    f.beats(0, down(0, 300)).await;
+    let period = f.period(&sla, None).await;
+    assert_eq!(period["monitors"][0]["availability_outcome"], "on_track");
+    assert_eq!(period["availability"]["outcome"], "on_track");
+
+    f.beats(0, down(300, 100)).await;
+    let period = f.period(&sla, None).await;
+    assert_eq!(period["monitors"][0]["availability_outcome"], "at_risk");
+    assert_eq!(period["availability"]["outcome"], "at_risk");
+
+    f.beats(0, down(400, 100)).await;
+    let period = f.period(&sla, None).await;
+    assert_eq!(period["availability"]["outcome"], "missed");
+}
+
+/// Latency is judged missed only when the period closes, so a running average above the
+/// target is at risk instead.
+#[tokio::test]
+async fn a_running_period_with_slow_latency_is_at_risk() {
+    let f = Fixture::new().await;
+    let admin = f.harness.session(&f.harness.admin).await;
+    let created = f
+        .harness
+        .ok(
+            &admin,
+            "monitors.create",
+            json!({ "node": f.client, "name": "site", "interval": 60,
+                    "settings": { "type": "http", "url": "http://site.test" } }),
+        )
+        .await;
+    let site = created["monitor"]["id"].as_str().unwrap().to_owned();
+    let sla = f
+        .sla(json!({ "start_date": "2026-10-01", "latency_ms": 250, "monitors": [site] }))
+        .await;
+    let beat = |time_ms, latency_ms| Heartbeat {
+        monitor: MonitorId(site.parse().unwrap()),
+        probe: None,
+        time_ms,
+        status: Status::Up,
+        latency_ms: Some(latency_ms),
+        message: String::new(),
+        retries: 0,
+        http_status: None,
+        cert_expiry_ms: None,
+    };
+    let storage = &f.harness.state.storage;
+    let start = ms("2026-10-05T00:00:00Z");
+    let admitted = storage
+        .admit(None, &[beat(start, 819), beat(start + MINUTE_MS, 819)])
+        .await
+        .unwrap();
+    storage
+        .watermark()
+        .wait_for(|w| w.sequence >= admitted.sequence)
+        .await
+        .unwrap();
+
+    let period = f.period(&sla, None).await;
+    assert_eq!(period["latency"], "at_risk");
+    assert_eq!(period["monitors"][0]["latency_outcome"], "at_risk");
+}
+
+/// A closed period before any monitor reported has nothing to judge, even without incidents.
+/// With data and no incident the clocks are met.
+#[tokio::test]
+async fn a_period_without_data_has_no_outcome() {
+    let f = Fixture::new().await;
+    let sla = f
+        .sla(json!({ "availability": 99.0, "times": { "major_outage": { "response_minutes": 30, "resolution_minutes": 240 } } }))
+        .await;
+    let empty = f.period(&sla, Some("2026-09-01")).await;
+    assert_eq!(empty["availability"]["outcome"], "no_data");
+    assert_eq!(empty["response"]["outcome"], "no_data");
+    assert_eq!(empty["resolution"]["outcome"], "no_data");
+
+    let start = ms("2026-08-31T22:00:00Z");
+    f.beats(0, (0..10).map(|i| (start + i * MINUTE_MS, Status::Up)))
+        .await;
+    let seen = f.period(&sla, Some("2026-09-01")).await;
+    assert_eq!(seen["response"]["outcome"], "met");
+    assert_eq!(seen["resolution"]["outcome"], "met");
+}
+
 /// An auto-incident that resolves before its response deadline without a human update needs
 /// no response: it is neither met nor missed. One still open at the deadline missed it.
 #[tokio::test]
@@ -375,10 +470,16 @@ async fn a_self_healed_incident_is_not_a_missed_response() {
         .await;
     let period = f.period(&sla, None).await;
     let healed = &period["incidents"][1];
-    assert_eq!(healed["response"]["outcome"], "not_counted");
+    assert_eq!(healed["response"]["outcome"], "not_needed");
     assert_eq!(healed["resolution"]["outcome"], "met");
     assert_eq!(period["response"]["counted"], 1);
     assert_eq!(period["response"]["met"], 0);
+
+    let resolution_only = f
+        .sla(json!({ "start_date": "2026-10-01", "times": { "major_outage": { "resolution_minutes": 240 } } }))
+        .await;
+    let period = f.period(&resolution_only, None).await;
+    assert_eq!(period["incidents"][1]["response"]["outcome"], "no_target");
 }
 
 /// Business hours stop the clocks over a weekend: Friday 16:00 to Monday 10:00 in Vienna is
