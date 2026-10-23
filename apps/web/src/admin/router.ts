@@ -15,6 +15,8 @@ declare module 'vue-router' {
     enrollment?: boolean
     /** Instance admins only; anyone else gets the not-found page. */
     instanceAdmin?: boolean
+    /** Without the shell and always light, for a signed-in reader: a page meant for printing. */
+    print?: boolean
     /** Which of the two ways of working a node page belongs to. */
     mode?: Mode
   }
@@ -109,6 +111,18 @@ const routes: RouteRecordRaw[] = [
     name: 'node-sla-edit',
     component: () => import('./pages/SlaEditorPage.vue'),
     meta: { mode: 'configure' },
+  },
+  {
+    path: '/n/:nodeId(\\d+)/slas/:slaId(\\d+)',
+    name: 'node-sla',
+    component: () => import('./pages/SlaPeriodPage.vue'),
+    meta: { mode: 'configure' },
+  },
+  {
+    path: '/n/:nodeId(\\d+)/slas/:slaId(\\d+)/report/:start(\\d{4}-\\d{2}-\\d{2})',
+    name: 'node-sla-report',
+    component: () => import('./pages/SlaReportPage.vue'),
+    meta: { print: true },
   },
   { path: '/n/:nodeId(\\d+)/channels', name: 'node-channels', component: () => import('./pages/NodeChannelsPage.vue'), meta: { mode: 'configure' } },
   {

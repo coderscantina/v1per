@@ -25,7 +25,8 @@ import { useI18n } from '~/plugins/i18n'
 
 /**
  * A node's SLAs, live: each one's period, how availability combines over its monitors and
- * its targets. Staff with Admin above the node add, edit and delete them; a client reads them.
+ * its targets. The name opens its periods. Staff with Admin above the node add, edit and
+ * delete them; a client reads them.
  */
 const { t, locale } = useI18n()
 const { formats, numberLocale } = useFormats()
@@ -213,16 +214,11 @@ const columns = 6
             >
               <div class="grid min-w-0 gap-0.5">
                 <RouterLink
-                  v-if="manage"
-                  :to="{ name: 'node-sla-edit', params: { nodeId: sla.node, slaId: sla.id } }"
+                  :to="{ name: 'node-sla', params: { nodeId: sla.node, slaId: sla.id } }"
                   class="truncate rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
                   {{ sla.name }}
                 </RouterLink>
-                <span
-                  v-else
-                  class="truncate"
-                >{{ sla.name }}</span>
                 <span class="truncate text-xs font-normal text-muted">{{ since(sla) }}</span>
                 <ul
                   v-if="lines.length > 0"
