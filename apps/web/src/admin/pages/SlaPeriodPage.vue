@@ -279,7 +279,7 @@ const failed = computed(() => (detail.error.value && !sla.value ? detail.error.v
         id="sla-commitments"
         :title="t('slas.view.commitments')"
       >
-        <dl
+        <div
           v-if="commitments.length > 0"
           class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
         >
@@ -290,15 +290,17 @@ const failed = computed(() => (detail.error.value && !sla.value ? detail.error.v
             :data-commitment="entry.key"
           >
             <div class="flex items-start justify-between gap-2">
-              <StatFigure
-                :label="entry.label"
-                :value="entry.actual"
-              >
-                <span
-                  v-if="entry.actual === null"
-                  class="font-normal text-muted"
-                >{{ t('slas.view.noData') }}</span>
-              </StatFigure>
+              <dl class="min-w-0">
+                <StatFigure
+                  :label="entry.label"
+                  :value="entry.actual"
+                >
+                  <span
+                    v-if="entry.actual === null"
+                    class="font-normal text-muted"
+                  >{{ t('slas.view.noData') }}</span>
+                </StatFigure>
+              </dl>
               <SlaStandingBadge :standing="entry.outcome" />
             </div>
             <Progress
@@ -319,7 +321,7 @@ const failed = computed(() => (detail.error.value && !sla.value ? detail.error.v
               </p>
             </div>
           </div>
-        </dl>
+        </div>
         <p
           v-else
           class="text-sm text-muted"
