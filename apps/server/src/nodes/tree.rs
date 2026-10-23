@@ -13,6 +13,7 @@ use v1per_protocol::operations::nodes::TreeNode;
 
 use crate::error::ApiError;
 use crate::identity::KeyCaller;
+use crate::nodes::scope::person_capabilities;
 
 #[derive(sqlx::FromRow)]
 struct Row {
@@ -23,6 +24,8 @@ struct Row {
     two_factor_required: bool,
     /// The highest rank reaching this node, `None` for a placeholder.
     rank: Option<i64>,
+    /// The highest rank from grants on strict ancestors, 3 for the instance admin.
+    above_rank: Option<i64>,
 }
 
 /// What `user` sees, depth first with siblings in order. With `key`, only the key's subtree is
@@ -34,18 +37,18 @@ pub async fn visible(
 ) -> Result<Vec<TreeNode>, ApiError> {
     let mut rows: Vec<Row> = sqlx::query_as(
         "WITH RECURSIVE
-           granted(id, rank) AS (
+           granted(id, rank, inherited) AS (
              SELECT node_id, CASE role WHEN 'owner' THEN 3 WHEN 'admin' THEN 2
-                                       WHEN 'member' THEN 1 ELSE 0 END
+                                       WHEN 'member' THEN 1 ELSE 0 END, 0
                FROM grants WHERE user_id = ?1
              UNION ALL
-             SELECT n.id, 3 FROM nodes n JOIN users u ON u.id = ?1
+             SELECT n.id, 3, 1 FROM nodes n JOIN users u ON u.id = ?1
               WHERE n.parent_id IS NULL AND u.instance_admin = 1
            ),
-           below(id, rank) AS (
-             SELECT id, rank FROM granted
+           below(id, rank, inherited) AS (
+             SELECT id, rank, inherited FROM granted
              UNION ALL
-             SELECT n.id, b.rank FROM nodes n JOIN below b ON n.parent_id = b.id
+             SELECT n.id, b.rank, 1 FROM nodes n JOIN below b ON n.parent_id = b.id
            ),
            above(id) AS (
              SELECT n.parent_id FROM nodes n JOIN granted g ON n.id = g.id
@@ -54,12 +57,14 @@ pub async fn visible(
              SELECT n.parent_id FROM nodes n JOIN above a ON n.id = a.id
               WHERE n.parent_id IS NOT NULL
            ),
-           shown(id, rank) AS (
-             SELECT id, MAX(rank) FROM below GROUP BY id
+           shown(id, rank, above_rank) AS (
+             SELECT id, MAX(rank), MAX(CASE WHEN inherited = 1 THEN rank END)
+               FROM below GROUP BY id
              UNION ALL
-             SELECT id, NULL FROM above WHERE id NOT IN (SELECT id FROM below)
+             SELECT id, NULL, NULL FROM above WHERE id NOT IN (SELECT id FROM below)
            )
-         SELECT n.id, n.parent_id AS parent, n.name, n.position, n.two_factor_required, s.rank
+         SELECT n.id, n.parent_id AS parent, n.name, n.position, n.two_factor_required, s.rank,
+                s.above_rank
          FROM shown s JOIN nodes n ON n.id = s.id",
     )
     .bind(user.as_str())
@@ -87,7 +92,9 @@ pub async fn visible(
         let role = row.rank.and_then(Role::from_rank);
         let capabilities: Vec<Capability> = match (role, key) {
             (None, _) => Vec::new(),
-            (Some(role), None) => role.capabilities().to_vec(),
+            (Some(role), None) => {
+                person_capabilities(role, row.above_rank.and_then(Role::from_rank))
+            }
             (Some(role), Some(key)) => role
                 .capabilities()
                 .iter()

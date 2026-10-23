@@ -3,4 +3,4 @@
 /**
  * What a node scope allows. A closed set: every node-scoped operation names one.
  */
-export type Capability = "node.read" | "monitors.manage" | "incidents.manage" | "maintenance.manage" | "pages.manage" | "channels.manage" | "probes.manage" | "node.write" | "members.manage" | "node.move" | "node.delete";
+export type Capability = "node.read" | "monitors.manage" | "incidents.manage" | "maintenance.manage" | "pages.manage" | "channels.manage" | "probes.manage" | "node.write" | "members.manage" | "node.move" | "node.delete" | "slas.manage";

@@ -1,5 +1,5 @@
 {
-  "about": "The briefing's example tree (decision 0001) with one person per kind of grant. Each person sees exactly `sees` (node name to effective role) and, above them, `placeholders` without names. `roles` pins the capability matrix in docs/contracts/capability-matrix.md.",
+  "about": "The briefing's example tree (decision 0001) with one person per kind of grant. Each person sees exactly `sees` (node name to effective role) and, above them, `placeholders` without names. On the nodes in `manage_slas` they also hold `slas.manage`, from Admin or Owner on a strict ancestor (decision 0012). `roles` pins the capability matrix in docs/contracts/capability-matrix.md.",
   "roles": {
     "owner": ["node.read", "monitors.manage", "incidents.manage", "maintenance.manage", "pages.manage", "channels.manage", "probes.manage", "node.write", "members.manage", "node.move", "node.delete"],
     "admin": ["node.read", "monitors.manage", "incidents.manage", "maintenance.manage", "pages.manage", "channels.manage", "probes.manage", "node.write", "members.manage"],
@@ -27,18 +27,24 @@
         "kaessbohrer": "owner", "website": "owner", "landing page": "owner",
         "autohaus": "owner", "schmidt": "owner", "motormobile": "owner"
       },
+      "manage_slas": [
+        "Root", "operations", "scaleway", "aws", "products", "b10cks", "ravn", "client services",
+        "kaessbohrer", "website", "landing page", "autohaus", "schmidt", "motormobile"
+      ],
       "placeholders": []
     },
     {
       "name": "ops engineer",
       "grants": { "operations": "owner" },
       "sees": { "operations": "owner", "scaleway": "owner", "aws": "owner" },
+      "manage_slas": ["scaleway", "aws"],
       "placeholders": ["Root"]
     },
     {
       "name": "kaessbohrer client",
       "grants": { "kaessbohrer": "admin" },
       "sees": { "kaessbohrer": "admin", "website": "admin", "landing page": "admin" },
+      "manage_slas": ["website", "landing page"],
       "placeholders": ["Root", "client services"]
     },
     {
@@ -61,6 +67,7 @@
         "kaessbohrer": "viewer", "website": "viewer", "landing page": "viewer",
         "autohaus": "admin", "schmidt": "admin", "motormobile": "admin"
       },
+      "manage_slas": ["schmidt", "motormobile"],
       "placeholders": ["Root"]
     }
   ]

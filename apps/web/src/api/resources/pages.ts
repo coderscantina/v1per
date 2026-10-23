@@ -9,6 +9,7 @@ import type {
   PagesUpdateAccessArgs,
   PagesUpdateArgs,
   PagesUpdateLayoutArgs,
+  PagesUpdateSlasArgs,
   ShareTokenId,
 } from '~/generated'
 
@@ -26,6 +27,7 @@ export const pagesResource = {
   update: (args: PagesUpdateArgs) => api.command('pages.update', args),
   updateAccess: (args: PagesUpdateAccessArgs) => api.command('pages.updateAccess', args),
   updateLayout: (args: PagesUpdateLayoutArgs) => api.command('pages.updateLayout', args),
+  updateSlas: (args: PagesUpdateSlasArgs) => api.command('pages.updateSlas', args),
   claimHostname: (page: PageId, hostname: string) => api.command('pages.claimHostname', { page, hostname }),
   releaseHostname: (page: PageId, hostname: string) => api.command('pages.releaseHostname', { page, hostname }),
   /** The image as the raw body; the server recognizes PNG, JPEG, GIF, WebP and SVG by their bytes. */

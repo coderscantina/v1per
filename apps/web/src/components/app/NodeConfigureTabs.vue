@@ -29,6 +29,7 @@ const sections: Record<ConfigureSection, { label: MessageKey; icon: IconName }> 
   'node-channels': { label: 'nav.channels', icon: 'lucide:bell' },
   'node-probes': { label: 'nav.probes', icon: 'lucide:radio-tower' },
   'node-maintenance': { label: 'nav.maintenance', icon: 'lucide:wrench' },
+  'node-slas': { label: 'slas.title', icon: 'lucide:file-check' },
   'node-members': { label: 'nav.members', icon: 'lucide:users' },
   'node-settings': { label: 'nav.settings', icon: 'lucide:settings-2' },
 }
