@@ -4521,6 +4521,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "v1per-sla"
+version = "26.10.20"
+dependencies = [
+ "chrono",
+ "chrono-tz",
+ "thiserror",
+]
+
+[[package]]
 name = "v1per-storage"
 version = "26.10.20"
 dependencies = [
