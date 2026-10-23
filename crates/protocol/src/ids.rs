@@ -174,6 +174,12 @@ row_id!(
 );
 
 row_id!(
+    /// A service level agreement, owned by one node.
+    SlaId,
+    "SLA"
+);
+
+row_id!(
     /// A share token of one status page.
     ShareTokenId,
     "share token"

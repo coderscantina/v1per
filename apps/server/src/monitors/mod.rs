@@ -940,6 +940,7 @@ impl MonitorsHandlers for AppState {
             notifications::prune_moved(ctx.conn(), &moved).await?;
             maintenance::prune_moved(ctx.conn(), &moved).await?;
             pages::prune_moved(ctx).await?;
+            crate::slas::prune_moved(ctx).await?;
             renumber(ctx.conn(), from, None).await?;
         }
         renumber(ctx.conn(), args.node, Some((&moved, args.position))).await?;

@@ -991,6 +991,7 @@ impl PageLive {
                 maintenance: None,
                 component: None,
                 page: None,
+                sla: None,
             })
             .collect())
     }

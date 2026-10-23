@@ -2,8 +2,13 @@
 import type { Page } from "./Page";
 import type { PageGroup } from "./PageGroup";
 import type { PageShareToken } from "./PageShareToken";
+import type { SlaId } from "./SlaId";
 
 export type PageDetail = { page: Page, groups: Array<PageGroup>, share_tokens: Array<PageShareToken>, 
+/**
+ * The SLAs the page shows, in order.
+ */
+slas: Array<SlaId>, 
 /**
  * The instance can send sign-in links: SMTP is set up.
  */

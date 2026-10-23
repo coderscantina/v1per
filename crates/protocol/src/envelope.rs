@@ -41,7 +41,8 @@ pub struct Empty {}
 /// node below it), `probes:<id>` (the probes registered on it), `channels:<id>` (its
 /// notification channels and their deliveries), and `incidents:<id>`, `maintenance:<id>` and
 /// `components:<id>` (those of the node and every node below it), `pages:<id>` (the status
-/// pages of the node and every node below it) and, per status page, `page:<id>`: everything
+/// pages of the node and every node below it), `slas:<id>` (the SLAs of the node and every
+/// node below it) and, per status page, `page:<id>`: everything
 /// its snapshot shows, which the public page stream follows.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Topic(String);
@@ -93,6 +94,10 @@ impl Topic {
 
     pub fn pages(node: crate::ids::NodeId) -> Self {
         Self(format!("pages:{node}"))
+    }
+
+    pub fn slas(node: crate::ids::NodeId) -> Self {
+        Self(format!("slas:{node}"))
     }
 
     pub fn page(page: crate::ids::PageId) -> Self {

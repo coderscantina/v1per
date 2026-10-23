@@ -7,6 +7,7 @@ use ts_rs::TS;
 
 use crate::ids::{
     ChannelId, ComponentId, DeliveryId, IncidentId, MaintenanceId, MonitorId, PageId, ProbeId,
+    SlaId,
 };
 
 /// A frame of `/api/subscribe`, which may carry several topics: the frame of one of them.
@@ -75,6 +76,10 @@ pub struct LiveEvent {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub page: Option<PageId>,
+    /// The SLA of an `sla.*` event.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub sla: Option<SlaId>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]

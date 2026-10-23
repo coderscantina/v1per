@@ -6349,6 +6349,73 @@
         }
       }
     },
+    "/api/commands/pages.updateSlas": {
+      "post": {
+        "operationId": "pages.updateSlas",
+        "description": "Replaces the SLAs the page shows, in order. Each must be on the page's node or below\n and listed once (`invalid_value` on `slas`). Needs `pages.manage`.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x-v1per-request",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CommandKey"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PagesUpdateSlasArgs"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PageDetail"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/queries/probes.available": {
       "get": {
         "operationId": "probes.available",
@@ -6637,6 +6704,445 @@
                     },
                     {
                       "$ref": "#/components/schemas/ProbeResult"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/commands/slas.create": {
+      "post": {
+        "operationId": "slas.create",
+        "description": "Creates an SLA on `node`. `monitors` must be on the node or below and `channels` on\n the node or an ancestor (`invalid_value` on the field). Needs Admin through a grant\n on an ancestor of `node`, or the instance admin.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x-v1per-request",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CommandKey"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SlasCreateArgs"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SlaResult"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/commands/slas.delete": {
+      "post": {
+        "operationId": "slas.delete",
+        "description": "Deletes an SLA with its frozen periods and tallies, and takes it off status pages.\n Needs Admin through a grant on an ancestor of the SLA's node.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x-v1per-request",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CommandKey"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SlaArgs"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SlaDeleted"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/queries/slas.get": {
+      "get": {
+        "operationId": "slas.get",
+        "description": "One SLA. Needs `node.read` on its node. On the node's `slas:<id>` topic.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sla",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SlaId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SnapshotMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SlaDetail"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/queries/slas.list": {
+      "get": {
+        "operationId": "slas.list",
+        "description": "The SLAs of a node, or with `subtree` of the node and every node below it, by name.\n Needs `node.read`. On the node's `slas:<id>` topic.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "node",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/NodeId"
+            }
+          },
+          {
+            "name": "subtree",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SnapshotMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SlaList"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/queries/slas.period": {
+      "get": {
+        "operationId": "slas.period",
+        "description": "One period of an SLA: frozen when it closed more than an hour ago, computed now\n otherwise. Needs `node.read` on the SLA's node. On the node's `slas:<id>` topic.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sla",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SlaId"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "`YYYY-MM-DD`, the first day of the period. Absent: the running period. Required for\n`slas.recompute`, which takes closed periods only."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SnapshotMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SlaPeriodResult"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/commands/slas.recompute": {
+      "post": {
+        "operationId": "slas.recompute",
+        "description": "Computes a closed period again from the current terms and data and freezes the\n result in place of the old one. Needs Admin through a grant on an ancestor of the\n SLA's node.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x-v1per-request",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CommandKey"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SlaPeriodArgs"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SlaPeriodResult"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/commands/slas.update": {
+      "post": {
+        "operationId": "slas.update",
+        "description": "Replaces an SLA's terms. Frozen periods keep the terms they were computed with.\n Needs Admin through a grant on an ancestor of the SLA's node.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x-v1per-request",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CommandKey"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SlasUpdateArgs"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SlaResult"
                     }
                   ]
                 }
@@ -14510,6 +15016,13 @@
               "$ref": "#/components/schemas/PageShareToken"
             }
           },
+          "slas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlaId"
+            },
+            "description": "The SLAs the page shows, in order."
+          },
           "smtp_configured": {
             "type": "boolean",
             "description": "The instance can send sign-in links: SMTP is set up."
@@ -14519,6 +15032,7 @@
           "page",
           "groups",
           "share_tokens",
+          "slas",
           "smtp_configured"
         ]
       },
@@ -14613,7 +15127,7 @@
           "revision": {
             "type": "integer",
             "format": "int64",
-            "description": "Rises with every change to settings, access, layout, hostnames or logo. Pass it as\n`expected_revision`."
+            "description": "Rises with every change to settings, access, layout, SLAs, hostnames or logo. Pass it as\n`expected_revision`."
           },
           "created_at": {
             "type": "integer",
@@ -14853,6 +15367,10 @@
       "ShareTokenId": {
         "type": "string",
         "description": "A share token of one status page."
+      },
+      "SlaId": {
+        "type": "string",
+        "description": "A service level agreement, owned by one node."
       },
       "PagesCreateArgs": {
         "type": "object",
@@ -15818,6 +16336,32 @@
           "target"
         ]
       },
+      "PagesUpdateSlasArgs": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "$ref": "#/components/schemas/PageId"
+          },
+          "expected_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "slas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlaId"
+            },
+            "description": "Up to 20 SLAs, in the order the page shows them."
+          }
+        },
+        "required": [
+          "page",
+          "slas"
+        ]
+      },
       "ProbeChoiceList": {
         "type": "object",
         "properties": {
@@ -15983,6 +16527,928 @@
           "probe",
           "name"
         ]
+      },
+      "SlasCreateArgs": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "$ref": "#/components/schemas/NodeId"
+          },
+          "name": {
+            "type": "string",
+            "description": "1 to 100 characters after trimming."
+          },
+          "timezone": {
+            "type": "string",
+            "description": "An IANA zone such as `Europe/Vienna`. Periods, days and business hours are counted in it."
+          },
+          "period": {
+            "$ref": "#/components/schemas/SlaPeriodKind"
+          },
+          "start_date": {
+            "type": "string",
+            "description": "`YYYY-MM-DD`, the contract start. Periods before the one holding it are not computed."
+          },
+          "combine": {
+            "$ref": "#/components/schemas/SlaCombine"
+          },
+          "availability": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Availability target in percent, above 0 and at most 100, up to three decimals."
+          },
+          "latency_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Average latency target in milliseconds, 1 to 600,000."
+          },
+          "times": {
+            "$ref": "#/components/schemas/SlaTimeTargets",
+            "default": {
+              "major_outage": {},
+              "partial_outage": {},
+              "degraded": {}
+            }
+          },
+          "hours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlaHours"
+            },
+            "description": "Weekly business hours the time targets count. Empty: around the clock.",
+            "default": []
+          },
+          "holidays": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "`YYYY-MM-DD` days without business hours, up to 1,000.",
+            "default": []
+          },
+          "monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonitorId"
+            },
+            "description": "1 to 500 monitors on the SLA's node or below."
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelId"
+            },
+            "description": "Channels on the SLA's node or an ancestor that get its warnings and breaches.",
+            "default": []
+          }
+        },
+        "required": [
+          "node",
+          "name",
+          "timezone",
+          "period",
+          "start_date",
+          "combine",
+          "monitors"
+        ],
+        "description": "What `slas.create` and `slas.update` set."
+      },
+      "SlaPeriodKind": {
+        "type": "string",
+        "enum": [
+          "month",
+          "quarter",
+          "year"
+        ],
+        "description": "How long one period lasts, in the SLA's timezone."
+      },
+      "SlaCombine": {
+        "oneOf": [
+          {
+            "type": "string",
+            "const": "each",
+            "description": "To every covered monitor on its own; the SLA misses when any monitor misses."
+          },
+          {
+            "type": "string",
+            "const": "any_down",
+            "description": "To one service timeline: a minute is down when any covered monitor is down in it."
+          }
+        ],
+        "description": "How the availability target applies to several monitors."
+      },
+      "SlaTimeTargets": {
+        "type": "object",
+        "properties": {
+          "major_outage": {
+            "$ref": "#/components/schemas/SlaTimeTarget",
+            "default": {}
+          },
+          "partial_outage": {
+            "$ref": "#/components/schemas/SlaTimeTarget",
+            "default": {}
+          },
+          "degraded": {
+            "$ref": "#/components/schemas/SlaTimeTarget",
+            "default": {}
+          }
+        },
+        "description": "Time targets by the worst impact an incident reached on a covered monitor."
+      },
+      "SlaTimeTarget": {
+        "type": "object",
+        "properties": {
+          "response_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0,
+            "description": "1 to 525,600 minutes from start to the first update a person writes."
+          },
+          "resolution_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0,
+            "description": "1 to 525,600 minutes from start to resolution."
+          }
+        },
+        "description": "Response and resolution targets for incidents of one impact, in business minutes."
+      },
+      "SlaHours": {
+        "type": "object",
+        "properties": {
+          "weekday": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255,
+            "description": "0 to 6, Sunday is 0."
+          },
+          "start": {
+            "type": "string",
+            "description": "`HH:MM`."
+          },
+          "end": {
+            "type": "string",
+            "description": "`HH:MM` after `start`, or `24:00` for the end of the day."
+          }
+        },
+        "required": [
+          "weekday",
+          "start",
+          "end"
+        ],
+        "description": "Business hours on one weekday. Ranges of one weekday must not overlap."
+      },
+      "SlaResult": {
+        "type": "object",
+        "properties": {
+          "sla": {
+            "$ref": "#/components/schemas/Sla"
+          }
+        },
+        "required": [
+          "sla"
+        ]
+      },
+      "Sla": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/SlaId"
+          },
+          "node": {
+            "$ref": "#/components/schemas/NodeId"
+          },
+          "name": {
+            "type": "string",
+            "description": "1 to 100 characters after trimming."
+          },
+          "timezone": {
+            "type": "string",
+            "description": "An IANA zone such as `Europe/Vienna`. Periods, days and business hours are counted in it."
+          },
+          "period": {
+            "$ref": "#/components/schemas/SlaPeriodKind"
+          },
+          "start_date": {
+            "type": "string",
+            "description": "`YYYY-MM-DD`, the contract start. Periods before the one holding it are not computed."
+          },
+          "combine": {
+            "$ref": "#/components/schemas/SlaCombine"
+          },
+          "availability": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Availability target in percent, above 0 and at most 100, up to three decimals."
+          },
+          "latency_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Average latency target in milliseconds, 1 to 600,000."
+          },
+          "times": {
+            "$ref": "#/components/schemas/SlaTimeTargets",
+            "default": {
+              "major_outage": {},
+              "partial_outage": {},
+              "degraded": {}
+            }
+          },
+          "hours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlaHours"
+            },
+            "description": "Weekly business hours the time targets count. Empty: around the clock.",
+            "default": []
+          },
+          "holidays": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "`YYYY-MM-DD` days without business hours, up to 1,000.",
+            "default": []
+          },
+          "monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonitorId"
+            },
+            "description": "1 to 500 monitors on the SLA's node or below."
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelId"
+            },
+            "description": "Channels on the SLA's node or an ancestor that get its warnings and breaches.",
+            "default": []
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Rises with every change. Pass it as `expected_revision` to `slas.update`."
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "id",
+          "node",
+          "name",
+          "timezone",
+          "period",
+          "start_date",
+          "combine",
+          "monitors",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "description": "What `slas.create` and `slas.update` set."
+      },
+      "SlaArgs": {
+        "type": "object",
+        "properties": {
+          "sla": {
+            "$ref": "#/components/schemas/SlaId"
+          }
+        },
+        "required": [
+          "sla"
+        ]
+      },
+      "SlaDeleted": {
+        "type": "object",
+        "properties": {
+          "sla": {
+            "$ref": "#/components/schemas/SlaId"
+          }
+        },
+        "required": [
+          "sla"
+        ]
+      },
+      "SlaDetail": {
+        "type": "object",
+        "properties": {
+          "sla": {
+            "$ref": "#/components/schemas/Sla"
+          }
+        },
+        "required": [
+          "sla"
+        ]
+      },
+      "SlasListArgs": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "$ref": "#/components/schemas/NodeId"
+          },
+          "subtree": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "node"
+        ]
+      },
+      "SlaList": {
+        "type": "object",
+        "properties": {
+          "slas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sla"
+            }
+          }
+        },
+        "required": [
+          "slas"
+        ]
+      },
+      "SlaPeriodArgs": {
+        "type": "object",
+        "properties": {
+          "sla": {
+            "$ref": "#/components/schemas/SlaId"
+          },
+          "start": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`YYYY-MM-DD`, the first day of the period. Absent: the running period. Required for\n`slas.recompute`, which takes closed periods only."
+          }
+        },
+        "required": [
+          "sla"
+        ]
+      },
+      "SlaPeriodResult": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/SlaPeriod"
+          }
+        },
+        "required": [
+          "period"
+        ]
+      },
+      "SlaPeriod": {
+        "type": "object",
+        "properties": {
+          "sla": {
+            "$ref": "#/components/schemas/SlaId"
+          },
+          "start": {
+            "type": "string",
+            "description": "`YYYY-MM-DD`, the first day in the SLA's timezone."
+          },
+          "starts_at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "First instant of the period."
+          },
+          "ends_at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "First instant after the period."
+          },
+          "frozen_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "When the stored result was computed; absent while the period is computed live."
+          },
+          "terms": {
+            "$ref": "#/components/schemas/SlaInput",
+            "description": "The terms the result was computed with."
+          },
+          "availability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SlaAvailabilityStanding"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absent without an availability target."
+          },
+          "latency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SlaOutcome"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absent without a latency target."
+          },
+          "response": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SlaClockSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absent without any response target."
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SlaClockSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absent without any resolution target."
+          },
+          "monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlaMonitorStanding"
+            }
+          },
+          "incidents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlaIncidentStanding"
+            },
+            "description": "By start time."
+          }
+        },
+        "required": [
+          "sla",
+          "start",
+          "starts_at",
+          "ends_at",
+          "terms",
+          "monitors",
+          "incidents"
+        ],
+        "description": "One period of an SLA against the terms it was computed with."
+      },
+      "SlaInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "1 to 100 characters after trimming."
+          },
+          "timezone": {
+            "type": "string",
+            "description": "An IANA zone such as `Europe/Vienna`. Periods, days and business hours are counted in it."
+          },
+          "period": {
+            "$ref": "#/components/schemas/SlaPeriodKind"
+          },
+          "start_date": {
+            "type": "string",
+            "description": "`YYYY-MM-DD`, the contract start. Periods before the one holding it are not computed."
+          },
+          "combine": {
+            "$ref": "#/components/schemas/SlaCombine"
+          },
+          "availability": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Availability target in percent, above 0 and at most 100, up to three decimals."
+          },
+          "latency_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Average latency target in milliseconds, 1 to 600,000."
+          },
+          "times": {
+            "$ref": "#/components/schemas/SlaTimeTargets",
+            "default": {
+              "major_outage": {},
+              "partial_outage": {},
+              "degraded": {}
+            }
+          },
+          "hours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlaHours"
+            },
+            "description": "Weekly business hours the time targets count. Empty: around the clock.",
+            "default": []
+          },
+          "holidays": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "`YYYY-MM-DD` days without business hours, up to 1,000.",
+            "default": []
+          },
+          "monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonitorId"
+            },
+            "description": "1 to 500 monitors on the SLA's node or below."
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelId"
+            },
+            "description": "Channels on the SLA's node or an ancestor that get its warnings and breaches.",
+            "default": []
+          }
+        },
+        "required": [
+          "name",
+          "timezone",
+          "period",
+          "start_date",
+          "combine",
+          "monitors"
+        ],
+        "description": "What `slas.create` and `slas.update` set."
+      },
+      "SlaAvailabilityStanding": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/SlaOutcome"
+          },
+          "actual": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "In percent: the service timeline in `any_down` mode, the lowest monitor in `each`\nmode. Absent: no data."
+          },
+          "budget_used": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Share of the downtime budget used, 1 being all of it: the service's in `any_down`\nmode, the highest monitor's in `each` mode."
+          }
+        },
+        "required": [
+          "outcome"
+        ],
+        "description": "The availability commitment over the period."
+      },
+      "SlaOutcome": {
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "met",
+              "missed"
+            ]
+          },
+          {
+            "type": "string",
+            "const": "on_track",
+            "description": "The period is running and the commitment is not missed yet."
+          },
+          {
+            "type": "string",
+            "const": "no_data",
+            "description": "The data cannot support it, such as `any_down` days without minute rollups."
+          }
+        ],
+        "description": "How a commitment stands."
+      },
+      "SlaClockSummary": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/SlaOutcome"
+          },
+          "counted": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "met": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "average_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Average business milliseconds of the counted incidents."
+          }
+        },
+        "required": [
+          "outcome",
+          "counted",
+          "met"
+        ],
+        "description": "Counted incidents of one clock: those that met or missed it."
+      },
+      "SlaMonitorStanding": {
+        "type": "object",
+        "properties": {
+          "monitor": {
+            "$ref": "#/components/schemas/MonitorId"
+          },
+          "name": {
+            "type": "string",
+            "description": "The monitor's name when the period was computed."
+          },
+          "availability": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Up count over up and down count in percent, pending counted as down. Absent: no data."
+          },
+          "availability_outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SlaOutcome"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "In `each` mode against the availability target; absent otherwise."
+          },
+          "budget_used": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Share of this monitor's downtime budget used, 1 being all of it. `each` mode only."
+          },
+          "latency_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Average latency of up beats in milliseconds. Absent for monitor types without latency\nand without data."
+          },
+          "latency_outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SlaOutcome"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Against the latency target; absent without one or for types without latency."
+          }
+        },
+        "required": [
+          "monitor",
+          "name"
+        ],
+        "description": "One covered monitor over the period."
+      },
+      "SlaIncidentStanding": {
+        "type": "object",
+        "properties": {
+          "incident": {
+            "$ref": "#/components/schemas/IncidentId"
+          },
+          "title": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "resolved_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "impact": {
+            "$ref": "#/components/schemas/Impact",
+            "description": "The worst impact any update set on a covered monitor."
+          },
+          "response": {
+            "$ref": "#/components/schemas/SlaClock"
+          },
+          "resolution": {
+            "$ref": "#/components/schemas/SlaClock"
+          }
+        },
+        "required": [
+          "incident",
+          "title",
+          "started_at",
+          "impact",
+          "response",
+          "resolution"
+        ],
+        "description": "An incident that names a covered monitor and started in the period, drafts included."
+      },
+      "SlaClock": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/SlaClockOutcome"
+          },
+          "elapsed_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Business milliseconds from start to the stop, or to now while running."
+          },
+          "deadline": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "When the target runs out, as an instant."
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      },
+      "SlaClockOutcome": {
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "met",
+              "missed"
+            ]
+          },
+          {
+            "type": "string",
+            "const": "running",
+            "description": "Open and before its deadline."
+          },
+          {
+            "type": "string",
+            "const": "not_counted",
+            "description": "No target for the incident's impact, or a response the resolution made unnecessary."
+          }
+        ],
+        "description": "How one incident clock stands."
+      },
+      "SlasUpdateArgs": {
+        "type": "object",
+        "properties": {
+          "sla": {
+            "$ref": "#/components/schemas/SlaId"
+          },
+          "expected_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The SLA's `revision` the edit is based on; `stale_revision` with the current one\notherwise."
+          },
+          "name": {
+            "type": "string",
+            "description": "1 to 100 characters after trimming."
+          },
+          "timezone": {
+            "type": "string",
+            "description": "An IANA zone such as `Europe/Vienna`. Periods, days and business hours are counted in it."
+          },
+          "period": {
+            "$ref": "#/components/schemas/SlaPeriodKind"
+          },
+          "start_date": {
+            "type": "string",
+            "description": "`YYYY-MM-DD`, the contract start. Periods before the one holding it are not computed."
+          },
+          "combine": {
+            "$ref": "#/components/schemas/SlaCombine"
+          },
+          "availability": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Availability target in percent, above 0 and at most 100, up to three decimals."
+          },
+          "latency_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Average latency target in milliseconds, 1 to 600,000."
+          },
+          "times": {
+            "$ref": "#/components/schemas/SlaTimeTargets",
+            "default": {
+              "major_outage": {},
+              "partial_outage": {},
+              "degraded": {}
+            }
+          },
+          "hours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlaHours"
+            },
+            "description": "Weekly business hours the time targets count. Empty: around the clock.",
+            "default": []
+          },
+          "holidays": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "`YYYY-MM-DD` days without business hours, up to 1,000.",
+            "default": []
+          },
+          "monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonitorId"
+            },
+            "description": "1 to 500 monitors on the SLA's node or below."
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelId"
+            },
+            "description": "Channels on the SLA's node or an ancestor that get its warnings and breaches.",
+            "default": []
+          }
+        },
+        "required": [
+          "sla",
+          "name",
+          "timezone",
+          "period",
+          "start_date",
+          "combine",
+          "monitors"
+        ],
+        "description": "What `slas.create` and `slas.update` set."
       },
       "TwoFactorEnrollment": {
         "type": "object",

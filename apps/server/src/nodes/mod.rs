@@ -172,6 +172,7 @@ impl NodesHandlers for AppState {
         crate::notifications::prune_moved(ctx.conn(), &moved).await?;
         crate::incidents::maintenance::prune_moved(ctx.conn(), &moved).await?;
         crate::pages::prune_moved(ctx).await?;
+        crate::slas::prune_moved(ctx).await?;
         crate::incidents::maintenance::refresh_in(ctx).await?;
         renumber(ctx.conn(), from, None).await?;
         audience.extend(tree::audience(ctx.conn(), args.node).await?);

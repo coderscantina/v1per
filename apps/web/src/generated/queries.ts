@@ -63,6 +63,12 @@ import type { ProbeChoiceList } from './ProbeChoiceList'
 import type { ProbeList } from './ProbeList'
 import type { ScopeTrend } from './ScopeTrend'
 import type { SessionState } from './SessionState'
+import type { SlaArgs } from './SlaArgs'
+import type { SlaDetail } from './SlaDetail'
+import type { SlaList } from './SlaList'
+import type { SlaPeriodArgs } from './SlaPeriodArgs'
+import type { SlaPeriodResult } from './SlaPeriodResult'
+import type { SlasListArgs } from './SlasListArgs'
 import type { TwoFactorStatus } from './TwoFactorStatus'
 import type { UptimeArgs } from './UptimeArgs'
 
@@ -109,7 +115,10 @@ export interface Queries {
   'pages.preview': { args: PagesPreviewArgs; result: PagePreview; access: 'person'; key: true }
   'probes.available': { args: NodeArgs; result: ProbeChoiceList; access: 'person'; key: true }
   'probes.list': { args: NodeArgs; result: ProbeList; access: 'person'; key: true }
+  'slas.get': { args: SlaArgs; result: SlaDetail; access: 'person'; key: false }
+  'slas.list': { args: SlasListArgs; result: SlaList; access: 'person'; key: false }
+  'slas.period': { args: SlaPeriodArgs; result: SlaPeriodResult; access: 'person'; key: false }
   'twoFactor.status': { args: Empty; result: TwoFactorStatus; access: 'person'; key: false }
 }
 
-export const queryNames = ['account.get', 'account.grants', 'account.preferences', 'apiKeys.list', 'auth.session', 'channels.available', 'channels.deliveries', 'channels.delivery', 'channels.get', 'channels.list', 'channels.monitorDeliveries', 'components.list', 'imports.get', 'imports.inventory', 'imports.list', 'incidents.get', 'incidents.list', 'incidents.publications', 'instance.info', 'instance.operations', 'instance.settings', 'invitations.preview', 'maintenance.get', 'maintenance.list', 'maintenance.preview', 'members.invitations', 'members.list', 'monitors.dayBars', 'monitors.get', 'monitors.heartbeats', 'monitors.hourly', 'monitors.latency', 'monitors.list', 'monitors.trend', 'monitors.uptime', 'nodes.get', 'nodes.tree', 'pages.get', 'pages.list', 'pages.preview', 'probes.available', 'probes.list', 'twoFactor.status'] as const satisfies readonly (keyof Queries)[]
+export const queryNames = ['account.get', 'account.grants', 'account.preferences', 'apiKeys.list', 'auth.session', 'channels.available', 'channels.deliveries', 'channels.delivery', 'channels.get', 'channels.list', 'channels.monitorDeliveries', 'components.list', 'imports.get', 'imports.inventory', 'imports.list', 'incidents.get', 'incidents.list', 'incidents.publications', 'instance.info', 'instance.operations', 'instance.settings', 'invitations.preview', 'maintenance.get', 'maintenance.list', 'maintenance.preview', 'members.invitations', 'members.list', 'monitors.dayBars', 'monitors.get', 'monitors.heartbeats', 'monitors.hourly', 'monitors.latency', 'monitors.list', 'monitors.trend', 'monitors.uptime', 'nodes.get', 'nodes.tree', 'pages.get', 'pages.list', 'pages.preview', 'probes.available', 'probes.list', 'slas.get', 'slas.list', 'slas.period', 'twoFactor.status'] as const satisfies readonly (keyof Queries)[]

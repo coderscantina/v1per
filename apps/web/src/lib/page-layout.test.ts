@@ -41,6 +41,7 @@ const detail = (revision: number, layout: PageGroup[] = groups): PageDetail => (
   page: { id: 'p1', node: 'n1', access: { public: false }, hostnames: [], path: '/s/acme', revision, created_at: 0, updated_at: 0, slug: 'acme', title: 'Acme' },
   groups: layout,
   share_tokens: [],
+  slas: [],
   smtp_configured: false,
 })
 
