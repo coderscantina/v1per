@@ -9,13 +9,18 @@
 
 mod access;
 mod badge;
+pub(crate) mod deliveries;
+mod feeds;
 mod logo;
 mod mail;
 mod public;
 pub(crate) mod publish;
 mod snapshot;
+mod subscribers;
+mod subscription_text;
 mod text;
 
+pub use deliveries::run as run_deliveries;
 pub(crate) use logo::upload as upload_logo;
 pub(crate) use public::{host_routing, hostname_router, instance_routes};
 pub use publish::run as run_auto_publish;
@@ -46,6 +51,10 @@ use v1per_protocol::operations::pages::{
     PagesCreateShareTokenArgs, PagesHandlers, PagesHostnameArgs, PagesListArgs, PagesPreviewArgs,
     PagesUpdateAccessArgs, PagesUpdateArgs, PagesUpdateLayoutArgs, PagesUpdateSlasArgs,
     ShareTokenArgs, ShareTokenCreated, ShareTokenRevoked,
+};
+use v1per_protocol::operations::pages::{
+    PageSubscriberArgs, PageSubscriberRemoved, PageSubscribers, PageWebhook, PageWebhookArgs,
+    PageWebhookRemoved, PagesAddWebhookArgs,
 };
 use v1per_protocol::registry::Snapshot;
 use v1per_protocol::status_page::{Accent, Locale, PageTheme};
@@ -1285,5 +1294,37 @@ impl PagesHandlers for AppState {
                 snapshot: (*built.snapshot).clone(),
             },
         })
+    }
+
+    async fn pages_subscribers(
+        &self,
+        ctx: &mut QueryCtx,
+        args: PageArgs,
+    ) -> Result<Snapshot<PageSubscribers>, ApiError> {
+        subscribers::list(ctx, args).await
+    }
+
+    async fn pages_remove_subscriber(
+        &self,
+        ctx: &mut CommandCtx,
+        args: PageSubscriberArgs,
+    ) -> Result<PageSubscriberRemoved, ApiError> {
+        subscribers::remove_subscriber(ctx, args).await
+    }
+
+    async fn pages_add_webhook(
+        &self,
+        ctx: &mut CommandCtx,
+        args: PagesAddWebhookArgs,
+    ) -> Result<PageWebhook, ApiError> {
+        subscribers::add_webhook(self, ctx, args).await
+    }
+
+    async fn pages_remove_webhook(
+        &self,
+        ctx: &mut CommandCtx,
+        args: PageWebhookArgs,
+    ) -> Result<PageWebhookRemoved, ApiError> {
+        subscribers::remove_webhook(ctx, args).await
     }
 }

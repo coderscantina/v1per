@@ -169,6 +169,10 @@ pub struct PageSnapshot {
     /// `page:<id>@<seq>`: subscribe to `<base>/events` from here to follow the snapshot.
     pub cursor: String,
     pub generated_at: i64,
+    /// How visitors can follow the page; absent while its `subscriptions` setting is off.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub subscriptions: Option<PageSubscriptions>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
@@ -459,4 +463,105 @@ pub struct PageEmailBody {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
 pub struct PageRedeemBody {
     pub code: String,
+}
+
+/// What a page with the `subscriptions` setting offers its visitors. Email needs the instance
+/// mail server; the feeds and the calendar open without a share token on a public page only.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSubscriptions {
+    /// `POST <base>/subscribe` mails confirmation links.
+    pub email: bool,
+    /// `<base>/feed.atom`, `<base>/feed.rss` and `<base>/maintenance.ics` open without a token.
+    pub feeds: bool,
+    /// The components a subscription may follow: those not marked internal, in page order.
+    pub components: Vec<PageComponentId>,
+}
+
+/// `POST <base>/subscribe`: mails a confirmation link. The answer is the same whether or not
+/// one was sent.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSubscribeBody {
+    pub email: String,
+    /// Only incidents and maintenance touching one of these notify; absent or empty: the
+    /// whole page.
+    #[serde(default)]
+    #[ts(as = "Option<Vec<PageComponentId>>", optional)]
+    pub components: Vec<PageComponentId>,
+    /// Language of the emails; absent: the page's default.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub locale: Option<Locale>,
+}
+
+/// `POST <base>/subscription`, `<base>/subscription/confirm` and `<base>/unsubscribe` with the
+/// `token` of a subscriber's links.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSubscriptionToken {
+    pub token: String,
+}
+
+/// `POST <base>/subscription/components`: replaces what a subscription follows.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSubscriptionComponents {
+    pub token: String,
+    /// Empty: the whole page.
+    pub components: Vec<PageComponentId>,
+}
+
+/// A subscription as its links open it.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSubscription {
+    pub email: String,
+    pub confirmed: bool,
+    /// What it follows; empty: the whole page.
+    pub components: Vec<PageComponentId>,
+    /// What it may follow, with the names the page shows.
+    pub available: Vec<PageNamedComponent>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageNamedComponent {
+    pub id: PageComponentId,
+    pub name: String,
+}
+
+/// What a page tells its subscribers about.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum PageNotificationEvent {
+    /// An incident was published to the page.
+    IncidentPublished,
+    /// A published incident has a new update.
+    IncidentUpdated,
+    IncidentResolved,
+    /// A maintenance window shows on the page for the first time.
+    MaintenanceScheduled,
+    MaintenanceStarted,
+}
+
+/// The JSON body a page webhook receives, in the page's default locale. The incident and the
+/// maintenance are as the public snapshot shows them.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageNotification {
+    pub event: PageNotificationEvent,
+    pub page: PageNotificationPage,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub incident: Option<PublicIncident>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub maintenance: Option<PublicMaintenance>,
+    /// The components the incident or maintenance names, with the names the page shows.
+    pub components: Vec<PageNamedComponent>,
+    pub sent_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageNotificationPage {
+    pub slug: String,
+    pub title: String,
+    /// Where the page is served; absent without a public URL or a claimed hostname.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub url: Option<String>,
 }

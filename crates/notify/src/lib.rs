@@ -75,6 +75,19 @@ pub struct Delivered {
     pub detail: String,
 }
 
+/// Posts `body` as JSON to `url` with the webhook channels' client, bounded by the context's
+/// timeout. For callers with a body of their own, such as status page webhooks.
+pub async fn post_json(
+    url: &str,
+    body: &impl serde::Serialize,
+    ctx: &SendContext,
+) -> Result<Delivered, SendError> {
+    let url = http::url(Some(url), "webhook URL")?;
+    tokio::time::timeout(ctx.timeout, http::deliver(ctx.http.post(url).json(body)))
+        .await
+        .map_err(|_| SendError::Timeout(ctx.timeout))?
+}
+
 /// Delivers `event` through `channel`, bounded by the context's timeout.
 pub async fn send(
     channel: &ChannelConfig,

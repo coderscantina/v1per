@@ -184,3 +184,15 @@ row_id!(
     ShareTokenId,
     "share token"
 );
+
+row_id!(
+    /// An email address that follows one status page.
+    PageSubscriberId,
+    "page subscriber"
+);
+
+row_id!(
+    /// A URL a status page posts its incidents and maintenance to.
+    PageWebhookId,
+    "page webhook"
+);

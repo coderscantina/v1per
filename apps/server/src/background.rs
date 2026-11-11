@@ -1,6 +1,7 @@
 //! Work beside request handling: the built-in probe, the monitor evaluator, the notification
-//! outbox, the maintenance timer, status page auto-publication, SLA tallies and freezing, and
-//! operator jobs, which include the hourly retention run. Started once the server is composed, stopped before
+//! outbox, the maintenance timer, status page auto-publication and subscriber deliveries, SLA
+//! tallies and freezing, and operator jobs, which include the hourly retention run. Started
+//! once the server is composed, stopped before
 //! storage and the control database close.
 
 use tokio::sync::watch;
@@ -16,6 +17,7 @@ pub struct Background {
     outbox: JoinHandle<()>,
     maintenance: JoinHandle<()>,
     auto_publish: JoinHandle<()>,
+    page_deliveries: JoinHandle<()>,
     slas: JoinHandle<()>,
     jobs: JoinHandle<()>,
     state: AppState,
@@ -49,6 +51,10 @@ impl Background {
                 state.clone(),
                 stopped.clone(),
             )),
+            page_deliveries: tokio::spawn(crate::pages::run_deliveries(
+                state.clone(),
+                stopped.clone(),
+            )),
             slas: tokio::spawn(crate::slas::run(state.clone(), stopped.clone())),
             jobs: tokio::spawn(crate::maintenance::jobs::follow(state.clone(), stopped)),
             stop,
@@ -71,6 +77,7 @@ impl Background {
         let _ = self.outbox.await;
         let _ = self.maintenance.await;
         let _ = self.auto_publish.await;
+        let _ = self.page_deliveries.await;
         let _ = self.slas.await;
         let _ = self.jobs.await;
     }

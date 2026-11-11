@@ -21,6 +21,10 @@ deliveries: number,
  */
 sessions: number, login_challenges: number, page_sessions: number, page_email_codes: number, 
 /**
+ * Status page subscriptions not confirmed within 24 hours.
+ */
+unconfirmed_subscribers: number, 
+/**
  * Command answers past their replay window.
  */
 idempotency_keys: number, 

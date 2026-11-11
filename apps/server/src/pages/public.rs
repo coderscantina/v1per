@@ -60,11 +60,11 @@ const PRIVATE: &str = "private, no-store";
 struct HostPage(i64);
 
 /// The page a request is for, and the path prefix of its routes.
-struct Located {
-    page: PageRow,
+pub(super) struct Located {
+    pub(super) page: PageRow,
     /// `/s/<slug>`, or empty on a claimed hostname.
-    base: String,
-    claimed: bool,
+    pub(super) base: String,
+    pub(super) claimed: bool,
 }
 
 impl FromRequestParts<AppState> for Located {
@@ -111,15 +111,15 @@ impl FromRequestParts<AppState> for Located {
 }
 
 #[derive(Default, Deserialize)]
-struct Params {
-    token: Option<String>,
-    locale: Option<String>,
+pub(super) struct Params {
+    pub(super) token: Option<String>,
+    pub(super) locale: Option<String>,
     cursor: Option<String>,
     component: Option<String>,
     limit: Option<String>,
 }
 
-fn params(parts: &Parts) -> Params {
+pub(super) fn params(parts: &Parts) -> Params {
     serde_html_form::from_str(parts.uri.query().unwrap_or_default()).unwrap_or_default()
 }
 
@@ -138,6 +138,8 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/events", get(stream))
         .route("/badge/{name}", get(badge))
         .route("/logo", get(logo_file))
+        .merge(super::subscribers::routes())
+        .merge(super::feeds::routes())
         .layer(DefaultBodyLimit::max(ACCESS_BODY_MAX))
 }
 
@@ -203,7 +205,7 @@ pub(crate) async fn host_routing(
 
 /// The locale a request asks for among the page's: `?locale=`, then `Accept-Language`, then
 /// the page's default.
-fn pick_locale(page: &PageRow, asked: Option<&str>, headers: &HeaderMap) -> Locale {
+pub(super) fn pick_locale(page: &PageRow, asked: Option<&str>, headers: &HeaderMap) -> Locale {
     let enabled = page.locales();
     let accepted = headers
         .get(header::ACCEPT_LANGUAGE)
@@ -221,7 +223,11 @@ fn pick_locale(page: &PageRow, asked: Option<&str>, headers: &HeaderMap) -> Loca
         .unwrap_or_else(|| page.default_locale())
 }
 
-fn visitor<'a>(parts: &'a Parts, address: &'a str, token: Option<&'a str>) -> Visitor<'a> {
+pub(super) fn visitor<'a>(
+    parts: &'a Parts,
+    address: &'a str,
+    token: Option<&'a str>,
+) -> Visitor<'a> {
     Visitor {
         headers: &parts.headers,
         address,
@@ -253,7 +259,7 @@ fn script_json(json: &str) -> String {
         .replace('\u{2029}', "\\u2029")
 }
 
-fn escape_html(text: &str) -> String {
+pub(super) fn escape_html(text: &str) -> String {
     text.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
@@ -305,7 +311,11 @@ async fn gate(state: &AppState, located: &Located, locale: Locale) -> Result<Pag
 }
 
 /// `<base>`, `<base>/t/<token>` and `<base>/access/email`: the page app with its boot JSON.
-async fn html(State(state): State<AppState>, located: Located, request: Request) -> Response {
+pub(super) async fn html(
+    State(state): State<AppState>,
+    located: Located,
+    request: Request,
+) -> Response {
     match render(&state, &located, request).await {
         Ok(response) => response,
         Err(error) => error.into_response(),
@@ -378,6 +388,13 @@ async fn render(
         })
         .map_err(ApiError::internal)?,
     };
+    let mut html = inject(&template, &boot, &page.title, locale);
+    if let (Some(links), Some(at)) = (
+        super::feeds::alternate_links(page, &located.base),
+        html.find("</head>"),
+    ) {
+        html.insert_str(at, &links);
+    }
     let mut response = (
         [
             (header::CONTENT_TYPE, "text/html; charset=utf-8"),
@@ -387,7 +404,7 @@ async fn render(
             ),
             (header::VARY, "Cookie, Accept-Language"),
         ],
-        inject(&template, &boot, &page.title, locale),
+        html,
     )
         .into_response();
     if let Some(cookie) = cookie.and_then(|cookie| HeaderValue::from_str(&cookie).ok()) {
@@ -608,7 +625,11 @@ async fn logo_file(State(state): State<AppState>, located: Located) -> Response 
 }
 
 /// Access requests must come from the page's own origin as JSON.
-fn check_post(state: &AppState, located: &Located, headers: &HeaderMap) -> Result<(), ApiError> {
+pub(super) fn check_post(
+    state: &AppState,
+    located: &Located,
+    headers: &HeaderMap,
+) -> Result<(), ApiError> {
     let rejected = || ApiError::new(ErrorCode::OriginRejected);
     let origin = headers
         .get(header::ORIGIN)
@@ -628,7 +649,7 @@ fn check_post(state: &AppState, located: &Located, headers: &HeaderMap) -> Resul
     if allowed { Ok(()) } else { Err(rejected()) }
 }
 
-fn json_body<T: DeserializeOwned>(body: &[u8]) -> Result<T, ApiError> {
+pub(super) fn json_body<T: DeserializeOwned>(body: &[u8]) -> Result<T, ApiError> {
     serde_json::from_slice(body)
         .map_err(|error| ApiError::with_message(ErrorCode::MalformedRequest, error.to_string()))
 }
@@ -683,6 +704,34 @@ async fn password(
     }
 }
 
+/// The origin of links mailed for this request: the claimed hostname it came to, or the
+/// instance's public URL. `None` on the instance host without a public URL.
+pub(super) async fn link_origin(
+    state: &AppState,
+    located: &Located,
+    headers: &HeaderMap,
+) -> Result<Option<String>, ApiError> {
+    let mut conn = state.db.reader.acquire().await?;
+    let public_url = instance::effective(&mut conn, &state.config)
+        .await?
+        .public_url;
+    drop(conn);
+    Ok(if located.claimed {
+        let scheme = match &public_url {
+            Some(url) if url.starts_with("http://") => "http",
+            _ => "https",
+        };
+        let host = headers
+            .get(header::HOST)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        Some(format!("{scheme}://{host}"))
+    } else {
+        // The request's own Host could be forged, so links name the configured URL only.
+        public_url
+    })
+}
+
 /// `POST <base>/access/email`: mails a sign-in link to an allowed address. Answers `202`
 /// whether or not the address is allowed, so the list cannot be probed.
 async fn request_link(
@@ -702,27 +751,7 @@ async fn request_link(
         if !page.allows_email(&email) {
             return Ok(());
         }
-        let mut conn = state.db.reader.acquire().await?;
-        let public_url = instance::effective(&mut conn, &state.config)
-            .await?
-            .public_url;
-        drop(conn);
-        let origin = if located.claimed {
-            let scheme = match &public_url {
-                Some(url) if url.starts_with("http://") => "http",
-                _ => "https",
-            };
-            let host = parts
-                .headers
-                .get(header::HOST)
-                .and_then(|value| value.to_str().ok())
-                .unwrap_or_default();
-            Some(format!("{scheme}://{host}"))
-        } else {
-            // The request's own Host could be forged, so links name the configured URL only.
-            public_url
-        };
-        let Some(origin) = origin else {
+        let Some(origin) = link_origin(&state, &located, &parts.headers).await? else {
             tracing::warn!(
                 page = page.id,
                 "sign-in links need the instance's public URL"

@@ -15,10 +15,11 @@ use chrono::{DateTime, Days, NaiveDate, Offset};
 use chrono_tz::Tz;
 use sqlx::SqliteConnection;
 use v1per_protocol::envelope::Topic;
-use v1per_protocol::ids::{IncidentId, MonitorId, PageComponentId, PageGroupId};
+use v1per_protocol::ids::{IncidentId, MaintenanceId, MonitorId, PageComponentId, PageGroupId};
 use v1per_protocol::limits::DAY_BARS_MAX;
 use v1per_protocol::operations::incidents::{Impact, IncidentState};
 use v1per_protocol::operations::monitors::LatencyPoint;
+use v1per_protocol::status_page::PageNamedComponent;
 use v1per_protocol::status_page::{
     ComponentDetail, Locale, PageAppearance, PageAudience, PageBar, PageIncidents, PageSnapshot,
     PageStatus, ProbeView, PublicComponent, PublicGroup, PublicImpact, PublicIncident,
@@ -499,6 +500,7 @@ async fn build(
     } else {
         Vec::new()
     };
+    let subscriptions = super::subscribers::offer(&mut tx, page).await?;
     tx.rollback().await?;
     let slas = crate::slas::for_page(state, page.page(), &shown.by_monitor, internal, now).await?;
 
@@ -650,21 +652,7 @@ async fn build(
         .collect();
     let maintenance = shown_maintenance
         .into_iter()
-        .filter_map(|window| {
-            let components: Vec<PageComponentId> = window
-                .monitors
-                .iter()
-                .filter_map(|monitor| shown.by_monitor.get(&monitor.get()).copied())
-                .collect();
-            (!components.is_empty()).then_some(PublicMaintenance {
-                title: window.title,
-                description: window.description,
-                active: window.active,
-                starts_at: window.window.start,
-                ends_at: window.window.end,
-                components,
-            })
-        })
+        .filter_map(|window| public_window(window, &shown))
         .collect();
 
     Ok(PageSnapshot {
@@ -681,7 +669,94 @@ async fn build(
         slas,
         cursor: Topic::page(page.page()).cursor(head),
         generated_at: now,
+        subscriptions,
     })
+}
+
+/// A maintenance as the page shows it, with the shown components it covers; `None` when it
+/// covers none of them.
+fn public_window(window: maintenance::Shown, shown: &Shown) -> Option<PublicMaintenance> {
+    let components: Vec<PageComponentId> = window
+        .monitors
+        .iter()
+        .filter_map(|monitor| shown.by_monitor.get(&monitor.get()).copied())
+        .collect();
+    (!components.is_empty()).then_some(PublicMaintenance {
+        title: window.title,
+        description: window.description,
+        active: window.active,
+        starts_at: window.window.start,
+        ends_at: window.window.end,
+        components,
+    })
+}
+
+/// The names the public page gives `components`, for subscriber notices.
+fn named(shown: &Shown, components: &[PageComponentId]) -> Vec<PageNamedComponent> {
+    components
+        .iter()
+        .filter_map(|id| {
+            Some(PageNamedComponent {
+                id: *id,
+                name: shown.names.get(id)?.clone(),
+            })
+        })
+        .collect()
+}
+
+/// A published incident as the public page shows it in `locale`, with its components' names,
+/// for subscriber notices. `None` when it is not published there or names no public component.
+pub(super) async fn public_incident(
+    conn: &mut SqliteConnection,
+    page: &PageRow,
+    incident: IncidentId,
+    locale: Locale,
+) -> Result<Option<(PublicIncident, Vec<PageNamedComponent>)>, ApiError> {
+    let rows = component_rows(conn, page, false).await?;
+    let shown = Shown::new(&rows);
+    let row: Option<IncidentRow> = sqlx::query_as(concat!(
+        select_incident!(),
+        " WHERE p.page_id = ? AND i.id = ?"
+    ))
+    .bind(page.id)
+    .bind(incident.get())
+    .fetch_optional(&mut *conn)
+    .await?;
+    let Some(row) = row else {
+        return Ok(None);
+    };
+    Ok(published(conn, vec![row], &shown, locale)
+        .await?
+        .pop()
+        .map(|published| {
+            let names = named(&shown, &published.incident.components);
+            (published.incident, names)
+        }))
+}
+
+/// Maintenance the public page shows now, by maintenance ID, with its components' names, for
+/// subscriber notices.
+pub(super) async fn public_maintenance(
+    conn: &mut SqliteConnection,
+    page: &PageRow,
+    now: i64,
+) -> Result<Vec<(MaintenanceId, PublicMaintenance, Vec<PageNamedComponent>)>, ApiError> {
+    let rows = component_rows(conn, page, false).await?;
+    let shown = Shown::new(&rows);
+    let monitors: Vec<MonitorId> = rows
+        .iter()
+        .filter_map(|row| row.monitor_id.map(MonitorId::new))
+        .collect();
+    let windows = maintenance::shown_for(conn, &monitors, now, now + MAINTENANCE_AHEAD_MS).await?;
+    Ok(windows
+        .into_iter()
+        .filter_map(|window| {
+            let id = window.id;
+            let public = public_window(window, &shown)?;
+            let names = named(&shown, &public.components);
+            Some((id, public, names))
+        })
+        .collect())
 }
 
 /// Where an incident history page ends: the last incident's start and ID.

@@ -4,6 +4,7 @@ import type { PageAppearance } from "./PageAppearance";
 import type { PageAudience } from "./PageAudience";
 import type { PageSla } from "./PageSla";
 import type { PageStatus } from "./PageStatus";
+import type { PageSubscriptions } from "./PageSubscriptions";
 import type { PublicGroup } from "./PublicGroup";
 import type { PublicIncident } from "./PublicIncident";
 import type { PublicMaintenance } from "./PublicMaintenance";
@@ -40,4 +41,8 @@ slas: Array<PageSla>,
 /**
  * `page:<id>@<seq>`: subscribe to `<base>/events` from here to follow the snapshot.
  */
-cursor: string, generated_at: number, };
+cursor: string, generated_at: number, 
+/**
+ * How visitors can follow the page; absent while its `subscriptions` setting is off.
+ */
+subscriptions?: PageSubscriptions, };
