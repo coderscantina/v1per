@@ -32,3 +32,13 @@ Backups must capture both engines and ledger positions coherently (11). Status p
 ## Affected contracts
 
 Monitoring contract (rollup fields), milestones 02, 05, 10, 11.
+
+## Amendment: percentiles read raw heartbeats (proposed 2026-11-12, waiting for Mike)
+
+The status page's `response-times.json` reads raw heartbeats for the average and the p50, p95 and p99 of a range, because rollups hold only minimum, maximum, sum and count. Its points still come from rollups, and uptime and status page status stay on rollups as before.
+
+Evidence, 2,000 monitors at 60 seconds over 90 days (311 million raw rows), DuckDB on 2 threads on a laptop, not the reference host: one monitor's read from raw heartbeats as ingested took 13 ms over 24 hours and 1,040 ms over 90 days, because ingestion mixes every monitor into every row group. The hourly retention job now rewrites each closed UTC day once, sorted by monitor, probe and time (`Storage::compact`, about 0.84 s of writer time per day at that size, 76 s for all 90 days on first run). After that the full read takes 4 ms over 24 hours and about 20 ms over 90 days, and the percentiles stay exact. The rewrite is one transaction per day, so a crash leaves the day as it was and the next run repeats it. The `compacted_days` marker table is created on open; it needs no schema version bump and older releases ignore it.
+
+Rejected: approximate percentiles from a sketch column in the rollups, which needs a rollup schema change and a backfill, and gives estimates where exact numbers are cheap.
+
+If refused, the route drops the percentiles and keeps the average from rollups.

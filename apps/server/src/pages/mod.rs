@@ -13,12 +13,14 @@ mod logo;
 mod mail;
 mod public;
 pub(crate) mod publish;
+mod response_times;
 mod snapshot;
 mod text;
 
 pub(crate) use logo::upload as upload_logo;
 pub(crate) use public::{host_routing, hostname_router, instance_routes};
 pub use publish::run as run_auto_publish;
+pub use response_times::ResponseTimesCache;
 pub use snapshot::SnapshotCache;
 
 use std::collections::{HashMap, HashSet};

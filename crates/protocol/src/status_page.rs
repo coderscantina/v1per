@@ -1,7 +1,8 @@
 //! The public status page surface (milestone 09, `docs/contracts/status-page-api.md`). Pages are
 //! served at `/s/{slug}` and on claimed hostnames, outside the operation registry: the HTML
 //! carries a [`PageBoot`], `snapshot.json` answers a [`PageSnapshot`], `incidents.json` pages
-//! through the incident history as [`PageIncidents`], and `events` streams the
+//! through the incident history as [`PageIncidents`], `response-times.json` answers a
+//! [`PageResponseTimes`], and `events` streams the
 //! same [`LiveFrame`](crate::live::LiveFrame)s as `/api/subscribe` on the page's topic.
 //!
 //! Every type here is built per audience. None carries a node, a monitor or static component
@@ -246,6 +247,110 @@ pub struct ProbeView {
     #[ts(optional)]
     pub latency_ms: Option<u32>,
     pub checked_at: i64,
+}
+
+/// The span `<base>/response-times.json` covers, ending now.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS, JsonSchema)]
+pub enum ResponseRange {
+    #[serde(rename = "24h")]
+    Day,
+    #[serde(rename = "7d")]
+    Week,
+    #[serde(rename = "30d")]
+    Month,
+    #[serde(rename = "90d")]
+    Quarter,
+}
+
+impl ResponseRange {
+    pub const ALL: [ResponseRange; 4] = [Self::Day, Self::Week, Self::Month, Self::Quarter];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Day => "24h",
+            Self::Week => "7d",
+            Self::Month => "30d",
+            Self::Quarter => "90d",
+        }
+    }
+
+    pub fn parse(value: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|range| range.as_str() == value)
+    }
+}
+
+/// `<base>/response-times.json`: one monitor component's response times over a range, with
+/// the incidents and maintenance that touched it.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageResponseTimes {
+    pub range: ResponseRange,
+    /// The span the points cover, Unix milliseconds. A monitor with fewer than two hourly
+    /// points gets its last 2 hours per minute over `24h`, as the snapshot does.
+    pub from: i64,
+    pub to: i64,
+    /// Bucket width of the points in milliseconds; a longer step between two points is a gap.
+    pub step: i64,
+    /// Every check of the monitor.
+    pub overall: ResponseSeries,
+    /// Per probe for the `internal` audience, per probe location for the `public` one on a
+    /// page with `probe_locations`; empty otherwise.
+    pub series: Vec<ResponseSeries>,
+    /// Oldest first.
+    pub marks: Vec<ResponseMark>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct ResponseSeries {
+    /// The probe's name, with its location when set, or "City, CC"; absent on `overall`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub label: Option<String>,
+    /// ISO 3166-1 alpha-2, when the series has one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub country: Option<String>,
+    /// Buckets with up beats, oldest first.
+    pub points: Vec<LatencyPoint>,
+    /// Over the up checks in the range, in milliseconds; absent without one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub avg_ms: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub p50_ms: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub p95_ms: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub p99_ms: Option<f64>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ResponseMarkKind {
+    Incident,
+    Maintenance,
+}
+
+/// A published incident that touched the component, or a maintenance window that covered it.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct ResponseMark {
+    pub kind: ResponseMarkKind,
+    /// Incidents only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub incident: Option<IncidentId>,
+    /// An incident's worst impact on the component.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub impact: Option<Impact>,
+    pub title: String,
+    pub from: i64,
+    /// Absent while it lasts.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub to: Option<i64>,
 }
 
 /// One page of `<base>/incidents.json`: published incidents naming a visible component,
