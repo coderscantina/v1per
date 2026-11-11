@@ -256,6 +256,28 @@ test('a grant holder sees internal components, response times and probes', async
   }
 })
 
+test('a visitor sees response times, never probes, once the page shows them to everyone', async ({ browser }) => {
+  await command('pages.update', { page: ids.private, slug: privateSlug, title: 'Partner status', locales: ['en', 'de'], response_times: true })
+  // Points come from rollups, so wait for the first one.
+  await expect
+    .poll(async () => {
+      const snapshot = (await (await api.get(`/s/${privateSlug}/snapshot.json`)).json()) as {
+        groups: { components: { detail?: { latency: unknown[] } }[] }[]
+      }
+      return snapshot.groups[0]?.components[0]?.detail?.latency.length ?? 0
+    }, LIVE_WAIT)
+    .toBeGreaterThan(0)
+
+  const page = await visit(browser, `/s/${privateSlug}/t/${shareToken}`, { colorScheme: 'dark' })
+  const detail = component(page, 'Partner API').getByTestId('internal-detail')
+  await expect(detail).toContainText(/Average .* over the last 24 hours/)
+  await expect(detail.locator('[data-probe]')).toHaveCount(0)
+  await expect(page.getByTestId('internal-note')).toHaveCount(0)
+  await expectAccessible(page)
+  await capture(page, 'public-response-times-desktop-dark')
+  await page.context().close()
+})
+
 test('a published incident and maintenance arrive on an open page', async ({ browser }) => {
   const page = await visit(browser, `/s/${publicSlug}`)
 

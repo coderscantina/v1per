@@ -9,7 +9,7 @@ import type { ComponentView } from './view'
 
 /**
  * One component: its 90-day uptime and status now, then 90 daily bars; response times for the
- * team. An operational component shows only the check, the word stays for screen readers.
+ * team, and for visitors where the page shows them. An operational component shows only the check, the word stays for screen readers.
  */
 defineProps<{ component: ComponentView; nested: boolean }>()
 </script>

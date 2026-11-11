@@ -196,7 +196,8 @@ pub struct PublicComponent {
     pub uptime_90d: Option<f64>,
     /// 90 local days in `timezone`, oldest first, today last.
     pub bars: Vec<PageBar>,
-    /// Response times and per-probe status, for the `internal` audience only.
+    /// Monitors only: response times and per-probe status for the `internal` audience, and
+    /// response times alone for the `public` one on a page with `response_times` set.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub detail: Option<ComponentDetail>,
@@ -227,12 +228,13 @@ pub struct PageBar {
     pub incidents: Vec<IncidentId>,
 }
 
-/// What grant holders see beyond the public snapshot.
+/// What a monitor shows beyond its bars.
 #[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
 pub struct ComponentDetail {
     /// Hourly response times over the last 24 hours; per minute over the last 2 hours while
     /// there are fewer than two hourly points, as for a new monitor.
     pub latency: Vec<LatencyPoint>,
+    /// Each assigned probe's last check. Always empty for the `public` audience.
     pub probes: Vec<ProbeView>,
 }
 

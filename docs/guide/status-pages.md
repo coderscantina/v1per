@@ -63,6 +63,10 @@ In the Settings tab:
 - **Accent color**: indigo, blue, violet, rose, orange, amber, emerald or cyan.
 - **Timezone** of the daily bars.
 
+## Response times
+
+Each monitor has a response time chart: the average over the last 24 hours with the fastest and slowest response. Only signed-in team members see it until you switch on **Show to all visitors** under Response times in the Settings tab. The status per probe stays team only.
+
 ## Languages
 
 Pages come in English and German. Set a default language and which other languages the page offers.

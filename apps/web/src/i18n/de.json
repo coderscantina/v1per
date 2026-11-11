@@ -1461,6 +1461,10 @@
       "defaultAlwaysOn": "Standard",
       "timezone": "Zeitzone der Tagesbalken",
       "timezonePlaceholder": "Zeitzone der Instanz",
+      "responseTimes": "Antwortzeiten",
+      "responseTimesHint": "Das Diagramm unter jedem Monitor: durchschnittliche, schnellste und langsamste Antwort der letzten 24 Stunden.",
+      "responseTimesPublic": "Allen Besuchern zeigen",
+      "responseTimesPublicHint": "Ausgeschaltet sehen sie nur angemeldete Teammitglieder. Prüfstellen bleiben in jedem Fall dem Team vorbehalten.",
       "autoIncidents": "Automatische Vorfälle",
       "autoIncidentsHint": "Vorfälle, die sich öffnen, wenn ein Monitor dieser Seite ausfällt.",
       "autoModes": {

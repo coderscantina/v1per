@@ -22,6 +22,7 @@ uptime_90d?: number,
  */
 bars: Array<PageBar>, 
 /**
- * Response times and per-probe status, for the `internal` audience only.
+ * Monitors only: response times and per-probe status for the `internal` audience, and
+ * response times alone for the `public` one on a page with `response_times` set.
  */
 detail?: ComponentDetail, };

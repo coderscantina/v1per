@@ -6,8 +6,9 @@ import { locale, t } from './messages'
 import { probeLabel, probeTone } from './tones'
 
 /**
- * What grant holders see under a monitor: hourly response times over 24 hours as a line of the
- * averages over the min-to-max band, and each probe's last check.
+ * Under a monitor: hourly response times over 24 hours as a line of the averages over the
+ * min-to-max band, and for grant holders each probe's last check. Visitors get the response
+ * times on a page that shows them to everyone.
  */
 const props = defineProps<{ detail: ComponentDetail; name: string }>()
 

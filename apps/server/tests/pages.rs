@@ -1031,7 +1031,8 @@ async fn bars_start_when_their_component_does() {
     background.stop().await;
 }
 
-/// A new monitor's response times show per minute until there are two hourly points.
+/// A new monitor's response times show per minute until there are two hourly points, to
+/// grant holders and, on a page that shows response times to everyone, to visitors.
 #[tokio::test]
 async fn a_new_monitor_has_response_times_within_minutes() {
     let harness = Harness::manual().await;
@@ -1086,6 +1087,25 @@ async fn a_new_monitor_has_response_times_within_minutes() {
         .map(|point| &point["avg_ms"])
         .collect();
     assert_eq!(averages, [12.0, 20.0]);
+
+    // Visitors get the same response times once the page shows them, never the probes.
+    let id = &page["page"]["id"];
+    let open = json!({ "page": id, "public": true });
+    harness.ok(&admin, "pages.updateAccess", open).await;
+    let public = get(&harness, "/s/ops/snapshot.json", None).await.json();
+    assert!(public["groups"][0]["components"][0].get("detail").is_none());
+    harness
+        .ok(
+            &admin,
+            "pages.update",
+            json!({ "page": id, "slug": "ops", "title": "Ops", "response_times": true }),
+        )
+        .await;
+    let public = get(&harness, "/s/ops/snapshot.json", None).await.json();
+    assert_eq!(public["audience"], "public");
+    let detail = &public["groups"][0]["components"][0]["detail"];
+    assert_eq!(&detail["latency"], latency);
+    assert_eq!(detail["probes"], json!([]));
     background.stop().await;
 }
 

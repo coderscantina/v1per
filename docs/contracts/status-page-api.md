@@ -103,7 +103,7 @@ type PublicComponent = {
   status?: PageStatus // absent while a monitor has no status, such as when paused
   uptime_90d?: number // ratio over the 90 bars, monitors only
   bars: { day; status?; uptime?; utc_approximate?; maintenance?; incidents?: IncidentId[] }[] // 90 days, oldest first
-  detail?: { latency: LatencyPoint[]; probes: { name; status; latency_ms?; checked_at }[] } // internal only
+  detail?: { latency: LatencyPoint[]; probes: { name; status; latency_ms?; checked_at }[] } // monitors; see the rules
 }
 
 type PublicIncident = {
@@ -150,6 +150,7 @@ type PageSlaClock = {
 Rules:
 
 - The `public` audience sees only components not marked `internal`; groups left empty are dropped. The `internal` audience sees every component and gets `detail` on monitor components: hourly response times over the last 24 hours and each assigned probe's status. While a monitor has fewer than two hourly points, as a new one does, its response times are per minute over the last 2 hours instead.
+- On a page with the `response_times` setting, the `public` audience gets `detail` on its monitor components too, with the same `latency` and always empty `probes`. Probe names and per-probe results stay internal.
 - Components are named by page component IDs only. No snapshot carries a node, monitor or static component ID, a monitor's type, URL or hostname, a check message, a person, a revision, or anything from outside the page's components.
 - Only incidents published to the page appear, open ones and those resolved within the 90 days, at most 100, and only with the page's visible components. An incident naming none of them is left out. Older ones are in the [incident history](#incident-history).
 - An auto-incident's title is rendered in the snapshot's locale from the component's page name ("API is down", "API ist ausgefallen") until a person changes the title. Updates the server wrote for an auto-incident are replaced by a generic text in the locale, because check messages can name hosts.

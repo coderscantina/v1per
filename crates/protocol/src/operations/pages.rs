@@ -125,6 +125,10 @@ pub struct PageSettings {
     #[serde(default)]
     #[ts(as = "Option<u32>", optional)]
     pub grace_minutes: u32,
+    /// Every visitor gets the monitors' response times, not only grant holders.
+    #[serde(default)]
+    #[ts(as = "Option<bool>", optional)]
+    pub response_times: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, JsonSchema)]

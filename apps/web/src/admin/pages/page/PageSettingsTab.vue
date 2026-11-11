@@ -10,6 +10,7 @@ import CommandAlert from '~/components/CommandAlert.vue'
 import FormField from '~/components/FormField.vue'
 import Icon from '~/components/Icon.vue'
 import SelectField from '~/components/SelectField.vue'
+import SwitchField from '~/components/SwitchField.vue'
 import TextareaField from '~/components/TextareaField.vue'
 import TimezoneField from '~/components/TimezoneField.vue'
 import { Alert } from '~/components/ui/alert'
@@ -309,6 +310,19 @@ const shownFields = ['title', 'slug', 'description', 'footer', 'timezone', 'grac
           :label="t('pages.settings.timezone')"
           :placeholder="t('pages.settings.timezonePlaceholder')"
           :error="errorFor('timezone')"
+        />
+      </SettingsSection>
+
+      <SettingsSection
+        id="page-response-times"
+        :title="t('pages.settings.responseTimes')"
+        :description="t('pages.settings.responseTimesHint')"
+      >
+        <SwitchField
+          id="page-response-times-switch"
+          v-model="form.responseTimes"
+          :label="t('pages.settings.responseTimesPublic')"
+          :description="t('pages.settings.responseTimesPublicHint')"
         />
       </SettingsSection>
 

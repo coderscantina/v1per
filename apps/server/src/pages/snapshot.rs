@@ -3,8 +3,9 @@
 //! A snapshot reads the control database in one read transaction and the heartbeat store in
 //! its own snapshot. Public audiences get status, bars, uptime, published incidents and
 //! maintenance of the components not marked internal, and the aggregates of the SLAs the page
-//! shows; the internal audience also gets every component, hourly response times, per-probe
-//! status and per-monitor SLA rows. Monitor, component, node, person and SLA IDs, monitor
+//! shows, and hourly response times on a page that shows them to everyone; the internal
+//! audience also gets every component, hourly response times, per-probe status and per-monitor
+//! SLA rows. Monitor, component, node, person and SLA IDs, monitor
 //! targets, check messages and SLA incidents never enter a snapshot.
 
 use std::collections::{BTreeMap, HashMap};
@@ -512,7 +513,7 @@ async fn build(
         .map_err(read_failed)?
         .value;
     let mut latency: HashMap<i64, Vec<LatencyPoint>> = HashMap::new();
-    if internal {
+    if internal || page.response_times {
         for monitor in &storage_ids {
             let points = recent_latency(state, *monitor, now).await?;
             latency.insert(
@@ -596,8 +597,11 @@ async fn build(
                 }
             })
             .collect();
-        let detail = match (internal, row.monitor_id) {
-            (true, Some(monitor)) => Some(ComponentDetail {
+        // `probes` is only loaded for the internal audience, so a public detail has none.
+        let detail = row
+            .monitor_id
+            .filter(|_| internal || page.response_times)
+            .map(|monitor| ComponentDetail {
                 latency: latency.remove(&monitor).unwrap_or_default(),
                 probes: probes
                     .iter()
@@ -611,9 +615,7 @@ async fn build(
                         })
                     })
                     .collect(),
-            }),
-            _ => None,
-        };
+            });
         components
             .entry(row.group_id)
             .or_default()
