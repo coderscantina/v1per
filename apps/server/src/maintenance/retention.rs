@@ -2,6 +2,7 @@
 //! Mike decides, decision 0002), probe batch IDs after a day, finished deliveries and
 //! maintenance jobs after 30 days, and ended sessions, sign-in steps, page sessions, sign-in
 //! links and command answers. Queries already ignore what ended; this gives the space back.
+//! It also compacts each closed day of raw heartbeats once, for response time percentiles.
 //! Every step finds nothing to do when it already ran, so an interrupted or failed run is
 //! finished by the next one.
 
@@ -105,6 +106,13 @@ pub async fn run(state: &AppState, dry_run: bool) -> Result<RetentionCounts, Fai
     .map_err(|e| storage_failure(dir, e))?;
     counts.heartbeats = expired.heartbeats;
     counts.minute_rollups = expired.minute_rollups;
+    if !dry_run {
+        let compacted = storage
+            .compact(Retention::default(), now)
+            .await
+            .map_err(|e| storage_failure(dir, e))?;
+        tracing::info!(days = compacted, "compacted raw heartbeats");
+    }
     // Batch IDs carry the inbox's own receive time, not the application clock.
     let wall = crate::db::now_ms();
     counts.agent_batches = if dry_run {

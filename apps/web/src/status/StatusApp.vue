@@ -3,7 +3,7 @@ import type { PageBoot, PageSnapshot } from '~/generated'
 
 import AccessGate from './AccessGate.vue'
 import { linkCode } from './boot'
-import { pageClient } from './client'
+import { pageClient, pageClientKey } from './client'
 import { followPage } from './live'
 import { locale, t } from './messages'
 import PageView from './PageView.vue'
@@ -17,6 +17,7 @@ const props = defineProps<{ boot: PageBoot | null }>()
 
 const base = props.boot?.base ?? ''
 const client = pageClient(base)
+provide(pageClientKey, client)
 const snapshot = shallowRef<PageSnapshot | null>(props.boot?.kind === 'page' ? props.boot.snapshot : null)
 
 // A sign-in link opened while already let in: drop the code from the address.

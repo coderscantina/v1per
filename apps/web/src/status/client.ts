@@ -7,9 +7,12 @@ import type {
   PageIncidents,
   PagePasswordBody,
   PageRedeemBody,
+  PageResponseTimes,
   PageSnapshot,
   PublicIncident,
+  ResponseRange,
 } from '~/generated'
+import type { InjectionKey } from 'vue'
 
 /**
  * The status page's one network module: the page routes below its base
@@ -82,6 +85,15 @@ export function pageClient(base: string) {
       return (await response.json()) as PublicIncident
     },
 
+    /** One monitor component's response times over `range`, with series, percentiles and marks. */
+    async responseTimes(component: string, range: ResponseRange): Promise<PageResponseTimes> {
+      const query = new URLSearchParams({ component, range })
+      const asked = new URLSearchParams(window.location.search).get('locale')
+      if (asked) query.set('locale', asked)
+      const response = await call(`${base}/response-times.json?${query}`, { headers: { Accept: 'application/json' } })
+      return (await response.json()) as PageResponseTimes
+    },
+
     async password(password: string): Promise<void> {
       await post(`${base}/access/password`, { password })
     },
@@ -126,3 +138,6 @@ export function pageClient(base: string) {
 }
 
 export type PageClient = ReturnType<typeof pageClient>
+
+/** The page's client, provided by `StatusApp` for components deep in the page. */
+export const pageClientKey: InjectionKey<PageClient> = Symbol('page client')

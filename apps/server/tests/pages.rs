@@ -664,6 +664,124 @@ async fn public_responses_carry_nothing_internal() {
             "a public response contains {leak}"
         );
     }
+
+    // Response times per location name a city and country, never the probe behind them.
+    tree.access(json!({ "public": true })).await;
+    let probe = harness
+        .ok(
+            &tree.admin,
+            "probes.create",
+            json!({ "node": tree.acme, "name": "eu-probe-7",
+                    "location": { "country": "AT", "city": "Vienna", "provider": "Hetzner" } }),
+        )
+        .await["probe"]["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let edge = harness
+        .ok(
+            &tree.admin,
+            "monitors.create",
+            json!({ "node": tree.acme, "name": "edge", "interval": 60, "probes": [probe],
+                    "settings": { "type": "http", "url": "https://edge-secret.invalid/" } }),
+        )
+        .await["monitor"]["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let detail = harness
+        .query(
+            Some(&tree.admin),
+            "pages.get",
+            &format!("page={}", tree.page_id()),
+        )
+        .await
+        .json();
+    let mut groups = detail["groups"].clone();
+    for group in groups.as_array_mut().unwrap() {
+        for component in group["components"].as_array_mut().unwrap() {
+            component.as_object_mut().unwrap().remove("id");
+            component.as_object_mut().unwrap().remove("name");
+        }
+    }
+    groups[0]["components"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({ "target": monitor(&edge), "display_name": "Edge" }));
+    harness
+        .ok(
+            &tree.admin,
+            "pages.updateLayout",
+            json!({ "page": tree.page_id(), "expected_revision": detail["page"]["revision"], "groups": groups }),
+        )
+        .await;
+    harness
+        .ok(
+            &tree.admin,
+            "pages.update",
+            json!({ "page": tree.page_id(), "slug": "acme", "title": "Acme status",
+                    "response_times": true, "probe_locations": true }),
+        )
+        .await;
+    let storage = &harness.state.storage;
+    storage
+        .admit(
+            None,
+            &[Heartbeat {
+                monitor: MonitorId(edge.parse().unwrap()),
+                probe: Some(v1per_storage::ProbeId(probe.parse().unwrap())),
+                time_ms: harness.state.clock.now_ms(),
+                status: Status::Up,
+                latency_ms: Some(42),
+                message: "edge-secret.invalid answered".into(),
+                retries: 0,
+                http_status: Some(200),
+                cert_expiry_ms: None,
+            }],
+        )
+        .await
+        .unwrap();
+    storage.drain().await;
+    let snapshot = get(harness, "/s/acme/snapshot.json", None).await.json();
+    let mut answers = String::new();
+    for component in snapshot["groups"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|group| group["components"].as_array().unwrap())
+    {
+        for range in ["24h", "90d"] {
+            let path = format!(
+                "/s/acme/response-times.json?component={}&range={range}",
+                component["id"].as_str().unwrap()
+            );
+            let answer = get(harness, &path, None).await;
+            if answer.status == StatusCode::OK {
+                answers.push_str(&String::from_utf8_lossy(&answer.bytes));
+            }
+        }
+    }
+    assert!(answers.contains("\"label\":\"Vienna, AT\""));
+    assert!(answers.contains("\"title\":\"API is down\""));
+    for leak in [
+        "eu-probe-7",
+        "Hetzner",
+        "edge-secret.invalid",
+        "\"probe",
+        "\"monitor\"",
+        "secret-db.invalid",
+        "10.9.8.7",
+        "globex",
+        "worker",
+        "Worker queue stuck",
+        "cache is down",
+        "admin@example.test",
+    ] {
+        assert!(
+            !answers.contains(leak),
+            "a response times answer contains {leak}"
+        );
+    }
     background.stop().await;
 }
 

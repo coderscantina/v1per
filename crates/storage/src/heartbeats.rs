@@ -80,6 +80,9 @@ CREATE TABLE IF NOT EXISTS kuma_stats (
     down INTEGER NOT NULL,
     extras VARCHAR
 );
+-- UTC days whose raw heartbeats were rewritten in (monitor, probe, time) order. Added after
+-- schema 1 without changing it: older releases ignore the table.
+CREATE TABLE IF NOT EXISTS compacted_days (day DATE NOT NULL);
 "#
     )
 }
@@ -355,6 +358,52 @@ pub(crate) fn expire_step(
         &format!("DELETE FROM {table} WHERE {column} < ?"),
         [ts(until)],
     )? as u64)
+}
+
+/// Rewrites the raw heartbeats of the oldest UTC day in `[from_ms, before_ms)` (whole days) not
+/// compacted yet, ordered by monitor, probe and time, in one transaction. Live ingestion
+/// interleaves every monitor in every row group; afterwards zone maps skip the other monitors,
+/// so a read of one monitor over weeks touches its own rows only. Forgets markers of days
+/// before `from_ms`. Returns the day's start, or `None` when every day is compacted.
+pub(crate) fn compact_step(
+    conn: &mut Connection,
+    from_ms: i64,
+    before_ms: i64,
+) -> duckdb::Result<Option<i64>> {
+    const DAY_MS: i64 = 86_400_000;
+    conn.execute(
+        "DELETE FROM compacted_days WHERE day < ?::DATE",
+        [ts(from_ms)],
+    )?;
+    let done: Vec<i64> = conn
+        .prepare("SELECT epoch_ms(day::TIMESTAMP) FROM compacted_days")?
+        .query_map([], |r| r.get(0))?
+        .collect::<duckdb::Result<_>>()?;
+    let first = from_ms.div_euclid(DAY_MS) * DAY_MS;
+    let Some(day) = (first..before_ms)
+        .step_by(DAY_MS as usize)
+        .find(|day| day + DAY_MS <= before_ms && !done.contains(day))
+    else {
+        return Ok(None);
+    };
+    let tx = conn.transaction()?;
+    let (start, end) = (ts(day), ts(day + DAY_MS));
+    tx.execute(
+        "CREATE OR REPLACE TEMP TABLE compacting AS
+         SELECT * FROM heartbeat WHERE time >= ? AND time < ?",
+        params![start, end],
+    )?;
+    tx.execute(
+        "DELETE FROM heartbeat WHERE time >= ? AND time < ?",
+        params![start, end],
+    )?;
+    tx.execute_batch(
+        "INSERT INTO heartbeat SELECT * FROM temp.compacting ORDER BY monitor_id, probe_id, time;
+         DROP TABLE temp.compacting;",
+    )?;
+    tx.execute("INSERT INTO compacted_days VALUES (?::DATE)", [ts(day)])?;
+    tx.commit()?;
+    Ok(Some(day))
 }
 
 /// Rows of `table` older than `cutoff_ms`: what [`expire_step`] would delete.

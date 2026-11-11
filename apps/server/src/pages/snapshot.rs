@@ -40,7 +40,7 @@ const MAINTENANCE_AHEAD_MS: i64 = 14 * DAY_MS;
 /// The span of per-minute response times for monitors without two hourly points yet.
 const RECENT_MS: i64 = 2 * HOUR_MS;
 /// Published incidents a snapshot lists at most.
-const INCIDENTS_MAX: i64 = 100;
+pub(super) const INCIDENTS_MAX: i64 = 100;
 /// A cached snapshot is rebuilt after this long even when nothing it reads moved, so the day
 /// boundary and maintenance windows follow the clock.
 const CACHE_TTL_MS: i64 = 60_000;
@@ -155,7 +155,7 @@ fn page_counts(counts: &Counts) -> PageCounts {
     }
 }
 
-fn read_failed(error: ReadError) -> ApiError {
+pub(super) fn read_failed(error: ReadError) -> ApiError {
     ApiError::internal(error)
 }
 
@@ -240,10 +240,10 @@ pub(super) fn appearance(page: &PageRow) -> PageAppearance {
 }
 
 #[derive(sqlx::FromRow)]
-struct ComponentRow {
-    id: i64,
+pub(super) struct ComponentRow {
+    pub id: i64,
     group_id: i64,
-    monitor_id: Option<i64>,
+    pub monitor_id: Option<i64>,
     component_id: Option<i64>,
     name: String,
     description: String,
@@ -255,7 +255,7 @@ struct ComponentRow {
 }
 
 #[derive(sqlx::FromRow)]
-struct IncidentRow {
+pub(super) struct IncidentRow {
     id: i64,
     title: String,
     title_kind: Option<String>,
@@ -280,12 +280,12 @@ impl IncidentRow {
 }
 
 /// A published incident as one page shows it, with what the bars and statuses need.
-struct Published {
-    incident: PublicIncident,
+pub(super) struct Published {
+    pub incident: PublicIncident,
     /// Current impact per page component.
     current: HashMap<PageComponentId, Impact>,
     /// Worst impact per page component over the incident's life.
-    peak: HashMap<PageComponentId, Impact>,
+    pub peak: HashMap<PageComponentId, Impact>,
 }
 
 macro_rules! select_incident {
@@ -295,9 +295,10 @@ macro_rules! select_incident {
          FROM incident_publications p JOIN incidents i ON i.id = p.incident_id"
     };
 }
+pub(super) use select_incident;
 
 /// The page's components `internal` decides between, in layout order.
-async fn component_rows(
+pub(super) async fn component_rows(
     conn: &mut SqliteConnection,
     page: &PageRow,
     internal: bool,
@@ -323,14 +324,14 @@ async fn component_rows(
 }
 
 /// The page components an audience sees, by what they show, and their names.
-struct Shown {
+pub(super) struct Shown {
     by_monitor: HashMap<i64, PageComponentId>,
     by_component: HashMap<i64, PageComponentId>,
     names: HashMap<PageComponentId, String>,
 }
 
 impl Shown {
-    fn new(rows: &[ComponentRow]) -> Self {
+    pub fn new(rows: &[ComponentRow]) -> Self {
         Self {
             by_monitor: rows
                 .iter()
@@ -359,7 +360,7 @@ impl Shown {
 
 /// Published incidents as the page shows them in `locale`. An incident naming no shown
 /// component is left out.
-async fn published(
+pub(super) async fn published(
     conn: &mut SqliteConnection,
     incidents: Vec<IncidentRow>,
     shown: &Shown,

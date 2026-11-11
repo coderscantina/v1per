@@ -31,11 +31,14 @@ use v1per_protocol::limits::{PAGE_EMAIL_LINK_MS, PAGE_PATH};
 use v1per_protocol::live::{LiveEvent, LiveFrame, ResyncReason};
 use v1per_protocol::status_page::{
     Locale, PageAudience, PageBoot, PageEmailBody, PageGate, PagePasswordBody, PageRedeemBody,
+    ResponseRange,
 };
 use v1per_storage::UptimeWindow;
 
 use super::access::{self, Kind, Visitor};
-use super::{PageRow, badge, logo, mail, meta, origin_host, select_page, snapshot, text};
+use super::{
+    PageRow, badge, logo, mail, meta, origin_host, response_times, select_page, snapshot, text,
+};
 use crate::error::{ApiError, FieldErrors};
 use crate::http::client_address;
 use crate::http::operations::same_origin;
@@ -117,6 +120,7 @@ struct Params {
     cursor: Option<String>,
     component: Option<String>,
     limit: Option<String>,
+    range: Option<String>,
 }
 
 fn params(parts: &Parts) -> Params {
@@ -136,6 +140,7 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/access/password", post(password))
         .route("/snapshot.json", get(snapshot_json))
         .route("/incidents.json", get(incidents_json))
+        .route("/response-times.json", get(response_times_json))
         .route("/events", get(stream))
         .route("/badge/{name}", get(badge))
         .route("/logo", get(logo_file))
@@ -605,6 +610,63 @@ async fn incidents_json(State(state): State<AppState>, located: Located, parts: 
                 (header::VARY, "Cookie, Accept-Language"),
             ],
             axum::Json(history),
+        )
+            .into_response(),
+        Err(error) => error.into_response(),
+    }
+}
+
+/// `<base>/response-times.json?component=&range=`: one monitor component's response times,
+/// with the snapshot's access, audience and caching.
+async fn response_times_json(
+    State(state): State<AppState>,
+    located: Located,
+    parts: Parts,
+) -> Response {
+    let query = params(&parts);
+    let address = client_address(&parts);
+    let page = &located.page;
+    let answer = async {
+        let mut errors = FieldErrors::default();
+        let range = query.range.as_deref().and_then(ResponseRange::parse);
+        match &query.range {
+            None => errors.add("range", FieldErrorCode::Required, None),
+            Some(_) if range.is_none() => errors.add("range", FieldErrorCode::InvalidValue, None),
+            Some(_) => {}
+        }
+        if query.component.is_none() {
+            errors.add("component", FieldErrorCode::Required, None);
+        }
+        errors.finish()?;
+        let audience = access::audience(
+            &state,
+            page,
+            &visitor(&parts, &address, query.token.as_deref()),
+        )
+        .await?
+        .ok_or_else(|| ApiError::new(ErrorCode::Unauthenticated))?;
+        let component: PageComponentId = query
+            .component
+            .as_deref()
+            .unwrap_or_default()
+            .parse()
+            .map_err(|_| ApiError::not_found())?;
+        let locale = pick_locale(page, query.locale.as_deref(), &parts.headers);
+        let range = range.unwrap_or(ResponseRange::Day);
+        let json = response_times::cached(&state, page, audience, locale, component, range).await?;
+        Ok::<_, ApiError>((audience, json))
+    };
+    match answer.await {
+        Ok((audience, json)) => (
+            [
+                (header::CONTENT_TYPE, "application/json"),
+                (
+                    header::CACHE_CONTROL,
+                    cache_header(page, Some(audience), &parts.headers),
+                ),
+                (header::VARY, "Cookie, Accept-Language"),
+            ],
+            json.to_string(),
         )
             .into_response(),
         Err(error) => error.into_response(),

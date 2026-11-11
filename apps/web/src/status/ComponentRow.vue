@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import DayBars from './DayBars.vue'
 import { formatUptime } from './format'
-import InternalDetail from './InternalDetail.vue'
 import { locale, t } from './messages'
+import MonitorDetail from './MonitorDetail.vue'
 import StatusIcon from './StatusIcon.vue'
 import { toneIcon, toneLabel } from './tones'
 import { componentBasis, explain } from './uptime'
@@ -62,9 +62,10 @@ const explanation = computed(() => explain(componentBasis(props.component.bars))
       :bars="component.bars"
       :name="component.name"
     />
-    <InternalDetail
+    <MonitorDetail
       v-if="component.detail && (component.detail.probes.length > 0 || component.detail.latency.length > 0)"
       :detail="component.detail"
+      :component="component.id"
       :name="component.name"
     />
   </li>

@@ -537,22 +537,7 @@ pub(crate) async fn shown_for(
     now: i64,
     until: i64,
 ) -> sqlx::Result<Vec<Shown>> {
-    if monitors.is_empty() {
-        return Ok(Vec::new());
-    }
-    let ids: Vec<i64> = monitors.iter().map(|monitor| monitor.get()).collect();
-    let covered: Vec<(i64, i64)> = sqlx::query_as(
-        "WITH RECURSIVE covered(maintenance_id, id) AS (
-             SELECT maintenance_id, monitor_id FROM maintenance_monitors
-             UNION
-             SELECT c.maintenance_id, m.id FROM monitors m JOIN covered c ON m.group_id = c.id
-         )
-         SELECT maintenance_id, id FROM covered
-         WHERE id IN (SELECT value FROM json_each(?1)) ORDER BY maintenance_id, id",
-    )
-    .bind(serde_json::to_string(&ids).expect("numbers serialize"))
-    .fetch_all(&mut *conn)
-    .await?;
+    let covered = covering(conn, monitors).await?;
     let server = instance::timezone(conn).await?;
     let mut shown = Vec::new();
     for maintenance in covered
@@ -591,6 +576,80 @@ pub(crate) async fn shown_for(
         });
     }
     Ok(shown)
+}
+
+/// `(maintenance, monitor)` for each of `monitors` a maintenance covers, directly or through a
+/// covered group.
+async fn covering(
+    conn: &mut SqliteConnection,
+    monitors: &[MonitorId],
+) -> sqlx::Result<Vec<(i64, i64)>> {
+    if monitors.is_empty() {
+        return Ok(Vec::new());
+    }
+    let ids: Vec<i64> = monitors.iter().map(|monitor| monitor.get()).collect();
+    sqlx::query_as(
+        "WITH RECURSIVE covered(maintenance_id, id) AS (
+             SELECT maintenance_id, monitor_id FROM maintenance_monitors
+             UNION
+             SELECT c.maintenance_id, m.id FROM monitors m JOIN covered c ON m.group_id = c.id
+         )
+         SELECT maintenance_id, id FROM covered
+         WHERE id IN (SELECT value FROM json_each(?1)) ORDER BY maintenance_id, id",
+    )
+    .bind(serde_json::to_string(&ids).expect("numbers serialize"))
+    .fetch_all(&mut *conn)
+    .await
+}
+
+/// One window of a maintenance covering a monitor, as a status page chart marks it.
+pub(crate) struct PastWindow {
+    pub title: String,
+    pub start: i64,
+    /// `None` while a manual maintenance is under way.
+    pub end: Option<i64>,
+}
+
+/// The windows of active maintenances covering `monitor` that overlap `[from, now)`, by start.
+/// A manual maintenance has no schedule: while under way it counts from its last change.
+pub(crate) async fn windows_between(
+    conn: &mut SqliteConnection,
+    monitor: MonitorId,
+    from: i64,
+    now: i64,
+) -> sqlx::Result<Vec<PastWindow>> {
+    let covered = covering(conn, &[monitor]).await?;
+    let server = instance::timezone(conn).await?;
+    let mut windows = Vec::new();
+    for (maintenance, _) in covered {
+        let row: Row = sqlx::query_as(concat!(select_row!(), " WHERE id = ?"))
+            .bind(maintenance)
+            .fetch_one(&mut *conn)
+            .await?;
+        let Some(definition) = row.definition(server).filter(|_| row.active) else {
+            continue;
+        };
+        if row.strategy == "manual" {
+            if schedule::status_at(&definition, utc(now)) == Status::UnderMaintenance {
+                windows.push(PastWindow {
+                    title: row.title.clone(),
+                    start: row.updated_at,
+                    end: None,
+                });
+            }
+            continue;
+        }
+        for found in schedule::windows(&definition, utc(from), utc(now)).map(window) {
+            let Some(start) = found.start else { continue };
+            windows.push(PastWindow {
+                title: row.title.clone(),
+                start,
+                end: found.end.filter(|end| *end <= now),
+            });
+        }
+    }
+    windows.sort_by_key(|window| window.start);
+    Ok(windows)
 }
 
 /// After `monitors` moved, alone or with their node: drops them from maintenances whose subtree

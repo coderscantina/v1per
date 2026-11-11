@@ -187,7 +187,7 @@ test('the page renders from its injected JSON, with keyboard-reachable bars', as
   await expect(component(page, 'API').locator('[data-day]')).toHaveCount(90)
   await expect(componentStatus(page, 'Support')).toHaveText('Operational')
   await expect(component(page, 'Worker')).toHaveCount(0)
-  await expect(page.getByTestId('internal-detail')).toHaveCount(0)
+  await expect(page.getByTestId('monitor-detail')).toHaveCount(0)
 
   // One tab stop per strip, today first; arrows move by day, and the label says it all.
   const strip = page.getByRole('group', { name: 'Last 90 days of API' })
@@ -244,10 +244,12 @@ test('a grant holder sees internal components, response times and probes', async
       const page = await visit(browser, `/s/${publicSlug}`, { viewport, colorScheme, storageState: sessionFile })
       await expect(page.getByTestId('internal-note')).toBeVisible()
       await expect(component(page, 'Worker')).toBeVisible()
-      const detail = component(page, 'API').getByTestId('internal-detail')
-      await expect(detail).toContainText('Response time, last 24 hours')
-      // Hourly points come from rollups, so a fresh monitor may have none yet.
-      await expect(detail).toContainText(/over the last 24 hours|No response times in the last 24 hours\./)
+      const detail = component(page, 'API').getByTestId('monitor-detail')
+      await expect(detail).toContainText('Response time')
+      // Points come from rollups, so a fresh monitor may have none yet.
+      await expect(detail.getByRole('img', { name: /over the last 24 hours/ }).or(detail.getByText('No response times in the last 24 hours.'))).toBeVisible()
+      // The team gets a line per probe, named by the probe.
+      await expect(detail.getByRole('list', { name: 'Shown lines' }).getByRole('button')).not.toHaveCount(0)
       await expect(detail.locator('[data-probe]').first()).toContainText('Up')
       await expectAccessible(page)
       await capture(page, `internal-${name}-${colorScheme}`)
@@ -269,8 +271,16 @@ test('a visitor sees response times, never probes, once the page shows them to e
     .toBeGreaterThan(0)
 
   const page = await visit(browser, `/s/${privateSlug}/t/${shareToken}`, { colorScheme: 'dark' })
-  const detail = component(page, 'Partner API').getByTestId('internal-detail')
-  await expect(detail).toContainText(/Average .* over the last 24 hours/)
+  const detail = component(page, 'Partner API').getByTestId('monitor-detail')
+  await expect(detail.getByRole('img', { name: /Average .* over the last 24 hours/ })).toBeVisible()
+  // Percentiles arrive with the full answer; no location is shown without the page's say.
+  const p95 = detail.locator('dd').nth(2)
+  await expect(p95).toHaveText(/\d+(\.\d+)? (ms|s)/)
+  await expect(detail.getByRole('list', { name: 'Shown lines' })).toHaveCount(0)
+  await detail.getByRole('button', { name: '7 d' }).click()
+  await expect(detail.getByRole('button', { name: '7 d' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(detail.getByRole('img', { name: /over the last 7 days/ }).or(detail.getByText('No response times in the last 7 days.'))).toBeVisible()
+  await expect(p95).toHaveText(/\d+(\.\d+)? (ms|s)/)
   await expect(detail.locator('[data-probe]')).toHaveCount(0)
   await expect(page.getByTestId('internal-note')).toHaveCount(0)
   await expectAccessible(page)

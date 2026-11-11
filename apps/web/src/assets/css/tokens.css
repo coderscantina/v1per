@@ -251,6 +251,15 @@
   --series-projected: var(--series-primary);
   --series-projected-fill: color-mix(in oklch, var(--series-primary) 14%, transparent);
   --series-baseline: var(--color-gray-400);
+  /* Categorical series, such as response times per probe or location: assigned in this order,
+     never cycled. The order keeps neighbours apart for colour-blind readers; three light steps
+     sit under 3:1 on the canvas, so these charts always carry a legend and a table. */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
 
   /* Monitor status (monitoring contract). Every screen and chart paints a status in these, and a
      word or an icon always goes with the colour. They are graphics only (dots, bars, icons), never
@@ -368,6 +377,11 @@
   --series-secondary: var(--color-gray-500);
   --series-comparison: var(--color-gray-500);
   --series-baseline: var(--color-gray-500);
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
 
   --status-up: var(--color-green-600);
   --status-pending: var(--color-yellow-600);
