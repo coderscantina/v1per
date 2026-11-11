@@ -2,9 +2,14 @@
 import type { AffectedTarget } from "./AffectedTarget";
 import type { Incident } from "./Incident";
 import type { IncidentUpdate } from "./IncidentUpdate";
+import type { Postmortem } from "./Postmortem";
 
 export type IncidentDetail = { incident: Incident, affected: Array<AffectedTarget>, 
 /**
  * Oldest first.
  */
-updates: Array<IncidentUpdate>, };
+updates: Array<IncidentUpdate>, 
+/**
+ * Kept while the incident is reopened; pages show it only while it is resolved.
+ */
+postmortem?: Postmortem, };

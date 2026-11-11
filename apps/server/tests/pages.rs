@@ -600,6 +600,8 @@ async fn public_responses_carry_nothing_internal() {
     );
 
     let mut everything = String::new();
+    let permalink = format!("/s/acme/incidents/{api_incident}");
+    let permalink_json = format!("{permalink}.json");
     for path in [
         "/s/acme",
         "/s/acme/snapshot.json",
@@ -607,6 +609,8 @@ async fn public_responses_carry_nothing_internal() {
         "/s/acme/badge/uptime-24h.svg",
         "/s/acme/badge/uptime-30d.svg",
         "/s/acme/badge/uptime-90d.svg",
+        &permalink,
+        &permalink_json,
     ] {
         let answer = get(harness, path, None).await;
         assert_eq!(answer.status, StatusCode::OK, "{path}");
@@ -628,9 +632,11 @@ async fn public_responses_carry_nothing_internal() {
         everything.push_str(&frame.to_string());
     }
     tree.access(json!({ "public": false })).await;
-    everything.push_str(&String::from_utf8_lossy(
-        &get(harness, "/s/acme", None).await.bytes,
-    ));
+    for path in ["/s/acme", &permalink] {
+        everything.push_str(&String::from_utf8_lossy(
+            &get(harness, path, None).await.bytes,
+        ));
+    }
 
     for leak in [
         "\"node\"",
@@ -701,6 +707,10 @@ async fn claimed_hostnames_route_to_their_page() {
     let text = String::from_utf8_lossy(&html.bytes);
     assert_eq!(text.matches("</script>").count(), 1, "{text}");
     assert!(text.contains("<title>Acme &lt;/script&gt;&lt;!-- status</title>"));
+    assert!(
+        text.contains(r#"<meta property="og:title" content="Acme &lt;/script&gt;&lt;!-- status">"#)
+    );
+    assert!(text.contains(r#"<link rel="canonical" href="https://status.acme.test:8080/">"#));
     let boot = boot(&html);
     assert_eq!(boot["base"], "");
     assert_eq!(
@@ -1020,6 +1030,13 @@ async fn bars_start_when_their_component_does() {
     let (api, email) = (&components[0], &components[1]);
     assert_eq!(api["bars"][89]["status"], "operational");
     assert_eq!(api["uptime_90d"], 1.0);
+    // The checks behind the figures: up only, so down and maintenance are left out as zero.
+    let up = api["bars"][89]["up"].as_u64().unwrap();
+    assert!(up >= 1);
+    assert_eq!(api["up"], up);
+    for key in ["down", "maint"] {
+        assert!(api["bars"][89].get(key).is_none() && api.get(key).is_none());
+    }
     assert_eq!(email["bars"][89]["status"], "operational");
     for component in [api, email] {
         let before: Vec<&Value> = component["bars"].as_array().unwrap()[..89]
@@ -1166,6 +1183,260 @@ async fn incident_history_pages_by_cursor() {
     tree.access(json!({ "public": false })).await;
     let closed = get(harness, "/s/acme/incidents.json", None).await;
     assert_eq!(closed.code(), "unauthenticated");
+}
+
+/// Opens an incident on `target` and returns its ID.
+async fn open_incident(tree: &Tree, title: &str, target: &str) -> String {
+    tree.harness
+        .ok(
+            &tree.admin,
+            "incidents.create",
+            json!({ "node": tree.acme, "title": title, "message": "Looking into it",
+                    "impacts": [{ "target": { "type": "monitor", "monitor": target }, "impact": "major_outage" }] }),
+        )
+        .await["incident"]["id"]
+        .as_str()
+        .unwrap()
+        .to_owned()
+}
+
+/// The page's `<meta>` and `<link rel="canonical">` tags, in order.
+fn preview_tags(answer: &Answer) -> Vec<String> {
+    let html = String::from_utf8_lossy(&answer.bytes);
+    let head = &html[..html.find("</head>").unwrap_or(html.len())];
+    head.split('<')
+        .filter(|tag| {
+            tag.starts_with("meta property=")
+                || tag.starts_with("meta name=")
+                || tag.starts_with("link rel=\"canonical\"")
+        })
+        .filter(|tag| !tag.contains("viewport") && !tag.contains("color-scheme"))
+        .map(|tag| format!("<{}", tag.trim_end()))
+        .collect()
+}
+
+/// A postmortem is the team's to write once an incident is resolved; pages show it while the
+/// incident stays resolved, and setting it moves the page topic so open pages read it.
+#[tokio::test]
+async fn a_postmortem_shows_while_its_incident_is_resolved() {
+    let tree = Tree::new(Harness::new().await).await;
+    let harness = &tree.harness;
+    let incident = open_incident(&tree, "Checkout down", &tree.api).await;
+    let set = |text: &'static str| json!({ "incident": incident, "postmortem": text });
+    let open = harness
+        .run(
+            Some(&tree.admin),
+            "incidents.setPostmortem",
+            set("Too early"),
+        )
+        .await;
+    assert_eq!(
+        open.json()["errors"]["postmortem"][0]["code"],
+        "invalid_value"
+    );
+    let long = "x".repeat(20_001);
+    let too_long = harness
+        .run(
+            Some(&tree.admin),
+            "incidents.setPostmortem",
+            json!({ "incident": incident, "postmortem": long }),
+        )
+        .await;
+    assert_eq!(
+        too_long.json()["errors"]["postmortem"][0]["code"],
+        "too_long"
+    );
+
+    let resolve = json!({ "incident": incident, "state": "resolved", "message": "Fixed." });
+    harness
+        .ok(&tree.admin, "incidents.addUpdate", resolve)
+        .await;
+    let viewer_id = harness.person("viewer").await;
+    harness.grant(&viewer_id, &tree.acme, "viewer").await;
+    let viewer = harness.session(&viewer_id).await;
+    let text = "A certificate expired.\n\nWe now renew them a month ahead.";
+    let denied = harness
+        .run(Some(&viewer), "incidents.setPostmortem", set(text))
+        .await;
+    assert_eq!(denied.code(), "forbidden");
+
+    let page = Topic::page(PageId::new(tree.page_id().parse().unwrap()));
+    let head = || async {
+        let mut conn = harness.state.db.reader.acquire().await.unwrap();
+        events::head(&mut conn, &page).await.unwrap()
+    };
+    let before = head().await;
+    harness
+        .ok(&tree.admin, "incidents.setPostmortem", set(text))
+        .await;
+    assert!(head().await > before);
+    let shown = |path: String| async move { get(harness, &path, None).await.json() };
+    let permalink = shown(format!("/s/acme/incidents/{incident}.json")).await;
+    assert_eq!(permalink["postmortem"]["text"], text);
+    assert!(permalink["postmortem"]["published_at"].is_i64());
+    let history = shown("/s/acme/incidents.json".into()).await;
+    assert_eq!(history["incidents"][0]["postmortem"]["text"], text);
+    let snapshot = shown("/s/acme/snapshot.json".into()).await;
+    assert_eq!(snapshot["incidents"][0]["postmortem"]["text"], text);
+
+    // Reopened, the team keeps the text; the page hides it until the incident is resolved.
+    let reopen = json!({ "incident": incident, "state": "identified" });
+    harness.ok(&tree.admin, "incidents.addUpdate", reopen).await;
+    assert!(
+        shown(format!("/s/acme/incidents/{incident}.json"))
+            .await
+            .get("postmortem")
+            .is_none()
+    );
+    let admin_detail = harness
+        .query(
+            Some(&tree.admin),
+            "incidents.get",
+            &format!("incident={incident}"),
+        )
+        .await
+        .json();
+    assert_eq!(admin_detail["postmortem"]["text"], text);
+
+    let resolve = json!({ "incident": incident, "state": "resolved" });
+    harness
+        .ok(&tree.admin, "incidents.addUpdate", resolve)
+        .await;
+    harness
+        .ok(&tree.admin, "incidents.setPostmortem", set(""))
+        .await;
+    assert!(
+        shown(format!("/s/acme/incidents/{incident}.json"))
+            .await
+            .get("postmortem")
+            .is_none()
+    );
+}
+
+/// An incident's own page follows the page's access exactly: the gate when the page is closed,
+/// `404` for an incident the audience does not see there.
+#[tokio::test]
+async fn an_incident_permalink_answers_only_what_the_audience_sees() {
+    let tree = Tree::new(Harness::new().await).await;
+    let harness = &tree.harness;
+    let shown = open_incident(&tree, "Checkout down", &tree.api).await;
+    let internal = open_incident(&tree, "Worker queue stuck", &tree.worker).await;
+    let unpublished = open_incident(&tree, "Quiet fix", &tree.api).await;
+    harness
+        .ok(
+            &tree.admin,
+            "incidents.unpublish",
+            json!({ "incident": unpublished, "page": tree.page_id() }),
+        )
+        .await;
+
+    let page = get(harness, &format!("/s/acme/incidents/{shown}"), None).await;
+    assert_eq!(page.status, StatusCode::OK);
+    assert_eq!(boot(&page)["kind"], "page");
+    let json = get(harness, &format!("/s/acme/incidents/{shown}.json"), None).await;
+    assert_eq!(json.json()["title"], "Checkout down");
+    for id in [
+        internal.as_str(),
+        unpublished.as_str(),
+        "999999",
+        "not-an-id",
+    ] {
+        for path in [
+            format!("/s/acme/incidents/{id}"),
+            format!("/s/acme/incidents/{id}.json"),
+        ] {
+            assert_eq!(
+                get(harness, &path, None).await.status,
+                StatusCode::NOT_FOUND,
+                "{path}"
+            );
+        }
+    }
+    let team = get(
+        harness,
+        &format!("/s/acme/incidents/{internal}.json"),
+        Some(&tree.admin),
+    )
+    .await;
+    assert_eq!(team.json()["title"], "Worker queue stuck");
+
+    tree.access(json!({ "public": false, "password": { "value": "page secret" } }))
+        .await;
+    for id in [shown.as_str(), internal.as_str(), "999999"] {
+        let gate = get(harness, &format!("/s/acme/incidents/{id}"), None).await;
+        assert_eq!(gate.status, StatusCode::OK);
+        assert_eq!(boot(&gate)["kind"], "gate");
+        let closed = get(harness, &format!("/s/acme/incidents/{id}.json"), None).await;
+        assert_eq!(closed.code(), "unauthenticated");
+    }
+}
+
+/// Pages carry link preview tags in their default locale, with a canonical URL once the
+/// instance has a public URL; a closed page's gate carries none.
+#[tokio::test]
+async fn link_previews_name_the_page_or_incident_and_never_a_closed_one() {
+    let tree = Tree::new(Harness::new().await).await;
+    let harness = &tree.harness;
+    let page = get(harness, "/s/acme/incidents", None).await;
+    let tags = preview_tags(&page);
+    assert!(
+        tags.contains(&r#"<meta property="og:title" content="Acme status">"#.to_owned()),
+        "{tags:?}"
+    );
+    assert!(
+        tags.contains(
+            &r#"<meta name="description" content="All systems operational.">"#.to_owned()
+        ),
+        "{tags:?}"
+    );
+    assert!(
+        !tags
+            .iter()
+            .any(|tag| tag.contains("canonical") || tag.contains("og:url"))
+    );
+
+    harness
+        .ok(
+            &tree.admin,
+            "instance.updateSettings",
+            json!({ "name": "Test instance", "public_url": ORIGIN }),
+        )
+        .await;
+    let incident = open_incident(&tree, "Checkout down", &tree.api).await;
+    let tags = preview_tags(&get(harness, &format!("/s/acme/incidents/{incident}"), None).await);
+    assert!(
+        tags.contains(&r#"<meta property="og:title" content="Checkout down">"#.to_owned()),
+        "{tags:?}"
+    );
+    assert!(tags.contains(&r#"<meta property="og:description" content="Investigating. Impact: major outage. Looking into it">"#.to_owned()), "{tags:?}");
+    assert!(
+        tags.contains(&format!(
+            r#"<link rel="canonical" href="{ORIGIN}/s/acme/incidents/{incident}">"#
+        )),
+        "{tags:?}"
+    );
+    let tags = preview_tags(&get(harness, "/s/acme/incidents", None).await);
+    assert!(
+        tags.contains(&r#"<meta name="description" content="Major outage.">"#.to_owned()),
+        "{tags:?}"
+    );
+    assert!(
+        tags.contains(&format!(
+            r#"<link rel="canonical" href="{ORIGIN}/s/acme/incidents">"#
+        )),
+        "{tags:?}"
+    );
+
+    tree.access(json!({ "public": false })).await;
+    for path in [
+        "/s/acme".to_owned(),
+        format!("/s/acme/incidents/{incident}"),
+    ] {
+        let gate = get(harness, &path, None).await;
+        assert_eq!(preview_tags(&gate), Vec::<String>::new(), "{path}");
+        let html = String::from_utf8_lossy(&gate.bytes);
+        assert!(!html.contains("Checkout down") && !html.contains("Major outage"));
+    }
 }
 
 /// The pages list names the restricted access modes in use, and `page.*` events on a node's

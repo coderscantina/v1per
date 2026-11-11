@@ -11,6 +11,7 @@
 
 mod components;
 pub mod maintenance;
+mod postmortem;
 
 use std::collections::HashMap;
 
@@ -24,8 +25,8 @@ use v1per_protocol::operations::incidents::{
     AffectedTarget, Impact, Incident, IncidentArgs, IncidentDeleted, IncidentDetail,
     IncidentOrigin, IncidentPage, IncidentPublications, IncidentPublishArgs, IncidentResult,
     IncidentState, IncidentStatusFilter, IncidentUpdate, IncidentsAddUpdateArgs,
-    IncidentsCreateArgs, IncidentsHandlers, IncidentsListArgs, IncidentsUpdateArgs, Target,
-    TargetImpact,
+    IncidentsCreateArgs, IncidentsHandlers, IncidentsListArgs, IncidentsSetPostmortemArgs,
+    IncidentsUpdateArgs, Target, TargetImpact,
 };
 use v1per_protocol::registry::Snapshot;
 use v1per_storage::Status;
@@ -651,6 +652,24 @@ impl IncidentsHandlers for AppState {
         })
     }
 
+    async fn incidents_set_postmortem(
+        &self,
+        ctx: &mut CommandCtx,
+        args: IncidentsSetPostmortemArgs,
+    ) -> Result<IncidentResult, ApiError> {
+        let row = load(ctx.conn(), args.incident).await?;
+        ctx.node_scope(row.node(), Capability::IncidentsManage)
+            .await?;
+        if let Some(expected) = args.expected_revision
+            && expected != row.revision
+        {
+            return Err(ApiError::stale_revision(row.revision));
+        }
+        postmortem::set(ctx, &row, &args.postmortem).await?;
+        record(ctx, row.node(), "incident.updated", args.incident).await?;
+        answer(ctx, args.incident).await
+    }
+
     async fn incidents_publish(
         &self,
         ctx: &mut CommandCtx,
@@ -809,12 +828,14 @@ impl IncidentsHandlers for AppState {
                 created_at,
             });
         }
+        let postmortem = postmortem::load(ctx.conn(), row.id).await?;
         Ok(Snapshot {
             topic: Topic::incidents(node),
             data: IncidentDetail {
                 incident: summary(ctx.conn(), row).await?,
                 affected,
                 updates,
+                postmortem,
             },
         })
     }

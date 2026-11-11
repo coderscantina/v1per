@@ -97,6 +97,8 @@ limits! {
         LATENCY_POINTS_MAX: u32 = 1_500;
         /// Most daily bars one request may hold.
         DAY_BARS_MAX: u32 = 90;
+        /// Longest incident postmortem, in characters.
+        INCIDENT_POSTMORTEM_MAX_CHARS: usize = 20_000;
         /// Longest status page slug, in characters: lowercase letters, digits and inner dashes.
         PAGE_SLUG_MAX_CHARS: usize = 64;
         /// Longest status page description, in characters.

@@ -108,6 +108,9 @@ export const LATENCY_POINTS_MAX = 1500
 /** Most daily bars one request may hold. */
 export const DAY_BARS_MAX = 90
 
+/** Longest incident postmortem, in characters. */
+export const INCIDENT_POSTMORTEM_MAX_CHARS = 20000
+
 /** Longest status page slug, in characters: lowercase letters, digits and inner dashes. */
 export const PAGE_SLUG_MAX_CHARS = 64
 

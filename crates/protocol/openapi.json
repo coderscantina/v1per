@@ -2311,6 +2311,76 @@
         }
       }
     },
+    "/api/commands/incidents.setPostmortem": {
+      "post": {
+        "operationId": "incidents.setPostmortem",
+        "description": "Sets the postmortem of a resolved incident; empty text removes it. Refused with\n `invalid_value` on `postmortem` while the incident is open. Reopening keeps the\n text, but pages show it only while the incident is resolved. Needs\n `incidents.manage`.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x-v1per-request",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CommandKey"
+                  },
+                  {
+                    "$ref": "#/components/schemas/IncidentsSetPostmortemArgs"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandMeta"
+                    },
+                    {
+                      "$ref": "#/components/schemas/IncidentResult"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/commands/incidents.unpublish": {
       "post": {
         "operationId": "incidents.unpublish",
@@ -10802,6 +10872,17 @@
               "$ref": "#/components/schemas/IncidentUpdate"
             },
             "description": "Oldest first."
+          },
+          "postmortem": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Postmortem"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Kept while the incident is reopened; pages show it only while it is resolved."
           }
         },
         "required": [
@@ -10878,6 +10959,24 @@
       "IncidentUpdateId": {
         "type": "string",
         "description": "One entry of an incident's timeline."
+      },
+      "Postmortem": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "published_at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "When it was last set."
+          }
+        },
+        "required": [
+          "text",
+          "published_at"
+        ],
+        "description": "What the team wrote about a resolved incident, as plain text."
       },
       "IncidentsListArgs": {
         "type": "object",
@@ -11038,6 +11137,30 @@
         "required": [
           "incident",
           "page"
+        ]
+      },
+      "IncidentsSetPostmortemArgs": {
+        "type": "object",
+        "properties": {
+          "incident": {
+            "$ref": "#/components/schemas/IncidentId"
+          },
+          "expected_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The incident's `revision` the edit is based on; `stale_revision` with the current one\notherwise."
+          },
+          "postmortem": {
+            "type": "string",
+            "description": "Plain text, up to 20,000 characters after trimming; empty removes the postmortem."
+          }
+        },
+        "required": [
+          "incident",
+          "postmortem"
         ]
       },
       "IncidentsUpdateArgs": {
@@ -15933,6 +16056,23 @@
               }
             ],
             "description": "Monitors only: response times and per-probe status for the `internal` audience, and\nresponse times alone for the `public` one on a page with `response_times` set."
+          },
+          "up": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "down": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Pending checks, still retrying, count as down."
+          },
+          "maint": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Checks under maintenance."
           }
         },
         "required": [
@@ -15940,7 +16080,8 @@
           "name",
           "description",
           "bars"
-        ]
+        ],
+        "description": "The monitor-level checks behind an uptime figure. Uptime is `up / (up + down)`; checks\nunder maintenance are left out of it. Each count is absent while zero."
       },
       "PageBar": {
         "type": "object",
@@ -15981,11 +16122,29 @@
               "$ref": "#/components/schemas/IncidentId"
             },
             "description": "Published incidents that touched the component that day."
+          },
+          "up": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "down": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Pending checks, still retrying, count as down."
+          },
+          "maint": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Checks under maintenance."
           }
         },
         "required": [
           "day"
-        ]
+        ],
+        "description": "The monitor-level checks behind an uptime figure. Uptime is `up / (up + down)`; checks\nunder maintenance are left out of it. Each count is absent while zero."
       },
       "ComponentDetail": {
         "type": "object",
@@ -16086,6 +16245,17 @@
               "$ref": "#/components/schemas/PublicIncidentUpdate"
             },
             "description": "Newest first."
+          },
+          "postmortem": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Postmortem"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Plain text the team wrote after resolution; absent without one and while the incident\nis open again."
           }
         },
         "required": [
