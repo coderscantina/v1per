@@ -2,13 +2,14 @@
 import { formatDay, formatUptime } from './format'
 import { locale, t } from './messages'
 import { toneLabel } from './tones'
+import { explainDay } from './uptime'
 import type { BarView } from './view'
 
 /**
  * 90 daily bars with a popover for the day under the pointer or the keyboard. The strip is one
  * tab stop: arrow keys, Home and End move between days, Escape closes the popover. Each bar's
- * label carries everything the popover shows, so the popover itself stays out of the
- * accessibility tree.
+ * label carries everything the popover shows, the checks behind the day's uptime included, so
+ * the popover itself stays out of the accessibility tree.
  */
 const props = defineProps<{ bars: BarView[]; name: string }>()
 
@@ -22,11 +23,13 @@ const left = ref(0)
 
 const POPOVER_WIDTH = 240
 
-function details(bar: BarView): string[] {
-  const lines: string[] = []
-  if (bar.maintenance) lines.push(t('bar.maintenance'))
-  if (bar.approximate) lines.push(t('bar.approximate'))
-  return lines
+/** The checks the day counted, then what applied to it. */
+function details(bar: BarView): { facts: string[]; notes: string[] } {
+  const { facts, rules } = explainDay(bar.counts)
+  const notes: string[] = []
+  if (bar.maintenance) notes.push(t('bar.maintenance'))
+  if (bar.approximate) notes.push(t('bar.approximate'))
+  return { facts, notes: [...notes, ...rules] }
 }
 
 function label(bar: BarView): string {
@@ -37,10 +40,12 @@ function label(bar: BarView): string {
       ? t('bar.label', { date, status })
       : t('bar.labelUptime', { date, status, uptime: formatUptime(bar.uptime, locale.value) })
   const incidents = bar.incidents.length > 0 ? [`${t('bar.incidents')}: ${bar.incidents.join(', ')}`] : []
-  return [head, ...incidents, ...details(bar)].join('. ')
+  const { facts, notes } = details(bar)
+  return [head, ...facts, ...incidents, ...notes].join('. ')
 }
 
 const shown = computed(() => (active.value === null ? null : (props.bars[active.value] ?? null)))
+const shownDetails = computed(() => (shown.value ? details(shown.value) : null))
 
 /** Places the popover over the bar, kept inside the strip. */
 function place(index: number) {
@@ -143,6 +148,11 @@ function onFocusout(event: FocusEvent) {
           class="text-muted"
         >{{ t('bar.uptime', { value: formatUptime(shown.uptime, locale) }) }}</span>
       </p>
+      <p
+        v-for="fact in shownDetails?.facts"
+        :key="fact"
+        data-testid="bar-checks"
+      >{{ fact }}</p>
       <div
         v-if="shown.incidents.length > 0"
         class="flex flex-col gap-0.5"
@@ -154,7 +164,7 @@ function onFocusout(event: FocusEvent) {
         >{{ title }}</p>
       </div>
       <p
-        v-for="line in details(shown)"
+        v-for="line in shownDetails?.notes"
         :key="line"
         class="text-xs text-muted"
       >{{ line }}</p>

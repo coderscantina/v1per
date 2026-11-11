@@ -79,6 +79,13 @@ export function formatDuration(ms: number): string {
   return t('duration.days', { d: Math.floor(hours / 24), h: hours % 24 })
 }
 
+/** How long an incident lasted, as "Resolved after 2 h 5 min", or "Ongoing for 12 min" while open. */
+export function incidentDuration(startedAt: number, resolvedAt: number | undefined, now: number): string {
+  return resolvedAt === undefined
+    ? t('incidents.ongoingFor', { duration: formatDuration(now - startedAt) })
+    : t('incidents.resolvedAfter', { duration: formatDuration(resolvedAt - startedAt) })
+}
+
 /** Milliseconds as "120 ms" or "1.2 s". */
 export function formatLatency(ms: number, locale: Locale): string {
   if (ms < 1000) return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(ms)} ms`

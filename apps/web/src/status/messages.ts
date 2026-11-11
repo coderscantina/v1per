@@ -159,6 +159,30 @@ const en = {
   'duration.days': '{d} d {h} h',
   'duration.wholeHours': '{h} h',
   'duration.wholeDays': '{d} d',
+
+  'uptime.checks': '{total} checks counted: {up} up, {down} down',
+  'uptime.noChecks': 'No checks counted yet',
+  'uptime.maintenance': '{n} under maintenance, left out',
+  'uptime.days.one': 'Covers {from}, 1 day',
+  'uptime.days.other': 'Covers {from} to {to}, {n} days',
+  'uptime.average.one': 'The figure of the one component with checks',
+  'uptime.average.other': 'The average of {n} components, each counted the same however many checks it has',
+  'uptime.rule.ratio': 'Uptime is the share of up checks among all up and down checks.',
+  'uptime.rule.down': 'Checks still retrying count as down.',
+  'uptime.rule.maintenance': 'Checks during maintenance are left out.',
+  'uptime.rule.quorum': 'A monitor checked from several probes is down only when its probe quorum says so.',
+  'uptime.rule.imported': 'Days imported from Uptime Kuma use its daily totals, counted by UTC day.',
+  'uptime.rule.bars': "Each bar is one day in the page's timezone. A published incident colors its days, otherwise the day's uptime does.",
+  'uptime.rule.headline': "The 90-day figure at the top is the average of the components' figures, each counted the same.",
+  'uptime.how': 'How uptime is counted',
+  'uptime.explain': '{name}: {value} uptime over 90 days. How it is counted',
+  'uptime.explainPage': '{value} uptime over 90 days. How it is counted',
+
+  'incident.back': 'All incidents',
+  'incident.postmortem': 'Postmortem',
+  'incident.postmortemAt': 'Written {date}',
+  'incident.loading': 'Loading the incident…',
+  'incident.missing': 'This incident could not be loaded.',
 } as const
 
 type MessageKey = keyof typeof en
@@ -316,6 +340,30 @@ const de: Record<MessageKey, string> = {
   'duration.days': '{d} T. {h} Std.',
   'duration.wholeHours': '{h} Std.',
   'duration.wholeDays': '{d} T.',
+
+  'uptime.checks': '{total} Prüfungen gezählt: {up} erreichbar, {down} ausgefallen',
+  'uptime.noChecks': 'Noch keine Prüfungen gezählt',
+  'uptime.maintenance': '{n} während Wartung, nicht gezählt',
+  'uptime.days.one': 'Zeitraum {from}, 1 Tag',
+  'uptime.days.other': 'Zeitraum {from} bis {to}, {n} Tage',
+  'uptime.average.one': 'Der Wert der einen Komponente mit Prüfungen',
+  'uptime.average.other': 'Der Durchschnitt von {n} Komponenten, jede gleich gewichtet, egal wie viele Prüfungen sie hat',
+  'uptime.rule.ratio': 'Die Verfügbarkeit ist der Anteil erreichbarer Prüfungen an allen erreichbaren und ausgefallenen.',
+  'uptime.rule.down': 'Prüfungen, die noch wiederholt werden, zählen als ausgefallen.',
+  'uptime.rule.maintenance': 'Prüfungen während einer Wartung werden nicht gezählt.',
+  'uptime.rule.quorum': 'Ein Monitor mit mehreren Prüfstellen gilt nur als ausgefallen, wenn sein Quorum das ergibt.',
+  'uptime.rule.imported': 'Aus Uptime Kuma importierte Tage nutzen dessen Tagessummen, nach UTC-Tag gezählt.',
+  'uptime.rule.bars': 'Jeder Balken ist ein Tag in der Zeitzone der Seite. Eine veröffentlichte Störung färbt ihre Tage, sonst die Verfügbarkeit des Tages.',
+  'uptime.rule.headline': 'Der 90-Tage-Wert oben ist der Durchschnitt der Werte der Komponenten, jede gleich gewichtet.',
+  'uptime.how': 'So wird die Verfügbarkeit gezählt',
+  'uptime.explain': '{name}: {value} verfügbar in 90 Tagen. So wird gezählt',
+  'uptime.explainPage': '{value} verfügbar in 90 Tagen. So wird gezählt',
+
+  'incident.back': 'Alle Störungen',
+  'incident.postmortem': 'Nachbetrachtung',
+  'incident.postmortemAt': 'Geschrieben {date}',
+  'incident.loading': 'Die Störung wird geladen…',
+  'incident.missing': 'Diese Störung konnte nicht geladen werden.',
 }
 
 const catalogs: Record<Locale, Record<MessageKey, string>> = { en, de }

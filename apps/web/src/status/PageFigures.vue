@@ -1,15 +1,26 @@
 <script setup lang="ts">
 import { formatShortDate, formatUptime } from './format'
 import { locale, t, type MessageKey } from './messages'
+import { explain } from './uptime'
+import UptimeExplain from './UptimeExplain.vue'
 import type { PageFigures } from './view'
 
-/** The page's headline figures, value above label, so the row reads as numbers first. */
+/**
+ * The page's headline figures, value above label, so the row reads as numbers first. The uptime
+ * explains itself when asked.
+ */
 const props = defineProps<{ figures: PageFigures }>()
 
-const items = computed((): { label: MessageKey; value: string }[] => {
+const explanation = computed(() => explain(props.figures.basis))
+
+const items = computed((): { label: MessageKey; value: string; explained?: boolean }[] => {
   const { uptime, incidents, maintenance } = props.figures
   return [
-    { label: 'figures.uptime', value: uptime === undefined ? t('status.none') : formatUptime(uptime, locale.value) },
+    {
+      label: 'figures.uptime',
+      value: uptime === undefined ? t('status.none') : formatUptime(uptime, locale.value),
+      explained: uptime !== undefined,
+    },
     { label: 'figures.incidents', value: String(incidents) },
     {
       label: 'figures.maintenance',
@@ -35,7 +46,20 @@ const items = computed((): { label: MessageKey; value: string }[] => {
       class="flex min-w-0 flex-col-reverse gap-0.5 px-3 py-3 sm:px-4 sm:py-4"
     >
       <dt class="text-[13px] leading-4 text-muted">{{ t(item.label) }}</dt>
-      <dd class="truncate text-xl font-semibold text-primary tabular-nums sm:text-2xl">{{ item.value }}</dd>
+      <dd
+        v-if="item.explained"
+        class="text-xl font-semibold text-primary tabular-nums sm:text-2xl"
+      >
+        <UptimeExplain
+          :explanation="explanation"
+          :label="t('uptime.explainPage', { value: item.value })"
+          align="start"
+        >{{ item.value }}</UptimeExplain>
+      </dd>
+      <dd
+        v-else
+        class="truncate text-xl font-semibold text-primary tabular-nums sm:text-2xl"
+      >{{ item.value }}</dd>
     </div>
   </dl>
 </template>

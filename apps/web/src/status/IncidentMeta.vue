@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { formatAge, formatDate, formatDuration } from './format'
-import { locale, t } from './messages'
+import { formatAge, formatDate, incidentDuration } from './format'
+import { locale } from './messages'
 import type { IncidentView } from './view'
 
 /**
@@ -9,12 +9,7 @@ import type { IncidentView } from './view'
  */
 const props = defineProps<{ incident: IncidentView; now: number; components?: boolean }>()
 
-const duration = computed(() => {
-  const { startedAt, resolvedAt } = props.incident
-  return resolvedAt === undefined
-    ? t('incidents.ongoingFor', { duration: formatDuration(props.now - startedAt) })
-    : t('incidents.resolvedAfter', { duration: formatDuration(resolvedAt - startedAt) })
-})
+const duration = computed(() => incidentDuration(props.incident.startedAt, props.incident.resolvedAt, props.now))
 const names = computed(() => (props.components ? props.incident.affected.map((item) => item.name).join(', ') : ''))
 </script>
 

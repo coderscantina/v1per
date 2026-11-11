@@ -7,6 +7,7 @@ import { pagesResource } from '~/api/resources/pages'
 import Icon from '~/components/Icon.vue'
 import ImpactLabel from '~/components/incidents/ImpactLabel.vue'
 import IncidentComposer from '~/components/incidents/IncidentComposer.vue'
+import IncidentPostmortem from '~/components/incidents/IncidentPostmortem.vue'
 import IncidentPublications from '~/components/incidents/IncidentPublications.vue'
 import IncidentStateBadge from '~/components/incidents/IncidentStateBadge.vue'
 import IncidentTimeline from '~/components/incidents/IncidentTimeline.vue'
@@ -30,7 +31,8 @@ import { useI18n } from '~/plugins/i18n'
 
 /**
  * One incident as a feed, live: a header with its state, impact, age and what it affects, the
- * status pages it is on, the composer for the next update, then the updates newest first.
+ * status pages it is on, the composer for the next update, the postmortem once it is resolved,
+ * then the updates newest first.
  * Resolve, edit and delete sit in the header. An auto-incident says which monitor opened it
  * and offers triage: post an update, publish to the pages showing it, or dismiss a false alarm.
  */
@@ -311,6 +313,13 @@ const composer = useTemplateRef<{ focus: () => void }>('composer')
           :detail="detail"
         />
       </section>
+
+      <IncidentPostmortem
+        v-if="incident.state === 'resolved' && (manage || detail.postmortem)"
+        :key="incident.id"
+        :detail="detail"
+        :manage="manage"
+      />
 
       <section
         class="rounded-panel border border-hairline bg-card px-4.5 py-5 max-sm:px-4"

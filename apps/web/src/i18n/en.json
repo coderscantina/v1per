@@ -1176,6 +1176,14 @@
     }
   },
   "incidents": {
+    "postmortem": {
+      "title": "Postmortem",
+      "text": "Postmortem text",
+      "hint": "Plain text. Status pages show it on the incident's own page while the incident is resolved.",
+      "save": "Save postmortem",
+      "remove": "Remove postmortem",
+      "savedAt": "Saved {time}"
+    },
     "title": "Incidents",
     "create": "New incident",
     "edit": "Edit",
