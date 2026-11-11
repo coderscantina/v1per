@@ -129,6 +129,16 @@ pub struct PageSettings {
     #[serde(default)]
     #[ts(as = "Option<bool>", optional)]
     pub response_times: bool,
+    /// With `response_times`: visitors also get response times per probe location, named by
+    /// the probe's city and country, never by its name. Probes without a location are left
+    /// out.
+    #[serde(default)]
+    #[ts(as = "Option<bool>", optional)]
+    pub probe_locations: bool,
+    /// Visitors may subscribe to the page's incidents and maintenance.
+    #[serde(default)]
+    #[ts(as = "Option<bool>", optional)]
+    pub subscriptions: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, JsonSchema)]

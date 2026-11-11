@@ -324,6 +324,25 @@ const shownFields = ['title', 'slug', 'description', 'footer', 'timezone', 'grac
           :label="t('pages.settings.responseTimesPublic')"
           :description="t('pages.settings.responseTimesPublicHint')"
         />
+        <SwitchField
+          v-if="form.responseTimes"
+          id="page-probe-locations-switch"
+          v-model="form.probeLocations"
+          :label="t('pages.settings.probeLocations')"
+          :description="t('pages.settings.probeLocationsHint')"
+        />
+      </SettingsSection>
+
+      <SettingsSection
+        id="page-subscriptions"
+        :title="t('pages.settings.subscriptions')"
+        :description="t('pages.settings.subscriptionsHint')"
+      >
+        <SwitchField
+          id="page-subscriptions-switch"
+          v-model="form.subscriptions"
+          :label="t('pages.settings.subscriptionsOn')"
+        />
       </SettingsSection>
 
       <SettingsSection

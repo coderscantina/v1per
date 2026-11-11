@@ -1465,6 +1465,11 @@
       "responseTimesHint": "The chart under each monitor: average, fastest and slowest response over the last 24 hours.",
       "responseTimesPublic": "Show to all visitors",
       "responseTimesPublicHint": "Off, only signed-in team members see them. Probes stay team only either way.",
+      "probeLocations": "Show per probe location",
+      "probeLocationsHint": "Visitors see one line per location, named by the probe's city and country. Probe names stay team only, and probes without a location are left out.",
+      "subscriptions": "Subscriptions",
+      "subscriptionsHint": "Visitors follow incidents and maintenance on this page.",
+      "subscriptionsOn": "Let visitors subscribe",
       "autoIncidents": "Auto-incidents",
       "autoIncidentsHint": "Incidents opened when a monitor on this page goes down.",
       "autoModes": {

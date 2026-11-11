@@ -1465,6 +1465,11 @@
       "responseTimesHint": "Das Diagramm unter jedem Monitor: durchschnittliche, schnellste und langsamste Antwort der letzten 24 Stunden.",
       "responseTimesPublic": "Allen Besuchern zeigen",
       "responseTimesPublicHint": "Ausgeschaltet sehen sie nur angemeldete Teammitglieder. Prüfstellen bleiben in jedem Fall dem Team vorbehalten.",
+      "probeLocations": "Je Prüfstellen-Standort zeigen",
+      "probeLocationsHint": "Besucher sehen eine Linie je Standort, benannt nach Stadt und Land der Prüfstelle. Namen der Prüfstellen bleiben dem Team vorbehalten, Prüfstellen ohne Standort entfallen.",
+      "subscriptions": "Abonnements",
+      "subscriptionsHint": "Besucher verfolgen Vorfälle und Wartungen dieser Seite.",
+      "subscriptionsOn": "Besucher abonnieren lassen",
       "autoIncidents": "Automatische Vorfälle",
       "autoIncidentsHint": "Vorfälle, die sich öffnen, wenn ein Monitor dieser Seite ausfällt.",
       "autoModes": {

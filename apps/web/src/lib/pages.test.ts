@@ -70,6 +70,8 @@ describe('settings form', () => {
       response_times: false,
     })
     expect(toUpdateArgs({ ...form, responseTimes: true }, page, 4).response_times).toBe(true)
+    // Locations are part of the response times, so they go off with them.
+    expect(toUpdateArgs({ ...form, probeLocations: true }, page, 4).probe_locations).toBe(false)
     expect(Object.keys(validateSettings({ ...form, title: ' ', slug: 'Bad slug', autoIncidents: 'auto_publish', graceMinutes: '2000' }))).toEqual([
       'slug',
       'title',

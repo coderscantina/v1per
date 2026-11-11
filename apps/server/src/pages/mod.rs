@@ -88,6 +88,8 @@ pub(crate) struct PageRow {
     pub auto_incidents: String,
     pub grace_minutes: i64,
     pub response_times: bool,
+    pub probe_locations: bool,
+    pub subscriptions: bool,
     pub public: bool,
     pub password_hash: Option<String>,
     pub allowed_emails: String,
@@ -103,8 +105,8 @@ pub(crate) struct PageRow {
 macro_rules! select_page {
     () => {
         "SELECT id, node_id, slug, title, description, footer, theme, accent, timezone,
-                default_locale, locales, auto_incidents, grace_minutes, response_times, public,
-                password_hash, allowed_emails, allowed_domains, logo_type, length(logo) AS logo_size,
+                default_locale, locales, auto_incidents, grace_minutes, response_times, probe_locations,
+                subscriptions, public, password_hash, allowed_emails, allowed_domains, logo_type, length(logo) AS logo_size,
                 logo_updated_at, revision, created_at, updated_at
          FROM pages"
     };
@@ -463,14 +465,16 @@ async fn store_settings(
             "UPDATE pages SET slug = ?1, title = ?2, description = ?3, footer = ?4, theme = ?5,
                               accent = ?6, timezone = ?7, default_locale = ?8, locales = ?9,
                               auto_incidents = ?10, grace_minutes = ?11, updated_at = ?13,
-                              response_times = ?14
+                              response_times = ?14, probe_locations = ?15, subscriptions = ?16
              WHERE id = ?12 RETURNING id"
         }
         Err(_) => {
             "INSERT INTO pages (slug, title, description, footer, theme, accent, timezone,
                                 default_locale, locales, auto_incidents, grace_minutes, node_id,
-                                public, revision, created_at, updated_at, response_times)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, 1, ?13, ?13, ?14)
+                                public, revision, created_at, updated_at, response_times,
+                                probe_locations, subscriptions)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, 1, ?13, ?13, ?14, ?15,
+                     ?16)
              RETURNING id"
         }
     };
@@ -489,6 +493,8 @@ async fn store_settings(
         .bind(page.map_or_else(NodeId::get, PageId::get))
         .bind(now)
         .bind(settings.response_times)
+        .bind(settings.response_times && settings.probe_locations)
+        .bind(settings.subscriptions)
         .fetch_one(ctx.conn())
         .await?;
     Ok(PageId::new(id))
@@ -603,6 +609,8 @@ async fn detail(conn: &mut SqliteConnection, page: PageId) -> Result<PageDetail,
                 auto_incidents: enum_from(&row.auto_incidents)?,
                 grace_minutes: row.grace_minutes as u32,
                 response_times: row.response_times,
+                probe_locations: row.probe_locations,
+                subscriptions: row.subscriptions,
             },
             access: PageAccess {
                 public: row.public,

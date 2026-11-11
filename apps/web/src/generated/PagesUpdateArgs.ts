@@ -45,4 +45,14 @@ grace_minutes?: number,
 /**
  * Every visitor gets the monitors' response times, not only grant holders.
  */
-response_times?: boolean, };
+response_times?: boolean, 
+/**
+ * With `response_times`: visitors also get response times per probe location, named by
+ * the probe's city and country, never by its name. Probes without a location are left
+ * out.
+ */
+probe_locations?: boolean, 
+/**
+ * Visitors may subscribe to the page's incidents and maintenance.
+ */
+subscriptions?: boolean, };

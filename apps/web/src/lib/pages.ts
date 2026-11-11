@@ -59,6 +59,10 @@ export interface SettingsForm {
   graceMinutes: string
   /** Every visitor sees response times, not only the team. */
   responseTimes: boolean
+  /** With `responseTimes`: also per probe location. */
+  probeLocations: boolean
+  /** Visitors may subscribe to incidents and maintenance. */
+  subscriptions: boolean
 }
 
 export function settingsFromPage(page: Page): SettingsForm {
@@ -76,6 +80,8 @@ export function settingsFromPage(page: Page): SettingsForm {
     autoIncidents: page.auto_incidents ?? 'draft',
     graceMinutes: String(page.grace_minutes ?? 0),
     responseTimes: page.response_times ?? false,
+    probeLocations: page.probe_locations ?? false,
+    subscriptions: page.subscriptions ?? false,
   }
 }
 
@@ -107,6 +113,8 @@ export function toUpdateArgs(form: SettingsForm, page: Page, basedOn: number): P
     auto_incidents: form.autoIncidents,
     grace_minutes: form.autoIncidents === 'auto_publish' ? Number(form.graceMinutes) : (page.grace_minutes ?? 0),
     response_times: form.responseTimes,
+    probe_locations: form.responseTimes && form.probeLocations,
+    subscriptions: form.subscriptions,
   }
 }
 

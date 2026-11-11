@@ -381,7 +381,7 @@ async fn an_install_at_schema_13_upgrades_with_its_outbox_intact() {
     .await
     .unwrap();
     assert_eq!(upgraded.state, "upgraded");
-    assert_eq!(upgraded.to.control, 15);
+    assert_eq!(upgraded.to.control, 16);
     assert_eq!(upgraded.to.heartbeats, upgraded.from.heartbeats);
 
     let pool = SqlitePoolOptions::new()
