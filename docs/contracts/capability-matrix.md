@@ -70,7 +70,7 @@ Capabilities without an operation yet are the contract for the milestones named 
 | `instance.updateSmtp`, `instance.testSmtp` | The instance admin flag; `instance.testSmtp` five times a minute per person          | instance admin                 |
 | `imports.list`, `imports.get`, `imports.inventory` | The instance admin flag; `imports.get` and `imports.inventory` answer `not_found` for a node without an import | instance admin |
 | `incidents.list`, `incidents.get`      | `node.read`                                                                               | viewer and up                  |
-| `incidents.create`, `incidents.addUpdate`, `incidents.update`, `incidents.delete` | `incidents.manage` on the incident's node; targets on that node or below | member and up |
+| `incidents.create`, `incidents.addUpdate`, `incidents.update`, `incidents.setPostmortem`, `incidents.delete` | `incidents.manage` on the incident's node; targets on that node or below | member and up |
 | `maintenance.list`, `maintenance.get`  | `node.read`                                                                               | viewer and up                  |
 | `maintenance.preview`                  | Signed in                                                                                 | any                            |
 | `maintenance.create`, `maintenance.update`, `maintenance.pause`, `maintenance.resume`, `maintenance.delete` | `maintenance.manage` on the maintenance's node; monitors on that node or below | member and up |

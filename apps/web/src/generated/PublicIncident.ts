@@ -3,6 +3,7 @@ import type { Impact } from "./Impact";
 import type { IncidentId } from "./IncidentId";
 import type { IncidentState } from "./IncidentState";
 import type { PageComponentId } from "./PageComponentId";
+import type { Postmortem } from "./Postmortem";
 import type { PublicIncidentUpdate } from "./PublicIncidentUpdate";
 
 export type PublicIncident = { id: IncidentId, title: string, state: IncidentState, 
@@ -17,4 +18,9 @@ components: Array<PageComponentId>,
 /**
  * Newest first.
  */
-updates: Array<PublicIncidentUpdate>, };
+updates: Array<PublicIncidentUpdate>, 
+/**
+ * Plain text the team wrote after resolution; absent without one and while the incident
+ * is open again.
+ */
+postmortem?: Postmortem, };

@@ -20,6 +20,8 @@ All paths are relative to the base. Errors use the admin API's `ApiErrorBody`.
 | `GET {base}` | `status.html` with the [boot JSON](#boot-json) injected |
 | `GET {base}/t/{token}` | The same, opened with a share token |
 | `GET {base}/incidents`, `GET {base}/maintenance` | The same, opened on that view |
+| `GET {base}/incidents/{id}` | The same, opened on one incident; `404` when the visitor may not see it, see [incident pages](#incident-pages) |
+| `GET {base}/incidents/{id}.json` | That incident as a `PublicIncident`; `404` likewise, `401 unauthenticated` when the page is closed to the visitor |
 | `GET {base}/access/email?code=` | The same, without using the code; the page app posts `code` to `redeem` once the visitor continues |
 | `GET {base}/snapshot.json` | `PageSnapshot`, or `401 unauthenticated` when the page is closed to the visitor |
 | `GET {base}/incidents.json?cursor=&limit=` | `PageIncidents`, see [incident history](#incident-history) |
@@ -102,7 +104,8 @@ type PublicComponent = {
   description: string // static components only
   status?: PageStatus // absent while a monitor has no status, such as when paused
   uptime_90d?: number // ratio over the 90 bars, monitors only
-  bars: { day; status?; uptime?; utc_approximate?; maintenance?; incidents?: IncidentId[] }[] // 90 days, oldest first
+  up?: number; down?: number; maint?: number // the checks behind uptime_90d, see the rules
+  bars: { day; status?; uptime?; up?; down?; maint?; utc_approximate?; maintenance?; incidents?: IncidentId[] }[] // 90 days, oldest first
   detail?: { latency: LatencyPoint[]; probes: { name; status; latency_ms?; checked_at }[] } // monitors; see the rules
 }
 
@@ -110,6 +113,7 @@ type PublicIncident = {
   id; title; state; impact?; started_at; resolved_at?
   components: PageComponentId[]
   updates: { state; message; created_at; impacts: { component: PageComponentId; impact }[] }[] // newest first
+  postmortem?: { text: string; published_at: number } // plain text, only while resolved
 }
 
 type PublicMaintenance = { title; description; active: boolean; starts_at?; ends_at?; components: PageComponentId[] }
@@ -155,6 +159,8 @@ Rules:
 - Only incidents published to the page appear, open ones and those resolved within the 90 days, at most 100, and only with the page's visible components. An incident naming none of them is left out. Older ones are in the [incident history](#incident-history).
 - An auto-incident's title is rendered in the snapshot's locale from the component's page name ("API is down", "API ist ausgefallen") until a person changes the title. Updates the server wrote for an auto-incident are replaced by a generic text in the locale, because check messages can name hosts.
 - Maintenance shows while under way or when a window starts within 14 days, with the visible components it covers.
+- `up`, `down` and `maint` are the monitor-level checks behind an uptime figure, on a bar for its day and on a component summed over its bars. Uptime is `up / (up + down)`. `down` includes checks still retrying, as uptime counts them; `maint` are checks under maintenance, which uptime leaves out. A count is absent while zero. The page app explains every uptime figure from these counts and derives nothing else from them.
+- `postmortem` is what the team set with `incidents.setPostmortem`. It appears only while the incident is resolved; reopening hides it and keeps the text. The page app renders it as plain text with its line breaks, never as HTML or Markdown.
 - `slas` lists the SLAs selected with `pages.updateSlas`, per the [monitoring contract](../monitoring-contract.md#slas). Each period carries the targets it was computed with. Counts and averages include incidents that were never published, drafts too, but no incident, its title or its ID appears. No SLA ID, covered monitor list, channel or person appears either.
 - The `internal` audience also gets `monitors` per period: the covered monitors the page shows, named by their page component. A covered monitor not on the page is only in the aggregates.
 - `at_risk` is the server's call on a running period: 75 % of the downtime budget used and not exceeded, or an average latency above its target. Clients show it and derive nothing from the figures. A period in which no covered monitor has data and no incident started is `no_data`, for the response and resolution clocks too.
@@ -190,6 +196,21 @@ type PageIncidents = {
 - `cursor`: the `next_cursor` of the page before. It is opaque; a malformed one is `400 invalid_arguments` on `cursor`, as is a `limit` out of range.
 - Pages are ordered by the incident's start, then its ID, so no incident appears on two pages.
 - Access, `token`, `locale` and caching are those of `snapshot.json`: `401 unauthenticated` when the page is closed to the visitor.
+
+## Incident pages
+
+`GET {base}/incidents/{id}` serves the page app on one incident: summary, postmortem and the full update timeline. `GET {base}/incidents/{id}.json` answers the `PublicIncident`, which the app reads for an incident the snapshot no longer lists. Both use the builder behind `incidents.json`, so the visibility rules are the same: the incident must be published to this page and name a component the visitor's audience sees. Anything else, a malformed ID included, is `404`. On a page closed to the visitor the HTML route serves the gate and the JSON route answers `401 unauthenticated`, whether or not the incident exists.
+
+## Link previews
+
+The HTML of a page the visitor may read carries `<meta name="description">`, Open Graph (`og:type`, `og:title`, `og:description`) and Twitter card tags, in the page's default locale:
+
+- On the page and its views: the page title, and the overall status in words before the page description.
+- On an incident page: the incident title, then its state, its impact in words (the worst it reached once resolved) and its latest update text.
+
+Descriptions are cut to 200 characters. `og:url` and `<link rel="canonical">` appear when the page's origin is known: a claimed hostname, or the instance's public URL. They never carry a share token. `og:image` is the page logo when it is a raster image; an SVG logo or none leaves the image out. Every value is escaped for an HTML attribute.
+
+The gate HTML carries none of these tags, so a restricted page's preview names neither its incidents nor its status.
 
 ## Badges
 

@@ -5,11 +5,13 @@ import type {
   PageAudience,
   PageSnapshot,
   PageStatus,
+  Postmortem,
   PublicIncident,
   PublicIncidentUpdate,
 } from '~/generated'
 
 import { slaView, type SlaView } from './sla'
+import { countsOf, pageBasis, type Counts, type UptimeBasis } from './uptime'
 
 /** A status as the page paints it: one of the page statuses, or `none` for a day or monitor without data. */
 export type Tone = PageStatus | 'none'
@@ -22,6 +24,8 @@ export interface BarView {
   approximate: boolean
   maintenance: boolean
   incidents: string[]
+  /** The checks behind `uptime`. */
+  counts: Counts
 }
 
 export interface ComponentView {
@@ -67,6 +71,9 @@ export interface IncidentView {
   /** Newest first. */
   timeline: TimelineEntry[]
   affected: AffectedView[]
+  /** The worst impact any update set: what a resolved incident was at its worst. */
+  peak?: Impact
+  postmortem?: Postmortem
 }
 
 /** Items of one calendar month in the visitor's timezone; `at` is the first item's start. */
@@ -89,6 +96,8 @@ export interface MaintenanceView {
 export interface PageFigures {
   /** The mean of the components' 90-day uptime; absent when none has data. */
   uptime?: number
+  /** What `uptime` stands on. */
+  basis: UptimeBasis
   /** Incidents open now or resolved within the bars' 90 days. */
   incidents: number
   /** When the next maintenance starts: `now` while one is under way, absent when none is planned. */
@@ -184,7 +193,20 @@ export function incidentView(incident: PublicIncident, names: ReadonlyMap<string
     resolvedAt: incident.resolved_at,
     timeline: timeline(incident.updates, names),
     affected: affected(incident, names),
+    peak: peakImpact(incident),
+    postmortem: incident.postmortem,
   }
+}
+
+const impactRank: Record<Impact, number> = { operational: 0, degraded: 1, partial_outage: 2, major_outage: 3 }
+
+/** The worst impact any update set, above operational; absent when none did. */
+function peakImpact(incident: PublicIncident): Impact | undefined {
+  let peak: Impact | undefined
+  for (const update of incident.updates) {
+    for (const { impact } of update.impacts) if (impact !== 'operational' && (!peak || impactRank[impact] > impactRank[peak])) peak = impact
+  }
+  return peak
 }
 
 /**
@@ -212,6 +234,7 @@ export function pageView(snapshot: PageSnapshot, base: string): PageView {
           approximate: bar.utc_approximate ?? false,
           maintenance: bar.maintenance ?? false,
           incidents: (bar.incidents ?? []).flatMap((id) => titles.get(id) ?? []),
+          counts: countsOf(bar),
         })),
       })
     )
@@ -257,6 +280,7 @@ export function pageView(snapshot: PageSnapshot, base: string): PageView {
     slas: snapshot.slas.map((sla) => slaView(sla, names)),
     figures: {
       uptime: uptimes.length > 0 ? uptimes.reduce((sum, uptime) => sum + uptime, 0) / uptimes.length : undefined,
+      basis: pageBasis(groups.flatMap((group) => group.components)),
       incidents: snapshot.incidents.length,
       maintenance: next?.active ? 'now' : next?.startsAt,
     },

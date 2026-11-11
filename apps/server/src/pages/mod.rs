@@ -11,6 +11,7 @@ mod access;
 mod badge;
 mod logo;
 mod mail;
+mod meta;
 mod public;
 pub(crate) mod publish;
 mod snapshot;

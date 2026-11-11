@@ -1176,6 +1176,14 @@
     }
   },
   "incidents": {
+    "postmortem": {
+      "title": "Nachbetrachtung",
+      "text": "Text der Nachbetrachtung",
+      "hint": "Reiner Text. Statusseiten zeigen ihn auf der Seite der Störung, solange sie behoben ist.",
+      "save": "Nachbetrachtung speichern",
+      "remove": "Nachbetrachtung entfernen",
+      "savedAt": "Gespeichert {time}"
+    },
     "title": "Vorfälle",
     "create": "Neuer Vorfall",
     "edit": "Bearbeiten",

@@ -5,6 +5,7 @@ import type { PageClient } from './client'
 import ComponentGroup from './ComponentGroup.vue'
 import IncidentCard from './IncidentCard.vue'
 import IncidentHistory from './IncidentHistory.vue'
+import IncidentPage from './IncidentPage.vue'
 import LocaleSwitch from './LocaleSwitch.vue'
 import MaintenanceCard from './MaintenanceCard.vue'
 import { t } from './messages'
@@ -12,6 +13,7 @@ import PageFigures from './PageFigures.vue'
 import { usePageRoute, viewLabel, views } from './route'
 import SlaCard from './SlaCard.vue'
 import StatusBanner from './StatusBanner.vue'
+import UptimeRules from './UptimeRules.vue'
 import { pageView } from './view'
 
 /** Where "Powered by" points. */
@@ -29,7 +31,9 @@ let tick: ReturnType<typeof setInterval> | undefined
 onMounted(() => (tick = setInterval(() => (now.value = Date.now()), 60_000)))
 onBeforeUnmount(() => clearInterval(tick))
 const incidentsKey = computed(() =>
-  props.snapshot.incidents.map((incident) => `${incident.id}:${incident.state}:${incident.updates.length}`).join()
+  props.snapshot.incidents
+    .map((incident) => `${incident.id}:${incident.state}:${incident.updates.length}:${incident.postmortem?.published_at ?? ''}`)
+    .join()
 )
 </script>
 
@@ -102,6 +106,7 @@ const incidentsKey = computed(() =>
             :key="incident.id"
             :incident="incident"
             :now="now"
+            :route="route"
           />
           <MaintenanceCard
             v-for="(window, index) in underWay"
@@ -163,12 +168,24 @@ const incidentsKey = computed(() =>
         >{{ t('maintenance.none') }}</p>
       </section>
 
+      <IncidentPage
+        v-else-if="route.incident.value !== null"
+        :id="route.incident.value"
+        :incidents="snapshot.incidents"
+        :names="view.names"
+        :client="client"
+        :route="route"
+        :watch="snapshot.cursor"
+        :now="now"
+      />
+
       <IncidentHistory
         v-else
         :client="client"
         :names="view.names"
         :watch="incidentsKey"
         :now="now"
+        :route="route"
       />
     </main>
 
@@ -177,6 +194,7 @@ const incidentsKey = computed(() =>
         v-if="view.footer"
         class="whitespace-pre-line"
       >{{ view.footer }}</p>
+      <UptimeRules v-if="route.current.value === 'status'" />
       <div class="flex flex-wrap items-center justify-between gap-3">
         <LocaleSwitch :locales="snapshot.appearance.locales" />
         <p class="ml-auto">

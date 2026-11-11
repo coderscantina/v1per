@@ -8,6 +8,7 @@ import type {
   PagePasswordBody,
   PageRedeemBody,
   PageSnapshot,
+  PublicIncident,
 } from '~/generated'
 
 /**
@@ -70,6 +71,15 @@ export function pageClient(base: string) {
         cache: 'no-store',
       })
       return (await response.json()) as PageIncidents
+    },
+
+    /** One incident published to the page, for one the snapshot no longer lists. */
+    async incident(id: string): Promise<PublicIncident> {
+      const response = await call(`${base}/incidents/${encodeURIComponent(id)}.json${localeQuery()}`, {
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+      })
+      return (await response.json()) as PublicIncident
     },
 
     async password(password: string): Promise<void> {

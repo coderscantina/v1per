@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::ids::{IncidentId, PageComponentId, PageGroupId};
-use crate::operations::incidents::{Impact, IncidentState};
+use crate::operations::incidents::{Impact, IncidentState, Postmortem};
 use crate::operations::monitors::{HeartbeatStatus, LatencyPoint};
 use crate::operations::slas::{SlaCombine, SlaOutcome, SlaPeriodKind};
 
@@ -201,6 +201,30 @@ pub struct PublicComponent {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub detail: Option<ComponentDetail>,
+    /// The checks behind `uptime_90d`: the sums of the bars' counts.
+    #[serde(flatten)]
+    pub counts: PageCounts,
+}
+
+/// The monitor-level checks behind an uptime figure. Uptime is `up / (up + down)`; checks
+/// under maintenance are left out of it. Each count is absent while zero.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageCounts {
+    #[serde(default, skip_serializing_if = "is_zero")]
+    #[ts(as = "Option<u32>", optional)]
+    pub up: u32,
+    /// Pending checks, still retrying, count as down.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    #[ts(as = "Option<u32>", optional)]
+    pub down: u32,
+    /// Checks under maintenance.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    #[ts(as = "Option<u32>", optional)]
+    pub maint: u32,
+}
+
+fn is_zero(count: &u32) -> bool {
+    *count == 0
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
@@ -226,6 +250,9 @@ pub struct PageBar {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     #[ts(as = "Option<Vec<IncidentId>>", optional)]
     pub incidents: Vec<IncidentId>,
+    /// The checks behind `uptime`.
+    #[serde(flatten)]
+    pub counts: PageCounts,
 }
 
 /// What a monitor shows beyond its bars.
@@ -276,6 +303,11 @@ pub struct PublicIncident {
     pub components: Vec<PageComponentId>,
     /// Newest first.
     pub updates: Vec<PublicIncidentUpdate>,
+    /// Plain text the team wrote after resolution; absent without one and while the incident
+    /// is open again.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub postmortem: Option<Postmortem>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]

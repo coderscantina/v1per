@@ -3,19 +3,23 @@ import type { PageClient } from './client'
 import { formatMonth } from './format'
 import IncidentMeta from './IncidentMeta.vue'
 import { locale, t } from './messages'
+import type { PageRouter } from './route'
 import StatusIcon from './StatusIcon.vue'
-import UpdateTimeline from './UpdateTimeline.vue'
+import { toneIcon, toneLabel } from './tones'
 import { byMonth, incidentView, type IncidentView } from './view'
 
 /**
  * Resolved incidents, newest first and grouped by month, read from `incidents.json` ten at a
- * time. A change in `watch` (the snapshot's incidents changed) starts over from the newest page.
+ * time. A row says how bad it got, when, for how long and where; its title opens the incident's
+ * own page with the full timeline and postmortem. A change in `watch` (the snapshot's incidents
+ * changed) starts over from the newest page.
  */
 const props = defineProps<{
   client: PageClient
   names: ReadonlyMap<string, string>
   watch: string
   now: number
+  route: PageRouter
 }>()
 
 const PAGE = 10
@@ -80,26 +84,43 @@ watch(() => props.watch, () => load(), { immediate: true })
             v-for="incident in month.items"
             :key="incident.id"
             :data-incident="incident.title"
+            class="relative flex items-start gap-3 px-4 py-3 transition-colors duration-100 first:rounded-t-panel last:rounded-b-panel hover:bg-fill"
           >
-            <details class="group/details">
-              <summary class="flex cursor-pointer list-none items-start gap-3 rounded-panel px-4 py-3 [&::-webkit-details-marker]:hidden">
-                <StatusIcon
-                  name="chevron"
-                  class="mt-0.5 size-4 shrink-0 -rotate-90 text-muted transition-transform group-open/details:rotate-0"
-                />
-                <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span class="font-medium text-primary">{{ incident.title }}</span>
-                  <IncidentMeta
-                    :incident="incident"
-                    :now="now"
-                    components
+            <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span class="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5">
+                <a
+                  :href="route.incidentHref(incident.id)"
+                  class="min-w-0 rounded-sm font-medium text-primary after:absolute after:inset-0"
+                  @click="route.openIncident(incident.id, $event)"
+                >{{ incident.title }}</a>
+                <span
+                  v-if="incident.peak"
+                  :data-tone="incident.peak"
+                  data-testid="incident-impact"
+                  class="inline-flex shrink-0 items-center gap-1.5 text-sm text-foreground"
+                >
+                  <StatusIcon
+                    :name="toneIcon[incident.peak]"
+                    class="size-4 text-(--tone)"
                   />
+                  {{ t(toneLabel[incident.peak]) }}
                 </span>
-              </summary>
-              <div class="px-4 pt-1 pb-4 pl-11">
-                <UpdateTimeline :entries="incident.timeline" />
-              </div>
-            </details>
+              </span>
+              <IncidentMeta
+                :incident="incident"
+                :now="now"
+                components
+              >
+                <template v-if="incident.postmortem">
+                  <span class="font-medium text-foreground">{{ t('incident.postmortem') }}</span>
+                  ·
+                </template>
+              </IncidentMeta>
+            </span>
+            <StatusIcon
+              name="chevron"
+              class="mt-0.5 size-4 shrink-0 -rotate-90 text-muted"
+            />
           </li>
         </ul>
       </div>

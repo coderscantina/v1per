@@ -17,12 +17,12 @@ use sqlx::SqliteConnection;
 use v1per_protocol::envelope::Topic;
 use v1per_protocol::ids::{IncidentId, MonitorId, PageComponentId, PageGroupId};
 use v1per_protocol::limits::DAY_BARS_MAX;
-use v1per_protocol::operations::incidents::{Impact, IncidentState};
+use v1per_protocol::operations::incidents::{Impact, IncidentState, Postmortem};
 use v1per_protocol::operations::monitors::LatencyPoint;
 use v1per_protocol::status_page::{
-    ComponentDetail, Locale, PageAppearance, PageAudience, PageBar, PageIncidents, PageSnapshot,
-    PageStatus, ProbeView, PublicComponent, PublicGroup, PublicImpact, PublicIncident,
-    PublicIncidentUpdate, PublicMaintenance,
+    ComponentDetail, Locale, PageAppearance, PageAudience, PageBar, PageCounts, PageIncidents,
+    PageSnapshot, PageStatus, ProbeView, PublicComponent, PublicGroup, PublicImpact,
+    PublicIncident, PublicIncidentUpdate, PublicMaintenance,
 };
 use v1per_storage::{self as storage, Counts, ReadError, Resolution, Series};
 
@@ -145,6 +145,16 @@ fn uptime_of(counts: &Counts) -> Option<f64> {
     counts.uptime().map(ratio)
 }
 
+/// The counts behind [`uptime_of`] for the wire, pending folded into down as uptime counts it.
+fn page_counts(counts: &Counts) -> PageCounts {
+    let wire = |count: u64| u32::try_from(count).unwrap_or(u32::MAX);
+    PageCounts {
+        up: wire(counts.up),
+        down: wire(counts.down + counts.pending),
+        maint: wire(counts.maintenance),
+    }
+}
+
 fn read_failed(error: ReadError) -> ApiError {
     ApiError::internal(error)
 }
@@ -254,6 +264,19 @@ struct IncidentRow {
     auto_monitor_id: Option<i64>,
     started_at: i64,
     resolved_at: Option<i64>,
+    postmortem: Option<String>,
+    postmortem_at: Option<i64>,
+}
+
+impl IncidentRow {
+    /// Pages show a postmortem only while the incident is resolved.
+    fn postmortem(&self) -> Option<Postmortem> {
+        self.resolved_at?;
+        Some(Postmortem {
+            text: self.postmortem.clone()?,
+            published_at: self.postmortem_at?,
+        })
+    }
 }
 
 /// A published incident as one page shows it, with what the bars and statuses need.
@@ -268,7 +291,7 @@ struct Published {
 macro_rules! select_incident {
     () => {
         "SELECT i.id, i.title, i.title_kind, i.state, i.auto, i.auto_monitor_id, i.started_at,
-                i.resolved_at
+                i.resolved_at, i.postmortem, i.postmortem_at
          FROM incident_publications p JOIN incidents i ON i.id = p.incident_id"
     };
 }
@@ -420,8 +443,10 @@ async fn published(
                 })
             })
             .collect::<Result<Vec<_>, ApiError>>()?;
+        let postmortem = row.postmortem();
         published.push(Published {
             incident: PublicIncident {
+                postmortem,
                 id: IncidentId::new(row.id),
                 title,
                 state: enum_from(&row.state)?,
@@ -566,6 +591,7 @@ async fn build(
                 total.up += counts.up;
                 total.down += counts.down;
                 total.pending += counts.pending;
+                total.maintenance += counts.maintenance;
                 let touching: Vec<&Published> = published
                     .iter()
                     .filter(|p| p.incident.components.contains(&id))
@@ -594,6 +620,7 @@ async fn build(
                     utc_approximate: bar.is_some_and(|bar| bar.utc_approximate),
                     maintenance,
                     incidents: touching.iter().map(|p| p.incident.id).collect(),
+                    counts: page_counts(&counts),
                 }
             })
             .collect();
@@ -627,6 +654,7 @@ async fn build(
                 uptime_90d: has_monitor.then(|| uptime_of(&total)).flatten(),
                 bars,
                 detail,
+                counts: page_counts(&total),
             });
     }
 
@@ -757,6 +785,31 @@ pub(super) async fn incident_history(
         incidents: published.into_iter().map(|p| p.incident).collect(),
         next_cursor,
     })
+}
+
+/// One incident as [`incident_history`] lists it, or `None` when it is not published to
+/// `page` or names no component `audience` sees.
+pub(super) async fn incident(
+    state: &AppState,
+    page: &PageRow,
+    audience: PageAudience,
+    locale: Locale,
+    id: IncidentId,
+) -> Result<Option<PublicIncident>, ApiError> {
+    let mut tx = state.db.reader.begin().await?;
+    let rows = component_rows(&mut tx, page, audience == PageAudience::Internal).await?;
+    let shown = Shown::new(&rows);
+    let incidents: Vec<IncidentRow> = sqlx::query_as(concat!(
+        select_incident!(),
+        " WHERE p.page_id = ? AND i.id = ?"
+    ))
+    .bind(page.id)
+    .bind(id.get())
+    .fetch_all(&mut *tx)
+    .await?;
+    let published = published(&mut tx, incidents, &shown, locale).await?;
+    tx.rollback().await?;
+    Ok(published.into_iter().next().map(|p| p.incident))
 }
 
 /// Response times of the last 24 hours per hour. A monitor with fewer than two hourly points,

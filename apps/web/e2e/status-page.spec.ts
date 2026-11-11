@@ -455,3 +455,87 @@ test('resolved incidents load from the server, ten at a time', async ({ browser 
   await expectAccessible(page)
   await context.close()
 })
+
+test('an incident has its own page with summary, timeline and postmortem', async ({ browser }) => {
+  const opened = await command('incidents.create', {
+    node: ids.root,
+    title: 'Booking API errors',
+    message: 'Some bookings fail.',
+    impacts: [{ target: { type: 'monitor', monitor: ids.api }, impact: 'major_outage' }],
+  })
+  const id = opened.incident.id
+  await command('incidents.publish', { incident: id, page: ids.page })
+  await command('incidents.addUpdate', { incident: id, state: 'resolved', message: 'A bad deploy was rolled back.' })
+  await command('incidents.setPostmortem', {
+    incident: id,
+    postmortem: 'A deploy shipped a broken database migration.\n\nWe now run migrations against a copy first.',
+  })
+
+  const page = await visit(browser, `/s/${publicSlug}/incidents`)
+  const row = page.locator('[data-incident="Booking API errors"]')
+  await expect(row).toContainText('Major outage')
+  await expect(row).toContainText('Postmortem')
+  await row.getByRole('link', { name: 'Booking API errors' }).click()
+  await expect(page).toHaveURL(new RegExp(`/s/${publicSlug}/incidents/${id}$`))
+  await page.context().close()
+
+  // The address alone opens it, in every size and scheme.
+  for (const [name, viewport] of Object.entries(viewports)) {
+    for (const colorScheme of schemes) {
+      const direct = await visit(browser, `/s/${publicSlug}/incidents/${id}`, { viewport, colorScheme })
+      const article = direct.locator('[data-incident="Booking API errors"]')
+      await expect(article.getByRole('heading', { level: 2, name: 'Booking API errors' })).toBeVisible()
+      await expect(article.getByTestId('incident-impact')).toHaveText('Major outage')
+      await expect(article.getByTestId('incident-state')).toHaveText('Resolved')
+      await expect(article).toContainText('Resolved after')
+      await expect(article.locator('[data-affected="API"]')).toBeVisible()
+      await expect(article.getByTestId('postmortem')).toContainText('We now run migrations against a copy first.')
+      await expect(article.locator('[data-update]')).toHaveCount(2)
+      await expect(direct.locator('meta[property="og:title"]')).toHaveAttribute('content', /Booking API errors/)
+      await expectAccessible(direct)
+      await expectNoHorizontalOverflow(direct)
+      await capture(direct, `incident-page-${name}-${colorScheme}`)
+      await direct.getByRole('link', { name: 'All incidents' }).click()
+      await expect(direct).toHaveURL(new RegExp(`/s/${publicSlug}/incidents$`))
+      await direct.context().close()
+    }
+  }
+
+  const missing = await api.get(`/s/${publicSlug}/incidents/999999`)
+  expect(missing.status()).toBe(404)
+})
+
+test('an uptime figure says how it was counted', async ({ browser }) => {
+  for (const [name, viewport] of Object.entries(viewports)) {
+    for (const colorScheme of schemes) {
+      const page = await visit(browser, `/s/${publicSlug}`, { viewport, colorScheme })
+      const figure = component(page, 'API').getByTestId('uptime-explain')
+      await expect(component(page, 'API').getByTestId('uptime-explanation')).toHaveCount(0)
+      await figure.click()
+      const explanation = component(page, 'API').getByTestId('uptime-explanation')
+      await expect(explanation).toContainText(/\d+ checks counted: \d+ up, \d+ down/)
+      await expect(explanation).toContainText('Checks during maintenance are left out.')
+      const box = await explanation.boundingBox()
+      expect(box && box.x >= 0 && box.x + box.width <= viewport.width).toBe(true)
+      await expectAccessible(page)
+      await expectNoHorizontalOverflow(page)
+      await capture(page, `uptime-explanation-${name}-${colorScheme}`, false)
+      await page.keyboard.press('Escape')
+      await expect(explanation).toHaveCount(0)
+
+      await page.getByTestId('page-figures').getByTestId('uptime-explain').click()
+      await expect(page.getByTestId('page-figures').getByTestId('uptime-explanation')).toContainText('average of')
+      await page.getByText('How uptime is counted').click()
+      await expect(page.getByTestId('uptime-rules')).toContainText('Uptime is the share of up checks among all up and down checks.')
+      await page.context().close()
+    }
+  }
+
+  // A day says its checks too, to the pointer and in its label.
+  const page = await visit(browser, `/s/${publicSlug}`)
+  const today = component(page, 'API').locator('[data-day]').last()
+  await today.focus()
+  await expect(component(page, 'API').getByTestId('bar-checks')).toContainText('checks counted')
+  await expect(today).toHaveAttribute('aria-label', /checks counted/)
+  await page.context().close()
+})
