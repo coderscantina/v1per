@@ -263,6 +263,8 @@ pub struct RetentionCounts {
     pub login_challenges: u64,
     pub page_sessions: u64,
     pub page_email_codes: u64,
+    /// Status page subscriptions not confirmed within 24 hours.
+    pub unconfirmed_subscribers: u64,
     /// Command answers past their replay window.
     pub idempotency_keys: u64,
     /// Finished maintenance jobs, after 30 days.

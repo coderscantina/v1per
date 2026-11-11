@@ -9,6 +9,10 @@ import type {
   PageRedeemBody,
   PageResponseTimes,
   PageSnapshot,
+  PageSubscribeBody,
+  PageSubscription,
+  PageSubscriptionComponents,
+  PageSubscriptionToken,
   PublicIncident,
   ResponseRange,
 } from '~/generated'
@@ -39,7 +43,15 @@ async function call(url: string, init: RequestInit = {}): Promise<Response> {
   throw new PageError(body?.error_code ?? 'internal')
 }
 
-function post(url: string, body: PagePasswordBody | PageEmailBody | PageRedeemBody): Promise<Response> {
+type PostBody =
+  | PagePasswordBody
+  | PageEmailBody
+  | PageRedeemBody
+  | PageSubscribeBody
+  | PageSubscriptionToken
+  | PageSubscriptionComponents
+
+function post(url: string, body: PostBody): Promise<Response> {
   return call(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -104,6 +116,28 @@ export function pageClient(base: string) {
 
     async redeem(code: string): Promise<void> {
       await post(`${base}/access/email/redeem`, { code })
+    },
+
+    /** Asks for a confirmation mail. Answers the same whether or not one was sent. */
+    async subscribe(body: PageSubscribeBody): Promise<void> {
+      await post(`${base}/subscribe`, body)
+    },
+
+    /** The subscription a mailed link's `token` opens. Reading it changes nothing. */
+    async subscription(token: string): Promise<PageSubscription> {
+      return (await (await post(`${base}/subscription`, { token })).json()) as PageSubscription
+    },
+
+    async confirmSubscription(token: string): Promise<PageSubscription> {
+      return (await (await post(`${base}/subscription/confirm`, { token })).json()) as PageSubscription
+    },
+
+    async chooseComponents(body: PageSubscriptionComponents): Promise<PageSubscription> {
+      return (await (await post(`${base}/subscription/components`, body)).json()) as PageSubscription
+    },
+
+    async unsubscribe(token: string): Promise<void> {
+      await post(`${base}/unsubscribe`, { token })
     },
 
     /**

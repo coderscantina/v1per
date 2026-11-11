@@ -123,6 +123,12 @@ limits! {
         PAGE_EMAIL_LINK_MS: i64 = 15 * 60 * 1000;
         /// Wrong page passwords and sign-in link requests per client address per minute.
         PAGE_ACCESS_ATTEMPTS_PER_MINUTE: u32 = 10;
+        /// Email subscribers per status page, confirmed or waiting for confirmation.
+        PAGE_SUBSCRIBERS_MAX: usize = 5_000;
+        /// Webhook subscribers per status page.
+        PAGE_WEBHOOKS_MAX: usize = 20;
+        /// How long a subscription waits for its confirmation, in milliseconds.
+        PAGE_SUBSCRIPTION_CONFIRM_MS: i64 = 24 * 60 * 60 * 1000;
     }
     strings {
         /// Header every API call sends. Commands without it are refused with `origin_rejected`.

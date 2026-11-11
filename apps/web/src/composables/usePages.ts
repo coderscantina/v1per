@@ -30,6 +30,16 @@ export function usePageDetail(id: MaybeRefOrGetter<PageId | null>) {
   })
 }
 
+/** Who follows a page, live on its node's `pages:<id>`. Needs `pages.manage`, so pass `null` without it. */
+export function usePageSubscribers(id: MaybeRefOrGetter<PageId | null>) {
+  return useLiveSnapshot({
+    key: () => toValue(id),
+    cache: 'pages.subscribers',
+    load: (page, signal) => pagesResource.subscribers(page, signal),
+    affects: isPageEvent,
+  })
+}
+
 /** The page, live, and whether the caller may change it (`pages.manage` on its node). */
 export type PageEditorState = ReturnType<typeof usePageDetail> & { manage: ComputedRef<boolean> }
 

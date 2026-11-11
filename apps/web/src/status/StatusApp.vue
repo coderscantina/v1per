@@ -2,11 +2,12 @@
 import type { PageBoot, PageSnapshot } from '~/generated'
 
 import AccessGate from './AccessGate.vue'
-import { linkCode } from './boot'
+import { linkCode, subscriptionLink } from './boot'
 import { pageClient, pageClientKey } from './client'
 import { followPage } from './live'
 import { locale, t } from './messages'
 import PageView from './PageView.vue'
+import SubscriptionView from './SubscriptionView.vue'
 import { applyAppearance } from './theme'
 
 /**
@@ -19,6 +20,9 @@ const base = props.boot?.base ?? ''
 const client = pageClient(base)
 provide(pageClientKey, client)
 const snapshot = shallowRef<PageSnapshot | null>(props.boot?.kind === 'page' ? props.boot.snapshot : null)
+/** A subscriber's mailed link. It opens with or without access to the page. */
+const subscription = subscriptionLink(base)
+const appearance = props.boot?.kind === 'gate' ? props.boot.gate.appearance : props.boot?.snapshot.appearance
 
 // A sign-in link opened while already let in: drop the code from the address.
 if (props.boot?.kind === 'page' && linkCode(base) !== null) window.history.replaceState(null, '', base || '/')
@@ -48,8 +52,16 @@ onBeforeUnmount(() => stop?.())
 </script>
 
 <template>
+  <SubscriptionView
+    v-if="subscription && appearance"
+    :appearance="appearance"
+    :base="base"
+    :client="client"
+    :token="subscription.token"
+    :leaving="subscription.unsubscribe"
+  />
   <PageView
-    v-if="snapshot"
+    v-else-if="snapshot"
     :snapshot="snapshot"
     :base="base"
     :client="client"

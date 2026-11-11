@@ -29,6 +29,7 @@ use v1per_protocol::operations::incidents::{
     IncidentsUpdateArgs, Target, TargetImpact,
 };
 use v1per_protocol::registry::Snapshot;
+use v1per_protocol::status_page::PageNotificationEvent;
 use v1per_storage::Status;
 
 use crate::context::{CommandCtx, QueryCtx};
@@ -436,6 +437,13 @@ pub(crate) async fn on_transition(
             .bind(id)
             .execute(&mut *conn)
             .await?;
+            pages::deliveries::incident_everywhere(
+                conn,
+                IncidentId::new(id),
+                PageNotificationEvent::IncidentResolved,
+                at,
+            )
+            .await?;
             pages_touched = pages::publish::auto_resolved(conn, IncidentId::new(id), at).await?;
             (id, node, "incident.updated")
         }
@@ -578,6 +586,12 @@ impl IncidentsHandlers for AppState {
         .bind(row.id)
         .execute(ctx.conn())
         .await?;
+        let event = if resolving && row.resolved_at.is_none() {
+            PageNotificationEvent::IncidentResolved
+        } else {
+            PageNotificationEvent::IncidentUpdated
+        };
+        pages::deliveries::incident_everywhere(ctx.conn(), args.incident, event, now).await?;
         record(ctx, row.node(), "incident.updated", args.incident).await?;
         answer(ctx, args.incident).await
     }

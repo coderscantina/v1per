@@ -71,7 +71,17 @@ Only signed-in team members see the chart until you switch on **Show to all visi
 
 The team also gets one line per probe and the status per probe. To give visitors a line per location, switch on **Show per probe location** as well and set a country, and a city if you like, on your probes. Visitors then see lines named like "Vienna, AT". Probes in the same city share a line, probes without a country have none, and probe names stay team only. With more than six lines the six slowest are drawn. Click a line's name to hide it.
 
-## Languages
+## Subscriptions
+
+Switch on **Let visitors subscribe** under Subscriptions in the Settings tab. The page then shows a Subscribe button with:
+
+- **Email.** The visitor enters an address, optionally picks components, and confirms from a link that works for 24 hours. Every mail has links to change the selection and to unsubscribe. Email needs the instance mail server and the [public URL](configuration.md#public-url). On a restricted page only addresses on the page's sign-in list can subscribe.
+- **Atom and RSS feeds** of the page's incidents, and a **calendar** of its maintenance to add to a calendar app. On a restricted page these need a share link's secret as `?token=`, so the button offers them on public pages only.
+
+Subscribers hear when an incident is published to the page, on each update and when it is resolved, and when maintenance is scheduled and when it starts.
+
+The Subscribers tab lists the confirmed addresses, with what they follow, and lets you remove one. It also holds **webhooks**: URLs the page posts each notice to as JSON. Only people with the Admin role add them. A page holds up to 5,000 subscribers and 20 webhooks.
+
 
 Pages come in English and German. Set a default language and which other languages the page offers.
 

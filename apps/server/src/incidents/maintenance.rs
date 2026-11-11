@@ -521,6 +521,7 @@ async fn tick(state: &AppState, now: i64) -> anyhow::Result<Option<i64>> {
 
 /// A maintenance as status pages show it.
 pub(crate) struct Shown {
+    pub id: MaintenanceId,
     pub title: String,
     pub description: String,
     pub active: bool,
@@ -564,6 +565,7 @@ pub(crate) async fn shown_for(
             continue;
         }
         shown.push(Shown {
+            id: MaintenanceId::new(maintenance),
             title: row.title,
             description: row.description,
             active,

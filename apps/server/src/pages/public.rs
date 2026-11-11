@@ -63,11 +63,11 @@ const PRIVATE: &str = "private, no-store";
 struct HostPage(i64);
 
 /// The page a request is for, and the path prefix of its routes.
-struct Located {
-    page: PageRow,
+pub(super) struct Located {
+    pub(super) page: PageRow,
     /// `/s/<slug>`, or empty on a claimed hostname.
-    base: String,
-    claimed: bool,
+    pub(super) base: String,
+    pub(super) claimed: bool,
 }
 
 impl FromRequestParts<AppState> for Located {
@@ -114,16 +114,16 @@ impl FromRequestParts<AppState> for Located {
 }
 
 #[derive(Default, Deserialize)]
-struct Params {
-    token: Option<String>,
-    locale: Option<String>,
+pub(super) struct Params {
+    pub(super) token: Option<String>,
+    pub(super) locale: Option<String>,
     cursor: Option<String>,
     component: Option<String>,
     limit: Option<String>,
     range: Option<String>,
 }
 
-fn params(parts: &Parts) -> Params {
+pub(super) fn params(parts: &Parts) -> Params {
     serde_html_form::from_str(parts.uri.query().unwrap_or_default()).unwrap_or_default()
 }
 
@@ -144,6 +144,8 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/events", get(stream))
         .route("/badge/{name}", get(badge))
         .route("/logo", get(logo_file))
+        .merge(super::subscribers::routes())
+        .merge(super::feeds::routes())
         .layer(DefaultBodyLimit::max(ACCESS_BODY_MAX))
 }
 
@@ -209,7 +211,7 @@ pub(crate) async fn host_routing(
 
 /// The locale a request asks for among the page's: `?locale=`, then `Accept-Language`, then
 /// the page's default.
-fn pick_locale(page: &PageRow, asked: Option<&str>, headers: &HeaderMap) -> Locale {
+pub(super) fn pick_locale(page: &PageRow, asked: Option<&str>, headers: &HeaderMap) -> Locale {
     let enabled = page.locales();
     let accepted = headers
         .get(header::ACCEPT_LANGUAGE)
@@ -227,7 +229,11 @@ fn pick_locale(page: &PageRow, asked: Option<&str>, headers: &HeaderMap) -> Loca
         .unwrap_or_else(|| page.default_locale())
 }
 
-fn visitor<'a>(parts: &'a Parts, address: &'a str, token: Option<&'a str>) -> Visitor<'a> {
+pub(super) fn visitor<'a>(
+    parts: &'a Parts,
+    address: &'a str,
+    token: Option<&'a str>,
+) -> Visitor<'a> {
     Visitor {
         headers: &parts.headers,
         address,
@@ -259,7 +265,7 @@ fn script_json(json: &str) -> String {
         .replace('\u{2029}', "\\u2029")
 }
 
-fn escape_html(text: &str) -> String {
+pub(super) fn escape_html(text: &str) -> String {
     text.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
@@ -320,7 +326,11 @@ enum Opened {
 
 /// `<base>`, `<base>/t/<token>`, `<base>/access/email` and the views: the page app with its
 /// boot JSON.
-async fn html(State(state): State<AppState>, located: Located, request: Request) -> Response {
+pub(super) async fn html(
+    State(state): State<AppState>,
+    located: Located,
+    request: Request,
+) -> Response {
     // Nesting strips `/s/<slug>`, so the path is relative to the base on every host.
     let path = request.uri().path().trim_end_matches('/');
     let view = ["/incidents", "/maintenance"]
@@ -486,10 +496,13 @@ async fn render(
     }
 
     // A visitor without access gets the gate and no preview, so nothing about the page leaks.
-    let head = match audience {
+    let mut head = match audience {
         Some(audience) => preview(state, located, &parts.headers, audience, opened).await?,
         None => String::new(),
     };
+    if let Some(links) = super::feeds::alternate_links(page, &located.base) {
+        head.push_str(&links);
+    }
     let boot = match audience {
         Some(audience) => {
             let built = snapshot::cached(state, page, audience, locale).await?;
@@ -792,7 +805,11 @@ async fn logo_file(State(state): State<AppState>, located: Located) -> Response 
 }
 
 /// Access requests must come from the page's own origin as JSON.
-fn check_post(state: &AppState, located: &Located, headers: &HeaderMap) -> Result<(), ApiError> {
+pub(super) fn check_post(
+    state: &AppState,
+    located: &Located,
+    headers: &HeaderMap,
+) -> Result<(), ApiError> {
     let rejected = || ApiError::new(ErrorCode::OriginRejected);
     let origin = headers
         .get(header::ORIGIN)
@@ -812,7 +829,7 @@ fn check_post(state: &AppState, located: &Located, headers: &HeaderMap) -> Resul
     if allowed { Ok(()) } else { Err(rejected()) }
 }
 
-fn json_body<T: DeserializeOwned>(body: &[u8]) -> Result<T, ApiError> {
+pub(super) fn json_body<T: DeserializeOwned>(body: &[u8]) -> Result<T, ApiError> {
     serde_json::from_slice(body)
         .map_err(|error| ApiError::with_message(ErrorCode::MalformedRequest, error.to_string()))
 }
@@ -869,7 +886,7 @@ async fn password(
 
 /// Where the page is served: the claimed hostname, or on the instance host its public URL.
 /// The instance host's own `Host` could be forged, so without a public URL there is none.
-async fn page_origin(
+pub(super) async fn page_origin(
     state: &AppState,
     located: &Located,
     headers: &HeaderMap,

@@ -599,12 +599,20 @@ async fn public_responses_carry_nothing_internal() {
             .any(|incident| incident["id"].as_str() == Some(cache_id.as_str()))
     );
 
+    // The feeds and the calendar exist once the page lets visitors subscribe.
+    sqlx::query("UPDATE pages SET subscriptions = 1 WHERE slug = 'acme'")
+        .execute(&harness.state.db.writer)
+        .await
+        .unwrap();
     let mut everything = String::new();
     let permalink = format!("/s/acme/incidents/{api_incident}");
     let permalink_json = format!("{permalink}.json");
     for path in [
         "/s/acme",
         "/s/acme/snapshot.json",
+        "/s/acme/feed.atom",
+        "/s/acme/feed.rss",
+        "/s/acme/maintenance.ics",
         "/s/acme/badge/status.svg",
         "/s/acme/badge/uptime-24h.svg",
         "/s/acme/badge/uptime-30d.svg",

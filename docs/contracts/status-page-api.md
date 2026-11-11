@@ -32,6 +32,8 @@ All paths are relative to the base. Errors use the admin API's `ApiErrorBody`.
 | `POST {base}/access/password` | `{ password }`: `204` with the page cookie, `401 invalid_credentials` |
 | `POST {base}/access/email` | `{ email, locale? }`: `202 {}` whether or not the address is allowed |
 | `POST {base}/access/email/redeem` | `{ code }`: `204` with the page cookie, `401 invalid_credentials` |
+| `POST {base}/subscribe`, `GET`/`POST {base}/subscription`, `POST {base}/subscription/confirm`, `POST {base}/subscription/components`, `POST {base}/unsubscribe` | Email subscriptions, see [subscriptions](#subscriptions) |
+| `GET {base}/feed.atom`, `GET {base}/feed.rss`, `GET {base}/maintenance.ics` | Feeds and the maintenance calendar, see [subscriptions](#subscriptions) |
 
 Every route except the badges and the logo takes `?token=<share token>`. The HTML and JSON routes take `?locale=en|de`; without it the server picks from `Accept-Language` among the page's enabled locales, then the page's default.
 
@@ -245,6 +247,69 @@ type ResponseSeries = {
 - Points come from rollups. The average and percentiles come from the raw heartbeats of the range: `overall` from every probe's up checks, a series from its probes'. Raw heartbeats are kept 90 days and each closed UTC day is rewritten once, sorted by monitor, so the read touches one monitor's rows ([decision 0002](../decisions/0002-storage-split-and-retention.md)).
 - `marks` are the published incidents that named the component and the maintenance windows that covered its monitor within the range, built by the snapshot's rules: only incidents published to the page, titles as the snapshot shows them, `impact` the worst on this component.
 - Answers are cached per page, audience, locale, component and range while the page's topic stays at the same head, for at most a minute. Unlike the snapshot cache this one does not follow new heartbeats, so the newest point can lag a minute.
+
+## Subscriptions
+
+Everything here exists while the page's `subscriptions` setting is on; otherwise each route answers `404` and the snapshot has no `subscriptions` field. Wire types: `PageSubscriptions`, `PageSubscribeBody`, `PageSubscriptionToken`, `PageSubscriptionComponents`, `PageSubscription`, `PageNotification`.
+
+```ts
+// PageSnapshot.subscriptions, absent with the setting off
+type PageSubscriptions = {
+  email: boolean // the instance has a mail server, so POST {base}/subscribe sends links
+  feeds: boolean // the page is public, so the feeds and the calendar open without a token
+  components: PageComponentId[] // what a subscription may follow: components not marked internal
+}
+```
+
+### Email
+
+| Method and path | Answer |
+| --- | --- |
+| `POST {base}/subscribe` | `{ email, components?, locale? }`: `202 {}` whether or not a mail was sent |
+| `GET {base}/subscription?token=` | The page app, which shows the subscription. Changes nothing |
+| `POST {base}/subscription` | `{ token }`: `PageSubscription`, `401 invalid_credentials` for an unknown or expired token |
+| `POST {base}/subscription/confirm` | `{ token }`: confirms, answers `PageSubscription` |
+| `POST {base}/subscription/components` | `{ token, components }`: replaces what it follows, answers `PageSubscription` |
+| `POST {base}/unsubscribe` | `{ token }`, or `?token=` from a mail client: deletes the subscriber, `204` either way |
+
+- Double opt-in. `subscribe` stores the address unconfirmed and mails a link to `{origin}{base}/subscription?token=<secret>`, valid 24 hours. Opening the link confirms nothing: the page app shows the subscription and posts the token to `confirm` only after the visitor clicks, so a mail scanner that follows links confirms nobody. Unconfirmed rows are deleted by the hourly retention pass.
+- The visitor must be able to open the page to subscribe. On a restricted page the address must also be in the page's `emails` or `domains`, checked at `subscribe`, at `confirm` and at every send. A subscriber whose address is no longer allowed gets nothing.
+- `components` empty or absent follows the whole page. Otherwise only incidents and maintenance naming one of them notify. A component that is internal or not on the page is `invalid_value` on `components`.
+- One secret per subscriber confirms, opens the settings and unsubscribes. It is derived from the instance key, the page, the address and the time the subscription started, and stored only as its SHA-256. The subscription routes open with the token alone, also on a restricted page, where the HTML then carries the gate boot and the app shows the subscription view.
+- Every notification mail carries the manage link, an unsubscribe link (`...&action=unsubscribe`, which also waits for a click) and `List-Unsubscribe` with `List-Unsubscribe-Post: List-Unsubscribe=One-Click` naming `POST {base}/unsubscribe?token=`. That one-click request comes from a mail client without an `Origin`, so `unsubscribe` accepts a missing `Origin` and refuses a foreign one.
+- The `POST` routes share the access routes' rules: the page's own `Origin`, a JSON body of at most 4 KiB, 10 attempts per minute per client address and 3 mails per minute per recipient.
+- Stored per subscriber: address, locale, component selection, when it started and when it was confirmed, and the token hash. No client address. A page holds at most 5,000 subscribers; past that `subscribe` still answers `202` and sends nothing.
+- Links need an origin: the claimed hostname the request came to, else the instance's public URL. Without one no confirmation is sent, as for sign-in links.
+
+### Feeds and calendar
+
+`{base}/feed.atom` and `{base}/feed.rss` list the 50 newest published incidents with their updates, built by the code behind `incidents.json` for the `public` audience. `{base}/maintenance.ics` is an iCalendar feed of the maintenance the public snapshot shows. Like badges they open on public pages, and on restricted ones with `?token=<share token>`; otherwise `404`. The HTML of a public page links both feeds with `<link rel="alternate">`.
+
+### Webhooks
+
+Page managers add webhook URLs with `pages.addWebhook`; visitors cannot, so nobody anonymous makes the server call an address. A webhook gets a `PageNotification` as a JSON `POST`, in the page's default locale:
+
+```ts
+type PageNotification = {
+  event: 'incident_published' | 'incident_updated' | 'incident_resolved' | 'maintenance_scheduled' | 'maintenance_started'
+  page: { slug; title; url? }
+  incident?: PublicIncident // as the public snapshot shows it
+  maintenance?: PublicMaintenance
+  components: { id: PageComponentId; name }[]
+  sent_at: number
+}
+```
+
+The URL is stored sealed and never answered; lists show its host. A page holds at most 20 webhooks.
+
+### What notifies
+
+- An incident being published to the page, each later update on a published incident, and its resolution, including the automatic resolution of an auto-incident. The notice is written in the transaction of the change, with the incident as the public page shows it then: only public components, auto-incident texts in their generic localized form.
+- A maintenance window when it first shows on the page (14 days ahead) and when it starts. The delivery worker looks once a minute, so these can be up to a minute late. A window first seen under way is announced once, as started.
+- Unpublishing notifies nobody, and deliveries still queued for an incident that is no longer published are dropped. So are deliveries for a page that turned subscriptions off.
+- Deliveries run in the background, per subscriber in order, and retry like the notification outbox: after 10 seconds, doubling up to 15 minutes, for 24 hours. A permanent SMTP error or a non-retryable HTTP answer drops the delivery.
+
+Admin operations: `pages.subscribers` lists confirmed addresses and webhooks, `pages.removeSubscriber`, `pages.addWebhook` and `pages.removeWebhook` change them, all with `pages.manage`. They record `page.subscribers_changed` on the node's `pages:<id>` topic, as do a visitor's confirm, selection change and unsubscribe.
 
 ## Badges
 

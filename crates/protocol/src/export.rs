@@ -36,7 +36,7 @@ pub struct Output {
 }
 
 /// Types the browser needs that no operation references.
-fn extra_types() -> [TypeInfo; 13] {
+fn extra_types() -> [TypeInfo; 18] {
     [
         TypeInfo::of::<errors::ApiErrorBody>(),
         TypeInfo::of::<envelope::CommandKey>(),
@@ -51,6 +51,11 @@ fn extra_types() -> [TypeInfo; 13] {
         TypeInfo::of::<status_page::PageEmailBody>(),
         TypeInfo::of::<status_page::PageRedeemBody>(),
         TypeInfo::of::<status_page::PageResponseTimes>(),
+        TypeInfo::of::<status_page::PageSubscribeBody>(),
+        TypeInfo::of::<status_page::PageSubscriptionToken>(),
+        TypeInfo::of::<status_page::PageSubscriptionComponents>(),
+        TypeInfo::of::<status_page::PageSubscription>(),
+        TypeInfo::of::<status_page::PageNotification>(),
     ]
 }
 

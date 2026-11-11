@@ -12,6 +12,7 @@ use v1per_protocol::envelope::Topic;
 use v1per_protocol::errors::FieldErrorCode;
 use v1per_protocol::ids::{IncidentId, MonitorId, NodeId, PageId};
 use v1per_protocol::operations::incidents::{IncidentPublication, IncidentPublications, Target};
+use v1per_protocol::status_page::PageNotificationEvent;
 
 use super::{Change, touch};
 use crate::context::{CommandCtx, QueryCtx};
@@ -89,15 +90,26 @@ async fn insert(
     page: PageId,
     at: i64,
 ) -> sqlx::Result<()> {
-    sqlx::query(
+    let added = sqlx::query(
         "INSERT OR IGNORE INTO incident_publications (incident_id, page_id, published_at)
          VALUES (?, ?, ?)",
     )
     .bind(incident.get())
     .bind(page.get())
     .bind(at)
-    .execute(conn)
-    .await?;
+    .execute(&mut *conn)
+    .await?
+    .rows_affected();
+    if added > 0 {
+        super::deliveries::incident(
+            conn,
+            page,
+            incident,
+            PageNotificationEvent::IncidentPublished,
+            at,
+        )
+        .await?;
+    }
     Ok(())
 }
 

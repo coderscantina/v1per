@@ -41,6 +41,7 @@ const links = [
   { name: 'node-page-layout', labelKey: 'pages.tabs.layout', icon: 'lucide:layout-list' },
   { name: 'node-page-incidents', labelKey: 'pages.tabs.incidents', icon: 'lucide:siren' },
   { name: 'node-page-slas', labelKey: 'slas.pageTab', icon: 'lucide:file-check' },
+  { name: 'node-page-subscribers', labelKey: 'pages.tabs.subscribers', icon: 'lucide:bell' },
   { name: 'node-page-access', labelKey: 'pages.tabs.access', icon: 'lucide:lock' },
   { name: 'node-page-hostnames', labelKey: 'pages.tabs.hostnames', icon: 'lucide:globe' },
   { name: 'node-page-preview', labelKey: 'pages.tabs.preview', icon: 'lucide:eye' },
