@@ -1411,6 +1411,7 @@
       "layout": "Components",
       "access": "Access",
       "hostnames": "Domains",
+      "subscribers": "Subscribers",
       "preview": "Preview",
       "incidents": "Incidents"
     },
@@ -1575,6 +1576,30 @@
       "revokeNamed": "Revoke {name}",
       "revokeTitle": "Revoke this share link?",
       "revokeConfirm": "{name} stops working at once, also for visitors who opened the page with it."
+    },
+    "subscribers": {
+      "intro": "Visitors subscribe on the page and confirm by email. They hear about published incidents, their updates, and maintenance.",
+      "off": "Subscriptions are off for this page. Switch them on in Settings. Nobody is notified while they are off.",
+      "noSmtp": "The instance has no mail server, so visitors cannot subscribe by email. Feeds and webhooks work.",
+      "emails": "Email subscribers",
+      "email": "Address",
+      "follows": "Follows",
+      "since": "Subscribed",
+      "everything": "Whole page",
+      "removedComponent": "Removed component",
+      "none": "Nobody subscribed yet.",
+      "remove": "Remove",
+      "removeNamed": "Remove {name}",
+      "removeTitle": "Remove this subscriber?",
+      "removeConfirm": "{email} gets no more mail from this page.",
+      "webhooks": "Webhooks",
+      "webhooksIntro": "The page posts each incident and maintenance notice as JSON to these addresses. The address is stored encrypted and only its host is shown.",
+      "webhookUrl": "URL",
+      "addWebhook": "Add webhook",
+      "host": "Host",
+      "added": "Added",
+      "removeWebhookTitle": "Remove this webhook?",
+      "removeWebhookConfirm": "The page stops posting to {host}."
     },
     "hostnames": {
       "intro": "A custom domain shows this page at its root, such as status.example.com. Your reverse proxy handles the certificate.",

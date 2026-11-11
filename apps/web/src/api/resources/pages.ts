@@ -2,6 +2,9 @@ import type {
   IncidentId,
   PageDetail,
   PageId,
+  PageSubscriberId,
+  PageWebhookId,
+  PagesAddWebhookArgs,
   PagesCreateArgs,
   PagesCreateShareTokenArgs,
   PagesListArgs,
@@ -36,6 +39,11 @@ export const pagesResource = {
   delete: (page: PageId) => api.command('pages.delete', { page }),
   createShareToken: (args: PagesCreateShareTokenArgs) => api.command('pages.createShareToken', args),
   revokeShareToken: (token: ShareTokenId) => api.command('pages.revokeShareToken', { token }),
+  /** Confirmed email subscribers and webhooks, on the node's `pages:<id>` topic. */
+  subscribers: (page: PageId, signal?: AbortSignal) => api.query('pages.subscribers', { page }, { signal }),
+  removeSubscriber: (subscriber: PageSubscriberId) => api.command('pages.removeSubscriber', { subscriber }),
+  addWebhook: (args: PagesAddWebhookArgs) => api.command('pages.addWebhook', args),
+  removeWebhook: (webhook: PageWebhookId) => api.command('pages.removeWebhook', { webhook }),
   /** The pages an incident is on or could go on. */
   publications: (incident: IncidentId, signal?: AbortSignal) => api.query('incidents.publications', { incident }, { signal }),
   publish: (incident: IncidentId, page: PageId) => api.command('incidents.publish', { incident, page }),

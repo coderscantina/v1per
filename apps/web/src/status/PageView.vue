@@ -12,6 +12,7 @@ import PageFigures from './PageFigures.vue'
 import { usePageRoute, viewLabel, views } from './route'
 import SlaCard from './SlaCard.vue'
 import StatusBanner from './StatusBanner.vue'
+import SubscribeDialog from './SubscribeDialog.vue'
 import { pageView } from './view'
 
 /** Where "Powered by" points. */
@@ -46,19 +47,28 @@ const incidentsKey = computed(() =>
           >
           <h1 class="truncate text-xl font-semibold tracking-tight text-primary">{{ view.title }}</h1>
         </div>
-        <nav
-          :aria-label="t('nav.label')"
-          class="flex self-start rounded-control bg-fill p-[3px] sm:self-auto"
-        >
-          <a
-            v-for="item in views"
-            :key="item"
-            :href="route.href(item)"
-            :aria-current="item === route.current.value ? 'page' : undefined"
-            class="rounded-lg px-3 py-1 text-sm font-medium text-muted transition-colors duration-100 hover:text-primary aria-[current]:bg-card aria-[current]:text-primary aria-[current]:shadow-[0_0_0_1px_var(--border-strong)]"
-            @click="route.open(item, $event)"
-          >{{ t(viewLabel[item]) }}</a>
-        </nav>
+        <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <nav
+            :aria-label="t('nav.label')"
+            class="flex rounded-control bg-fill p-[3px]"
+          >
+            <a
+              v-for="item in views"
+              :key="item"
+              :href="route.href(item)"
+              :aria-current="item === route.current.value ? 'page' : undefined"
+              class="rounded-lg px-3 py-1 text-sm font-medium text-muted transition-colors duration-100 hover:text-primary aria-[current]:bg-card aria-[current]:text-primary aria-[current]:shadow-[0_0_0_1px_var(--border-strong)]"
+              @click="route.open(item, $event)"
+            >{{ t(viewLabel[item]) }}</a>
+          </nav>
+          <SubscribeDialog
+            v-if="snapshot.subscriptions && (snapshot.subscriptions.email || snapshot.subscriptions.feeds)"
+            :offer="snapshot.subscriptions"
+            :names="view.names"
+            :base="base"
+            :client="client"
+          />
+        </div>
       </div>
       <template v-if="route.current.value === 'status'">
         <p

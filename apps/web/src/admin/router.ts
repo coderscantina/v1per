@@ -161,6 +161,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'layout', name: 'node-page-layout', component: () => import('./pages/page/PageLayoutTab.vue') },
       { path: 'incidents', name: 'node-page-incidents', component: () => import('./pages/page/PageIncidentsTab.vue') },
       { path: 'slas', name: 'node-page-slas', component: () => import('./pages/page/PageSlasTab.vue') },
+      { path: 'subscribers', name: 'node-page-subscribers', component: () => import('./pages/page/PageSubscribersTab.vue') },
       { path: 'access', name: 'node-page-access', component: () => import('./pages/page/PageAccessTab.vue') },
       { path: 'hostnames', name: 'node-page-hostnames', component: () => import('./pages/page/PageHostnamesTab.vue') },
       { path: 'preview', name: 'node-page-preview', component: () => import('./pages/page/PagePreviewTab.vue') },
