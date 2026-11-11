@@ -65,7 +65,11 @@ In the Settings tab:
 
 ## Response times
 
-Each monitor has a response time chart: the average over the last 24 hours with the fastest and slowest response. Only signed-in team members see it until you switch on **Show to all visitors** under Response times in the Settings tab. The status per probe stays team only.
+Each monitor has a response time chart: the average as a line over the band from the fastest to the slowest response. Above it, pick the last 24 hours, 7, 30 or 90 days. Below it are the average, the median and the 95th and 99th percentile of the range. Incidents published to the page and maintenance windows are tinted on the time axis; point at one or tab to it for its title and times.
+
+Only signed-in team members see the chart until you switch on **Show to all visitors** under Response times in the Settings tab.
+
+The team also gets one line per probe and the status per probe. To give visitors a line per location, switch on **Show per probe location** as well and set a country, and a city if you like, on your probes. Visitors then see lines named like "Vienna, AT". Probes in the same city share a line, probes without a country have none, and probe names stay team only. With more than six lines the six slowest are drawn. Click a line's name to hide it.
 
 ## Languages
 

@@ -23,6 +23,7 @@ All paths are relative to the base. Errors use the admin API's `ApiErrorBody`.
 | `GET {base}/access/email?code=` | The same, without using the code; the page app posts `code` to `redeem` once the visitor continues |
 | `GET {base}/snapshot.json` | `PageSnapshot`, or `401 unauthenticated` when the page is closed to the visitor |
 | `GET {base}/incidents.json?cursor=&limit=` | `PageIncidents`, see [incident history](#incident-history) |
+| `GET {base}/response-times.json?component=&range=` | `PageResponseTimes`, see [response times](#response-times) |
 | `GET {base}/events?cursor=page:{id}@{seq}` | Server-sent events, see [stream](#stream) |
 | `GET {base}/badge/{name}` | SVG badge, see [badges](#badges) |
 | `GET {base}/logo` | The page logo, `404` without one |
@@ -190,6 +191,39 @@ type PageIncidents = {
 - `cursor`: the `next_cursor` of the page before. It is opaque; a malformed one is `400 invalid_arguments` on `cursor`, as is a `limit` out of range.
 - Pages are ordered by the incident's start, then its ID, so no incident appears on two pages.
 - Access, `token`, `locale` and caching are those of `snapshot.json`: `401 unauthenticated` when the page is closed to the visitor.
+
+## Response times
+
+`GET {base}/response-times.json?component=<page component id>&range=24h|7d|30d|90d` answers one monitor component's response times over a range ending now, for the chart under the component. The snapshot's `detail.latency` stays, so the first paint needs no extra request; the page app reads this route when the block scrolls into view and when the visitor picks a range.
+
+```ts
+type PageResponseTimes = {
+  range: '24h' | '7d' | '30d' | '90d'
+  from: number // the span the points cover
+  to: number
+  step: number // bucket width in milliseconds; a longer step between two points is a gap
+  overall: ResponseSeries // every check of the monitor
+  series: ResponseSeries[] // per probe or per probe location, see below
+  marks: { kind: 'incident' | 'maintenance'; incident?: IncidentId; impact?: Impact; title: string; from: number; to?: number }[] // oldest first
+}
+
+type ResponseSeries = {
+  label?: string // absent on overall
+  country?: string // ISO 3166-1 alpha-2
+  points: LatencyPoint[] // buckets with up checks, oldest first
+  avg_ms?: number; p50_ms?: number; p95_ms?: number; p99_ms?: number // over the up checks in the range
+}
+```
+
+- Access, `token`, `locale` and the `Cache-Control` header are those of `snapshot.json`: `401 unauthenticated` when the page is closed to the visitor.
+- `404 not_found` when the audience gets no response times for the component: the `public` audience on a page without `response_times`, a component the audience does not see, or one that is not a monitor.
+- A missing or unknown `range`, or a missing `component`, is `invalid_arguments` with status `422`, as the API maps that code everywhere.
+- Steps: hourly for `24h` and `7d`, 4 hours for `30d`, daily for `90d`, so a series has at most 180 points. A monitor with fewer than two hourly points gets its last 2 hours per minute over `24h`, as in the snapshot; `from` and `step` say so.
+- `series` for the `internal` audience: one per assigned probe, labelled with the probe's name and its location when set.
+- `series` for the `public` audience: empty unless the page has both `response_times` and `probe_locations`. Then one per location, labelled "City, CC" or the country alone. Probes with the same city and country are merged. A probe without a country has no series and still counts in `overall`. No probe name, provider, platform or ID reaches the public audience.
+- Points come from rollups. The average and percentiles come from the raw heartbeats of the range: `overall` from every probe's up checks, a series from its probes'. Raw heartbeats are kept 90 days and each closed UTC day is rewritten once, sorted by monitor, so the read touches one monitor's rows ([decision 0002](../decisions/0002-storage-split-and-retention.md)).
+- `marks` are the published incidents that named the component and the maintenance windows that covered its monitor within the range, built by the snapshot's rules: only incidents published to the page, titles as the snapshot shows them, `impact` the worst on this component.
+- Answers are cached per page, audience, locale, component and range while the page's topic stays at the same head, for at most a minute. Unlike the snapshot cache this one does not follow new heartbeats, so the newest point can lag a minute.
 
 ## Badges
 
