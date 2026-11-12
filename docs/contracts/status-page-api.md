@@ -90,6 +90,7 @@ type PageSnapshot = {
   timezone: string // IANA zone of the bars
   locale: 'en' | 'de' // what incident titles and server texts are in
   audience: 'public' | 'internal'
+  range_max: '24h' | '7d' | '30d' | '90d' // the longest time frame this audience may pick
   status: PageStatus // worst visible component
   groups: { id; name; default_open; components: PublicComponent[] }[]
   incidents: PublicIncident[] // newest first
@@ -106,9 +107,10 @@ type PublicComponent = {
   name: string // display name, or the monitor's or static component's name
   description: string // static components only
   status?: PageStatus // absent while a monitor has no status, such as when paused
-  uptime_90d?: number // ratio over the 90 bars, monitors only
-  up?: number; down?: number; maint?: number // the checks behind uptime_90d, see the rules
-  bars: { day; status?; uptime?; up?; down?; maint?; utc_approximate?; maintenance?; incidents?: IncidentId[] }[] // 90 days, oldest first
+  uptime?: number // ratio over the daily bars, monitors only
+  up?: number; down?: number; maint?: number // the checks behind uptime, see the rules
+  bars: { day; status?; uptime?; up?; down?; maint?; utc_approximate?; maintenance?; incidents?: IncidentId[] }[] // the days range_max covers, oldest first
+  hours: { at; status?; uptime?; up?; down?; maint?; maintenance?; incidents?: IncidentId[] }[] // the last 24 UTC hours, oldest first
   detail?: { latency: LatencyPoint[]; probes: { name; status; latency_ms?; checked_at }[] } // monitors; see the rules
 }
 
@@ -159,10 +161,11 @@ Rules:
 - The `public` audience sees only components not marked `internal`; groups left empty are dropped. The `internal` audience sees every component and gets `detail` on monitor components: hourly response times over the last 24 hours and each assigned probe's status. While a monitor has fewer than two hourly points, as a new one does, its response times are per minute over the last 2 hours instead.
 - On a page with the `response_times` setting, the `public` audience gets `detail` on its monitor components too, with the same `latency` and always empty `probes`. Probe names and per-probe results stay internal.
 - Components are named by page component IDs only. No snapshot carries a node, monitor or static component ID, a monitor's type, URL or hostname, a check message, a person, a revision, or anything from outside the page's components.
-- Only incidents published to the page appear, open ones and those resolved within the 90 days, at most 100, and only with the page's visible components. An incident naming none of them is left out. Older ones are in the [incident history](#incident-history).
+- `range_max` is `90d` for the `internal` audience and the page's `public_range` setting (default `90d`) for the `public` one. `bars` has one day per day of it (1, 7, 30 or 90), so a visitor gets no older day; `hours` is always the last 24. The page app offers the ranges up to `range_max` and draws bars, uptime figures, the incident count and response times over the one picked: hours for `24h`, days otherwise.
+- Only incidents published to the page appear, open ones and those resolved within the days of `bars`, at most 100, and only with the page's visible components. An incident naming none of them is left out. Older ones are in the [incident history](#incident-history).
 - An auto-incident's title is rendered in the snapshot's locale from the component's page name ("API is down", "API ist ausgefallen") until a person changes the title. Updates the server wrote for an auto-incident are replaced by a generic text in the locale, because check messages can name hosts.
 - Maintenance shows while under way or when a window starts within 14 days, with the visible components it covers.
-- `up`, `down` and `maint` are the monitor-level checks behind an uptime figure, on a bar for its day and on a component summed over its bars. Uptime is `up / (up + down)`. `down` includes checks still retrying, as uptime counts them; `maint` are checks under maintenance, which uptime leaves out. A count is absent while zero. The page app explains every uptime figure from these counts and derives nothing else from them.
+- `up`, `down` and `maint` are the monitor-level checks behind an uptime figure, on a bar for its day or hour and on a component summed over its daily bars. Uptime is `up / (up + down)`. `down` includes checks still retrying, as uptime counts them; `maint` are checks under maintenance, which uptime leaves out. A count is absent while zero. The page app computes and explains each figure for the picked range from the counts of its bars, and derives nothing else from them.
 - `postmortem` is what the team set with `incidents.setPostmortem`. It appears only while the incident is resolved; reopening hides it and keeps the text. The page app renders it as plain text with its line breaks, never as HTML or Markdown.
 - `slas` lists the SLAs selected with `pages.updateSlas`, per the [monitoring contract](../monitoring-contract.md#slas). Each period carries the targets it was computed with. Counts and averages include incidents that were never published, drafts too, but no incident, its title or its ID appears. No SLA ID, covered monitor list, channel or person appears either.
 - The `internal` audience also gets `monitors` per period: the covered monitors the page shows, named by their page component. A covered monitor not on the page is only in the aggregates.
@@ -172,7 +175,7 @@ Rules:
 Colors follow the [monitoring contract](../monitoring-contract.md#component-color-and-page-status):
 
 - A component now: the worst of its monitor (down major outage, pending degraded, up operational) and the current impact of open published incidents naming it. Maintenance overrides the monitor but not such an incident. A static component without incidents is operational.
-- A bar: a published incident that touched the component that day wins with its worst impact. Otherwise uptime colors it: 100 % operational, at least 99 % degraded, at least 95 % partial outage, below that major outage, and maintenance when the day was otherwise operational. Days without heartbeats have no status, so a monitor's bars start on its first checked day. A static component is operational from the day it was created; earlier days have no status.
+- A bar: a published incident that touched the component that day (or hour) wins with its worst impact. Otherwise uptime colors it: 100 % operational, at least 99 % degraded, at least 95 % partial outage, below that major outage, and maintenance when the day was otherwise operational. Days without heartbeats have no status, so a monitor's bars start on its first checked day. A static component is operational from the day it was created; earlier days have no status.
 - Today's bar counts every heartbeat up to now. On the day of a Kuma import, Kuma's daily row is combined with the hours V1Per checked after it. This is decision 0008 item 13, still proposed; the rule lives in one function, `bar_status` in `apps/server/src/pages/snapshot.rs`.
 - Day boundaries are local midnights in the page timezone with non-hour offset minutes dropped (decision 0008 item 11), for bars and for the days an incident touched.
 
@@ -217,7 +220,7 @@ The gate HTML carries none of these tags, so a restricted page's preview names n
 
 ## Response times
 
-`GET {base}/response-times.json?component=<page component id>&range=24h|7d|30d|90d` answers one monitor component's response times over a range ending now, for the chart under the component. The snapshot's `detail.latency` stays, so the first paint needs no extra request; the page app reads this route when the block scrolls into view and when the visitor picks a range.
+`GET {base}/response-times.json?component=<page component id>&range=24h|7d|30d|90d` answers one monitor component's response times over a range ending now, for the chart under the component. The snapshot's `detail.latency` stays, so the first paint needs no extra request; the page app reads this route while the block is in view, for the range the visitor picked.
 
 ```ts
 type PageResponseTimes = {
@@ -232,6 +235,7 @@ type PageResponseTimes = {
 
 type ResponseSeries = {
   label?: string // absent on overall
+  place?: string // internal audience: the probe's "City, CC"
   country?: string // ISO 3166-1 alpha-2
   points: LatencyPoint[] // buckets with up checks, oldest first
   avg_ms?: number; p50_ms?: number; p95_ms?: number; p99_ms?: number // over the up checks in the range
@@ -239,10 +243,10 @@ type ResponseSeries = {
 ```
 
 - Access, `token`, `locale` and the `Cache-Control` header are those of `snapshot.json`: `401 unauthenticated` when the page is closed to the visitor.
-- `404 not_found` when the audience gets no response times for the component: the `public` audience on a page without `response_times`, a component the audience does not see, or one that is not a monitor.
+- `404 not_found` when the audience gets no response times for the component: the `public` audience on a page without `response_times`, a component the audience does not see, one that is not a monitor, or a `range` longer than the audience's `range_max`.
 - A missing or unknown `range`, or a missing `component`, is `invalid_arguments` with status `422`, as the API maps that code everywhere.
 - Steps: hourly for `24h` and `7d`, 4 hours for `30d`, daily for `90d`, so a series has at most 180 points. A monitor with fewer than two hourly points gets its last 2 hours per minute over `24h`, as in the snapshot; `from` and `step` say so.
-- `series` for the `internal` audience: one per assigned probe, labelled with the probe's name and its location when set.
+- `series` for the `internal` audience: one per assigned probe, labelled with the probe's name, with its location in `place` when set.
 - `series` for the `public` audience: empty unless the page has both `response_times` and `probe_locations`. Then one per location, labelled "City, CC" or the country alone. Probes with the same city and country are merged. A probe without a country has no series and still counts in `overall`. No probe name, provider, platform or ID reaches the public audience.
 - Points come from rollups. The average and percentiles come from the raw heartbeats of the range: `overall` from every probe's up checks, a series from its probes'. Raw heartbeats are kept 90 days and each closed UTC day is rewritten once, sorted by monitor, so the read touches one monitor's rows ([decision 0002](../decisions/0002-storage-split-and-retention.md)).
 - `marks` are the published incidents that named the component and the maintenance windows that covered its monitor within the range, built by the snapshot's rules: only incidents published to the page, titles as the snapshot shows them, `impact` the worst on this component.

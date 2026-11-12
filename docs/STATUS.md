@@ -17,6 +17,15 @@ Migrations 0014 to 0018 move the control schema from 13 to 18. Storage gains a `
 
 Checked on the merged tree before the merge to `main`, which then added docs only: fmt, clippy, `export-types --check`, `cargo test --workspace` (72 test binaries, all passing), web typecheck, lint and 162 unit tests, and the full e2e suite (59 tests; the probe spec passed on a rerun once `v1per-probe` was built).
 
+## Uncommitted on `main`
+
+From the 2026-11-12 status page time frame thread, checked but not committed:
+
+- One time frame for the whole Status view (`?range=`), driving bars, component and headline uptime, the incident count and every response time chart. 24 hours shows 24 hourly bars from the new snapshot field `hours`.
+- Page setting `public_range` (migration `0019_page_public_range.sql`, control schema 18 to 19, default `90d`, Settings › History): the longest frame visitors get. The snapshot's `range_max` says what the audience may pick, `bars` stops there, and `response-times.json` answers `404` past it. Grant holders always get 90 days.
+- Wire changes: `PublicComponent.uptime_90d` is now `uptime` (over the bars sent); internal response time series carry the probe name as `label` and the location as `place`.
+- The response time block is full width with one table for legend, per-line averages and probe status, a taller chart and a hover readout. Rules in [design.md](design.md#status-page), contract and guide updated.
+
 ## Recent work
 
 Committed on 2026-10-20 in area commits from three threads (`370b2b8` to the docs commit): tree drag and drop with `monitors.move` and inline folders and renames; quieter forms and desktop-like selection; the incident composer and status page timeline; probe location and platform (`probes.update`, migration `0013_probe_location.sql`); the monitor page around one time frame (four status card designs, History with bars and response time, probe tiles, Details in the right column); Account › Appearance with number, date, time, zone and week formats in `account.preferences`; and a speed round (remembered live snapshots, idle preloading of page code, a 90ms page fade). Shared files went with the area that changed them most, so commits in between may not build on their own; the last one does. At that state the Rust checks, web checks and all 50 e2e tests passed on a fresh build.

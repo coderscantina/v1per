@@ -65,7 +65,13 @@ In the Settings tab:
 
 ## Response times
 
-Each monitor has a response time chart: the average as a line over the band from the fastest to the slowest response. Above it, pick the last 24 hours, 7, 30 or 90 days. Below it are the average, the median and the 95th and 99th percentile of the range. Incidents published to the page and maintenance windows are tinted on the time axis; point at one or tab to it for its title and times.
+Each monitor has a response time chart: the average as a line over the band from the fastest to the slowest response, with the average, the median and the 95th and 99th percentile above it. Incidents published to the page and maintenance windows are tinted on the time axis; point at one or tab to it for its title and times. Point at the chart to read every line's value at that time in the table below it.
+
+## Time frame
+
+One switch beside "System status" picks the time frame for the whole page: the last 24 hours, 7, 30 or 90 days. The bars, every uptime figure, the incident count and the response time charts follow it, and over 24 hours the bars are hours instead of days. The choice stays in the address, so a shared link opens on the same frame.
+
+Signed-in team members can always go back 90 days. For everyone else, **Longest time frame for visitors** under History in the Settings tab sets how far back the page goes, 90 days by default. Older days are not sent to visitors at all. The uptime badges are not limited by it.
 
 Only signed-in team members see the chart until you switch on **Show to all visitors** under Response times in the Settings tab.
 
