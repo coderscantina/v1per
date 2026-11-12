@@ -3,6 +3,45 @@
 All notable changes to v1per are documented here.
 Commits follow the [Gitmoji](https://gitmoji.dev/) convention.
 
+## 26.11.12
+
+### Features
+
+- ✨ add the sla rules crate
+- ✨ read sla period totals and down minutes
+- ✨ add the sla schema, protocol and crud
+- ✨ compute, tally and freeze sla periods
+- ✨ manage slas in the admin app
+- ✨ send sla alerts and show slas on status pages
+- ✨ show sla periods with report and csv
+- ✨ show slas on status pages
+- ✨ show response times to status page visitors
+- ✨ add page settings for subscriptions and probe locations
+- ✨ serve incident pages, postmortems and the checks behind uptime
+- ✨ let visitors subscribe to a status page
+- ✨ add the subscribe dialog, the subscription view and the subscribers tab
+- ✨ give incidents their own page and explain every uptime figure
+- ✨ serve response times per range, probe location and percentile
+- ✨ chart response times with ranges, locations and marked incidents
+
+### Fixes
+
+- 🐛 alert missed sla clocks after the period froze
+
+### Interface
+
+- 💄 tell at risk, no data and no target apart in slas
+
+### Other changes
+
+- 📝 describe how sla tallies mark days without minute data
+- 📝 add the sla guide
+- ✅ add the sla e2e journey and m14 evidence
+- 📝 document page subscriptions
+- 📝 record the status page upgrade decisions
+- 📝 brief milestone 14, slas, and take subscribers into scope
+- 📝 update the project status after the status page upgrades
+
 ## 26.10.20
 
 Remote probe agents are now their own small program, `v1per-probe`: a static binary of 7 to 8 MB and the `ghcr.io/coderscantina/v1per-probe` image, built on an empty base. An idle agent uses about 8 MiB of memory, half of before, and writes nothing to disk while the server answers. `v1per probe` is gone.

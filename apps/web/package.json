@@ -1,6 +1,6 @@
 {
   "name": "v1per-web",
-  "version": "26.10.20",
+  "version": "26.11.12",
   "private": true,
   "type": "module",
   "scripts": {
