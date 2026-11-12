@@ -63,7 +63,25 @@ In the Settings tab:
 - **Accent color**: indigo, blue, violet, rose, orange, amber, emerald or cyan.
 - **Timezone** of the daily bars.
 
-## Languages
+## Response times
+
+Each monitor has a response time chart: the average as a line over the band from the fastest to the slowest response. Above it, pick the last 24 hours, 7, 30 or 90 days. Below it are the average, the median and the 95th and 99th percentile of the range. Incidents published to the page and maintenance windows are tinted on the time axis; point at one or tab to it for its title and times.
+
+Only signed-in team members see the chart until you switch on **Show to all visitors** under Response times in the Settings tab.
+
+The team also gets one line per probe and the status per probe. To give visitors a line per location, switch on **Show per probe location** as well and set a country, and a city if you like, on your probes. Visitors then see lines named like "Vienna, AT". Probes in the same city share a line, probes without a country have none, and probe names stay team only. With more than six lines the six slowest are drawn. Click a line's name to hide it.
+
+## Subscriptions
+
+Switch on **Let visitors subscribe** under Subscriptions in the Settings tab. The page then shows a Subscribe button with:
+
+- **Email.** The visitor enters an address, optionally picks components, and confirms from a link that works for 24 hours. Every mail has links to change the selection and to unsubscribe. Email needs the instance mail server and the [public URL](configuration.md#public-url). On a restricted page only addresses on the page's sign-in list can subscribe.
+- **Atom and RSS feeds** of the page's incidents, and a **calendar** of its maintenance to add to a calendar app. On a restricted page these need a share link's secret as `?token=`, so the button offers them on public pages only.
+
+Subscribers hear when an incident is published to the page, on each update and when it is resolved, and when maintenance is scheduled and when it starts.
+
+The Subscribers tab lists the confirmed addresses, with what they follow, and lets you remove one. It also holds **webhooks**: URLs the page posts each notice to as JSON. Only people with the Admin role add them. A page holds up to 5,000 subscribers and 20 webhooks.
+
 
 Pages come in English and German. Set a default language and which other languages the page offers.
 
@@ -94,6 +112,10 @@ Members and up create and update incidents. A manual incident is published to th
 
 The page has three views: Status, Maintenance and Incidents. Status shows active incidents first, each with its update timeline. Incidents lists the resolved ones, 10 at a time. Maintenance lists the windows under way and those starting within 14 days.
 
+Every incident has its own page at `<page address>/incidents/<id>`, which its title links to. It shows how bad the incident got, when it started, how long it lasted, what it affected and every update. Shared in a chat, a link to a public page or incident shows a preview with the title and the current state. Restricted pages give no preview.
+
+**Postmortems.** Once an incident is resolved, members and up can write a postmortem on the incident's screen in the admin app: plain text, up to 20,000 characters. It shows on the incident's page on every status page the incident is published to. Saving it empty removes it. Reopening the incident hides it until the incident is resolved again.
+
 **Auto-incidents** open when a monitor on the page goes down and resolve when it recovers. Choose per page in the Settings tab:
 
 - **Keep as draft**: they stay internal until someone publishes them.
@@ -106,6 +128,8 @@ Auto-incidents show a generic text, never the check's error message.
 Members and up schedule maintenance: one-off, recurring by interval, weekday or day of month, by cron expression, or started by hand, each in a timezone. A page shows maintenance while it runs and from 14 days before it starts. Affected components show as under maintenance unless a published incident says worse.
 
 ## Page status and colors
+
+Every uptime percentage on a page explains itself on hover, keyboard focus or tap: the checks counted, how many were up and down, how many fell under maintenance and were left out, and the days covered. Uptime is the share of up checks among up and down checks. A check still retrying counts as down, and a monitor checked from several probes is down only when its probe quorum says so. The 90-day figure at the top is the plain average of the components' figures. "How uptime is counted" in the page footer lists these rules.
 
 Each component takes the worst of its monitor status (down is a major outage, pending is degraded), the impact of published incidents that name it, and maintenance. The page status is the worst component status. Each daily bar shows the worst state of that day and its uptime.
 

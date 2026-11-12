@@ -44,7 +44,7 @@ describe('pageView', () => {
                 status: 'major_outage',
                 bars: [
                   { day: '2026-07-01' },
-                  { day: '2026-07-02', status: 'partial_outage', uptime: 0.97, incidents: ['i1'], utc_approximate: true },
+                  { day: '2026-07-02', status: 'partial_outage', uptime: 0.97, incidents: ['i1'], utc_approximate: true, up: 97, down: 3 },
                 ],
               }),
               component('c2', 'Email'),
@@ -59,8 +59,24 @@ describe('pageView', () => {
     )
     const [api, email] = view.groups[0]?.components ?? []
     expect(api?.bars).toEqual([
-      { day: '2026-07-01', status: 'none', uptime: undefined, approximate: false, maintenance: false, incidents: [] },
-      { day: '2026-07-02', status: 'partial_outage', uptime: 0.97, approximate: true, maintenance: false, incidents: ['API is down'] },
+      {
+        day: '2026-07-01',
+        status: 'none',
+        uptime: undefined,
+        approximate: false,
+        maintenance: false,
+        incidents: [],
+        counts: { up: 0, down: 0, maint: 0 },
+      },
+      {
+        day: '2026-07-02',
+        status: 'partial_outage',
+        uptime: 0.97,
+        approximate: true,
+        maintenance: false,
+        incidents: ['API is down'],
+        counts: { up: 97, down: 3, maint: 0 },
+      },
     ])
     expect(email?.status).toBe('none')
     expect(view.groups[0]?.status).toBe('major_outage')
@@ -154,7 +170,7 @@ describe('pageView', () => {
     expect(view.figures.uptime).toBeCloseTo(0.98)
     expect(view.figures.incidents).toBe(1)
     expect(view.figures.maintenance).toBe(500)
-    expect(pageView(snapshot(), '').figures).toEqual({ uptime: undefined, incidents: 0, maintenance: undefined })
+    expect(pageView(snapshot(), '').figures).toMatchObject({ uptime: undefined, incidents: 0, maintenance: undefined })
   })
 
   it('places the logo below the base', () => {

@@ -1176,6 +1176,14 @@
     }
   },
   "incidents": {
+    "postmortem": {
+      "title": "Nachbetrachtung",
+      "text": "Text der Nachbetrachtung",
+      "hint": "Reiner Text. Statusseiten zeigen ihn auf der Seite der Störung, solange sie behoben ist.",
+      "save": "Nachbetrachtung speichern",
+      "remove": "Nachbetrachtung entfernen",
+      "savedAt": "Gespeichert {time}"
+    },
     "title": "Vorfälle",
     "create": "Neuer Vorfall",
     "edit": "Bearbeiten",
@@ -1411,6 +1419,7 @@
       "layout": "Komponenten",
       "access": "Zugang",
       "hostnames": "Domains",
+      "subscribers": "Abonnenten",
       "preview": "Vorschau",
       "incidents": "Vorfälle"
     },
@@ -1461,6 +1470,15 @@
       "defaultAlwaysOn": "Standard",
       "timezone": "Zeitzone der Tagesbalken",
       "timezonePlaceholder": "Zeitzone der Instanz",
+      "responseTimes": "Antwortzeiten",
+      "responseTimesHint": "Das Diagramm unter jedem Monitor: durchschnittliche, schnellste und langsamste Antwort der letzten 24 Stunden.",
+      "responseTimesPublic": "Allen Besuchern zeigen",
+      "responseTimesPublicHint": "Ausgeschaltet sehen sie nur angemeldete Teammitglieder. Prüfstellen bleiben in jedem Fall dem Team vorbehalten.",
+      "probeLocations": "Je Prüfstellen-Standort zeigen",
+      "probeLocationsHint": "Besucher sehen eine Linie je Standort, benannt nach Stadt und Land der Prüfstelle. Namen der Prüfstellen bleiben dem Team vorbehalten, Prüfstellen ohne Standort entfallen.",
+      "subscriptions": "Abonnements",
+      "subscriptionsHint": "Besucher verfolgen Vorfälle und Wartungen dieser Seite.",
+      "subscriptionsOn": "Besucher abonnieren lassen",
       "autoIncidents": "Automatische Vorfälle",
       "autoIncidentsHint": "Vorfälle, die sich öffnen, wenn ein Monitor dieser Seite ausfällt.",
       "autoModes": {
@@ -1566,6 +1584,30 @@
       "revokeNamed": "{name} widerrufen",
       "revokeTitle": "Diesen Freigabelink widerrufen?",
       "revokeConfirm": "{name} funktioniert sofort nicht mehr, auch für Besucher, die die Seite damit geöffnet haben."
+    },
+    "subscribers": {
+      "intro": "Besucher abonnieren auf der Seite und bestätigen per E-Mail. Sie erfahren von veröffentlichten Vorfällen, deren Updates und Wartungen.",
+      "off": "Abonnements sind für diese Seite ausgeschaltet. Schalte sie in den Einstellungen ein. Solange sie aus sind, wird niemand benachrichtigt.",
+      "noSmtp": "Die Instanz hat keinen Mailserver, daher können Besucher nicht per E-Mail abonnieren. Feeds und Webhooks funktionieren.",
+      "emails": "E-Mail-Abonnenten",
+      "email": "Adresse",
+      "follows": "Folgt",
+      "since": "Abonniert",
+      "everything": "Ganze Seite",
+      "removedComponent": "Entfernte Komponente",
+      "none": "Noch niemand hat abonniert.",
+      "remove": "Entfernen",
+      "removeNamed": "{name} entfernen",
+      "removeTitle": "Diesen Abonnenten entfernen?",
+      "removeConfirm": "{email} bekommt keine Mails mehr von dieser Seite.",
+      "webhooks": "Webhooks",
+      "webhooksIntro": "Die Seite sendet jede Meldung zu Vorfällen und Wartungen als JSON an diese Adressen. Die Adresse wird verschlüsselt gespeichert, angezeigt wird nur der Host.",
+      "webhookUrl": "URL",
+      "addWebhook": "Webhook hinzufügen",
+      "host": "Host",
+      "added": "Hinzugefügt",
+      "removeWebhookTitle": "Diesen Webhook entfernen?",
+      "removeWebhookConfirm": "Die Seite sendet nicht mehr an {host}."
     },
     "hostnames": {
       "intro": "Eine eigene Domain zeigt diese Seite an ihrer Wurzel, etwa status.example.com. Das Zertifikat besorgt Ihr Reverse Proxy.",

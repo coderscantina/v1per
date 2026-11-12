@@ -62,7 +62,16 @@ describe('settings form', () => {
 
   it('sends every field with the default locale first and keeps grace while drafting', () => {
     const form = { ...settingsFromPage(page), locales: ['en' as const], autoIncidents: 'draft' as const, graceMinutes: '99' }
-    expect(toUpdateArgs(form, page, 4)).toMatchObject({ expected_revision: 4, default_locale: 'de', locales: ['de', 'en'], grace_minutes: 10 })
+    expect(toUpdateArgs(form, page, 4)).toMatchObject({
+      expected_revision: 4,
+      default_locale: 'de',
+      locales: ['de', 'en'],
+      grace_minutes: 10,
+      response_times: false,
+    })
+    expect(toUpdateArgs({ ...form, responseTimes: true }, page, 4).response_times).toBe(true)
+    // Locations are part of the response times, so they go off with them.
+    expect(toUpdateArgs({ ...form, probeLocations: true }, page, 4).probe_locations).toBe(false)
     expect(Object.keys(validateSettings({ ...form, title: ' ', slug: 'Bad slug', autoIncidents: 'auto_publish', graceMinutes: '2000' }))).toEqual([
       'slug',
       'title',

@@ -7,8 +7,16 @@ import type {
   PageIncidents,
   PagePasswordBody,
   PageRedeemBody,
+  PageResponseTimes,
   PageSnapshot,
+  PageSubscribeBody,
+  PageSubscription,
+  PageSubscriptionComponents,
+  PageSubscriptionToken,
+  PublicIncident,
+  ResponseRange,
 } from '~/generated'
+import type { InjectionKey } from 'vue'
 
 /**
  * The status page's one network module: the page routes below its base
@@ -35,7 +43,15 @@ async function call(url: string, init: RequestInit = {}): Promise<Response> {
   throw new PageError(body?.error_code ?? 'internal')
 }
 
-function post(url: string, body: PagePasswordBody | PageEmailBody | PageRedeemBody): Promise<Response> {
+type PostBody =
+  | PagePasswordBody
+  | PageEmailBody
+  | PageRedeemBody
+  | PageSubscribeBody
+  | PageSubscriptionToken
+  | PageSubscriptionComponents
+
+function post(url: string, body: PostBody): Promise<Response> {
   return call(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -72,6 +88,24 @@ export function pageClient(base: string) {
       return (await response.json()) as PageIncidents
     },
 
+    /** One incident published to the page, for one the snapshot no longer lists. */
+    async incident(id: string): Promise<PublicIncident> {
+      const response = await call(`${base}/incidents/${encodeURIComponent(id)}.json${localeQuery()}`, {
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+      })
+      return (await response.json()) as PublicIncident
+    },
+
+    /** One monitor component's response times over `range`, with series, percentiles and marks. */
+    async responseTimes(component: string, range: ResponseRange): Promise<PageResponseTimes> {
+      const query = new URLSearchParams({ component, range })
+      const asked = new URLSearchParams(window.location.search).get('locale')
+      if (asked) query.set('locale', asked)
+      const response = await call(`${base}/response-times.json?${query}`, { headers: { Accept: 'application/json' } })
+      return (await response.json()) as PageResponseTimes
+    },
+
     async password(password: string): Promise<void> {
       await post(`${base}/access/password`, { password })
     },
@@ -82,6 +116,28 @@ export function pageClient(base: string) {
 
     async redeem(code: string): Promise<void> {
       await post(`${base}/access/email/redeem`, { code })
+    },
+
+    /** Asks for a confirmation mail. Answers the same whether or not one was sent. */
+    async subscribe(body: PageSubscribeBody): Promise<void> {
+      await post(`${base}/subscribe`, body)
+    },
+
+    /** The subscription a mailed link's `token` opens. Reading it changes nothing. */
+    async subscription(token: string): Promise<PageSubscription> {
+      return (await (await post(`${base}/subscription`, { token })).json()) as PageSubscription
+    },
+
+    async confirmSubscription(token: string): Promise<PageSubscription> {
+      return (await (await post(`${base}/subscription/confirm`, { token })).json()) as PageSubscription
+    },
+
+    async chooseComponents(body: PageSubscriptionComponents): Promise<PageSubscription> {
+      return (await (await post(`${base}/subscription/components`, body)).json()) as PageSubscription
+    },
+
+    async unsubscribe(token: string): Promise<void> {
+      await post(`${base}/unsubscribe`, { token })
     },
 
     /**
@@ -116,3 +172,6 @@ export function pageClient(base: string) {
 }
 
 export type PageClient = ReturnType<typeof pageClient>
+
+/** The page's client, provided by `StatusApp` for components deep in the page. */
+export const pageClientKey: InjectionKey<PageClient> = Symbol('page client')

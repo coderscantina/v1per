@@ -33,7 +33,8 @@ pub use failpoint::fail_disk;
 pub use heartbeats::{HEARTBEAT_SCHEMA, KumaStat};
 pub use queries::{
     Counts, DayBar, DownMinutes, HeartbeatCursor, HeartbeatPage, Hourly, ImportedRows, Latency,
-    LatencyPoint, PeriodTotals, Resolution, Series, TrendBucket, UptimeWindow,
+    LatencyPoint, LatencySummary, PeriodTotals, Resolution, ResponseTimes, Series, SeriesLatency,
+    TrendBucket, UptimeWindow,
 };
 pub use reader::{Read, ReadError, Snapshot};
 pub use record::{BatchId, Heartbeat, INBOX_FORMAT, MonitorId, MonitorStatus, ProbeId, Status};
@@ -532,6 +533,32 @@ impl Storage {
         .await
     }
 
+    /// Response times of `monitor` in `[from_ms, to_ms)` per `step_ms` from `resolution`
+    /// rollups, for the monitor series and each group of probes merged, with the average and
+    /// percentiles of the up checks from raw heartbeats (see [`ResponseTimes`]).
+    pub async fn response_times(
+        &self,
+        monitor: MonitorId,
+        groups: Vec<Vec<ProbeId>>,
+        resolution: Resolution,
+        step_ms: i64,
+        from_ms: i64,
+        to_ms: i64,
+    ) -> Result<Read<ResponseTimes>, ReadError> {
+        self.read(move |s| {
+            queries::response_times(
+                s.connection(),
+                monitor,
+                &groups,
+                resolution,
+                step_ms,
+                from_ms,
+                to_ms,
+            )
+        })
+        .await
+    }
+
     /// Counts and latency of `series` per `resolution` bucket with beats in
     /// `[from_ms, to_ms)`, oldest first.
     pub async fn buckets(
@@ -612,6 +639,23 @@ impl Storage {
             expired.minute_rollups = self.expire_table("rollup_minute", "bucket", cutoff).await?;
         }
         Ok(expired)
+    }
+
+    /// Rewrites the raw heartbeats of every closed UTC day within `retention` that was not
+    /// compacted yet, ordered by monitor, probe and time, so reads of one monitor over weeks
+    /// (response time percentiles) skip the others. One day per writer hold, so transfer keeps
+    /// going in between. Returns the days compacted.
+    pub async fn compact(&self, retention: Retention, now_ms: i64) -> Result<u32, Error> {
+        let from = now_ms - retention.raw.as_millis() as i64;
+        let mut days = 0;
+        while self
+            .with_writer(move |conn| Ok(heartbeats::compact_step(conn, from, now_ms)?))
+            .await?
+            .is_some()
+        {
+            days += 1;
+        }
+        Ok(days)
     }
 
     /// What [`Storage::expire`] would delete now, deleting nothing.

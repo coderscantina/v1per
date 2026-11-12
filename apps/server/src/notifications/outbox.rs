@@ -35,7 +35,7 @@ const CONCURRENCY: usize = 16;
 const FIRST_RETRY_MS: i64 = 10_000;
 const LONGEST_RETRY_MS: i64 = 15 * 60_000;
 /// After this long a retryable failure is final.
-const GIVE_UP_AFTER_MS: i64 = 24 * 60 * 60_000;
+pub(crate) const GIVE_UP_AFTER_MS: i64 = 24 * 60 * 60_000;
 /// The longest the worker sleeps without a wake, in case one was missed.
 const IDLE_MS: i64 = 60_000;
 
@@ -747,7 +747,7 @@ async fn deliver(state: &AppState, ctx: &SendContext, id: i64) -> anyhow::Result
 }
 
 /// 10 seconds after the first failure, doubling up to 15 minutes.
-fn retry_delay(attempts: i64) -> i64 {
+pub(crate) fn retry_delay(attempts: i64) -> i64 {
     let doublings = attempts.clamp(1, 20) - 1;
     (FIRST_RETRY_MS << doublings).min(LONGEST_RETRY_MS)
 }

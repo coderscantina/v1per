@@ -313,7 +313,7 @@ async fn invalid_terms_are_refused_by_field() {
     assert_eq!(errors["channels"][0]["code"], "invalid_value");
 }
 
-/// An install at control schema 13 with outbox rows upgrades to 14 unattended: every row and
+/// An install at control schema 13 with outbox rows upgrades unattended: every row and
 /// delivery ID stays, the counter does not go back, and the outbox takes SLA events.
 #[tokio::test]
 async fn an_install_at_schema_13_upgrades_with_its_outbox_intact() {
@@ -381,7 +381,7 @@ async fn an_install_at_schema_13_upgrades_with_its_outbox_intact() {
     .await
     .unwrap();
     assert_eq!(upgraded.state, "upgraded");
-    assert_eq!(upgraded.to.control, 14);
+    assert_eq!(upgraded.to.control, 18);
     assert_eq!(upgraded.to.heartbeats, upgraded.from.heartbeats);
 
     let pool = SqlitePoolOptions::new()

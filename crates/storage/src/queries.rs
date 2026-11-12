@@ -760,6 +760,170 @@ pub(crate) fn latency(
     )
 }
 
+/// The latency of up checks over a span, from raw heartbeats.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct LatencySummary {
+    pub avg_ms: f64,
+    pub p50_ms: f64,
+    pub p95_ms: f64,
+    pub p99_ms: f64,
+    /// Up checks with a latency.
+    pub checks: u64,
+}
+
+/// One series of [`ResponseTimes`].
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct SeriesLatency {
+    /// Steps with up beats, oldest first.
+    pub points: Vec<LatencyPoint>,
+    /// `None` without an up check in the span.
+    pub summary: Option<LatencySummary>,
+}
+
+/// One monitor's response times over a span: the monitor series and probe groups.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct ResponseTimes {
+    /// Points from the monitor series; the summary counts every probe's raw checks.
+    pub overall: SeriesLatency,
+    /// One per group asked for, in order: the group's probe series merged.
+    pub groups: Vec<SeriesLatency>,
+}
+
+/// `CASE probe_id ... END`: the index of the group holding a probe, NULL outside every group.
+fn group_index(groups: &[Vec<ProbeId>]) -> String {
+    let arms: String = groups
+        .iter()
+        .enumerate()
+        .flat_map(|(index, group)| group.iter().map(move |probe| (index, probe.0)))
+        .map(|(index, probe)| format!(" WHEN {probe} THEN {index}"))
+        .collect();
+    if arms.is_empty() {
+        "NULL::INTEGER".to_owned()
+    } else {
+        format!("CASE probe_id{arms} END")
+    }
+}
+
+/// Latency points of rollup `rows` (bound to `[$1, $2)`) per `step_ms` from the bucket's UTC
+/// epoch and per `group` expression, oldest first. Steps without up beats are left out.
+fn stepped_latency(
+    conn: &Connection,
+    rows: &str,
+    group: &str,
+    step_ms: i64,
+    from_ms: i64,
+    to_ms: i64,
+) -> duckdb::Result<Vec<(i64, LatencyPoint)>> {
+    let sql = format!(
+        "SELECT {group} AS g, epoch_ms(bucket) // {step_ms} * {step_ms} AS b,
+                min(latency_min), max(latency_max), sum(latency_sum), sum(latency_count)::BIGINT
+         FROM ({rows}) AS rows (probe_id, monitor_id, bucket, up, down, pending, maintenance,
+                                latency_min, latency_max, latency_sum, latency_count)
+         GROUP BY g, b HAVING sum(latency_count) > 0 ORDER BY g, b"
+    );
+    let mut statement = conn.prepare(&sql)?;
+    let rows = statement.query_map([ts(from_ms), ts(to_ms)], |r| {
+        let sum = Sum {
+            latency_min: r.get(2)?,
+            latency_max: r.get(3)?,
+            latency_sum: r.get::<_, Option<f64>>(4)?.unwrap_or(0.0),
+            latency_count: r.get::<_, i64>(5)? as u64,
+            ..Sum::default()
+        };
+        Ok((r.get::<_, Option<i64>>(0)?, r.get::<_, i64>(1)?, sum))
+    })?;
+    let mut points = Vec::new();
+    for row in rows {
+        let (group, bucket_ms, sum) = row?;
+        if let (Some(group), Some(latency)) = (group, sum.latency()) {
+            points.push((group, LatencyPoint { bucket_ms, latency }));
+        }
+    }
+    Ok(points)
+}
+
+/// Response times of `monitor` in `[from_ms, to_ms)`: points of `resolution` rollups summed
+/// per `step_ms` (a multiple of the resolution's step), for the monitor series and for each
+/// group of probes merged, and the average and percentiles of the up checks in the span.
+///
+/// Percentiles need single checks, so they come from raw heartbeats: the overall one from
+/// every probe's checks (push monitors and imported Kuma checks included), a group's from its
+/// probes'. The scan is bounded by the time range and reads three columns.
+pub(crate) fn response_times(
+    conn: &Connection,
+    monitor: MonitorId,
+    groups: &[Vec<ProbeId>],
+    resolution: Resolution,
+    step_ms: i64,
+    from_ms: i64,
+    to_ms: i64,
+) -> duckdb::Result<ResponseTimes> {
+    let ids = monitor.0.to_string();
+    let overall_rows = format!(
+        "SELECT NULL, * FROM ({})",
+        series_sql(resolution, Series::Monitor, &ids)
+    );
+    let mut answer = ResponseTimes {
+        overall: SeriesLatency::default(),
+        groups: vec![SeriesLatency::default(); groups.len()],
+    };
+    answer.overall.points = stepped_latency(conn, &overall_rows, "0", step_ms, from_ms, to_ms)?
+        .into_iter()
+        .map(|(_, point)| point)
+        .collect();
+    let probes: Vec<String> = groups.iter().flatten().map(|p| p.0.to_string()).collect();
+    if !probes.is_empty() {
+        let rows = format!(
+            "SELECT n.probe_id, {NATIVE_COLUMNS} FROM {table} AS n
+             WHERE n.monitor_id = {ids} AND n.probe_id IN ({probes}) AND {RANGE}",
+            table = resolution.table(),
+            probes = probes.join(","),
+        );
+        let index = group_index(groups);
+        for (group, point) in stepped_latency(conn, &rows, &index, step_ms, from_ms, to_ms)? {
+            if let Some(series) = answer.groups.get_mut(group as usize) {
+                series.points.push(point);
+            }
+        }
+    }
+    let sql = format!(
+        "SELECT total, g, q[1], q[2], q[3], average, checks
+         FROM (SELECT GROUPING(g) AS total, g, quantile_cont(latency_ms, [0.5, 0.95, 0.99]) AS q,
+                      avg(latency_ms) AS average, count(*) AS checks
+               FROM (SELECT {index} AS g, latency_ms FROM heartbeat
+                     WHERE monitor_id = {ids} AND time >= $1 AND time < $2
+                       AND status = 1 AND latency_ms IS NOT NULL)
+               GROUP BY GROUPING SETS ((g), ()) HAVING count(*) > 0)",
+        index = group_index(groups),
+    );
+    let mut statement = conn.prepare(&sql)?;
+    let rows = statement.query_map([ts(from_ms), ts(to_ms)], |r| {
+        Ok((
+            r.get::<_, i64>(0)? == 1,
+            r.get::<_, Option<i64>>(1)?,
+            LatencySummary {
+                p50_ms: r.get(2)?,
+                p95_ms: r.get(3)?,
+                p99_ms: r.get(4)?,
+                avg_ms: r.get(5)?,
+                checks: r.get::<_, i64>(6)? as u64,
+            },
+        ))
+    })?;
+    for row in rows {
+        match row? {
+            (true, _, summary) => answer.overall.summary = Some(summary),
+            (false, Some(group), summary) => {
+                if let Some(series) = answer.groups.get_mut(group as usize) {
+                    series.summary = Some(summary);
+                }
+            }
+            (false, None, _) => {}
+        }
+    }
+    Ok(answer)
+}
+
 /// Counts and latency of one monitor's series per bucket in `[from_ms, to_ms)`, oldest
 /// first. Buckets without beats are left out.
 pub(crate) fn buckets(

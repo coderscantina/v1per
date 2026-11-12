@@ -2,13 +2,17 @@
 import AffectedList from './AffectedList.vue'
 import IncidentMeta from './IncidentMeta.vue'
 import { t } from './messages'
+import type { PageRouter } from './route'
 import StatusIcon from './StatusIcon.vue'
 import { stateLabel, toneIcon, toneLabel } from './tones'
 import UpdateTimeline from './UpdateTimeline.vue'
 import type { IncidentView } from './view'
 
-/** An open incident: its state and meta line, the affected components and the latest updates. */
-const props = defineProps<{ incident: IncidentView; now: number }>()
+/**
+ * An open incident: its title linking to its own page, its state and meta line, the affected
+ * components and the latest updates.
+ */
+const props = defineProps<{ incident: IncidentView; now: number; route: PageRouter }>()
 
 const LATEST = 3
 const expanded = ref(false)
@@ -25,7 +29,13 @@ const timelineId = `timeline-${props.incident.id}`
   >
     <header class="flex flex-col gap-1">
       <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-        <h3 class="min-w-0 flex-1 font-semibold text-primary">{{ incident.title }}</h3>
+        <h3 class="min-w-0 flex-1 font-semibold text-primary">
+          <a
+            :href="route.incidentHref(incident.id)"
+            class="rounded-sm underline-offset-4 hover:underline"
+            @click="route.openIncident(incident.id, $event)"
+          >{{ incident.title }}</a>
+        </h3>
         <span
           v-if="incident.impact"
           class="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium"

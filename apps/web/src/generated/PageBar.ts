@@ -22,4 +22,12 @@ maintenance?: boolean,
 /**
  * Published incidents that touched the component that day.
  */
-incidents?: Array<IncidentId>, };
+incidents?: Array<IncidentId>, up?: number, 
+/**
+ * Pending checks, still retrying, count as down.
+ */
+down?: number, 
+/**
+ * Checks under maintenance.
+ */
+maint?: number, };

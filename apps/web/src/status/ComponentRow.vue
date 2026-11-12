@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import DayBars from './DayBars.vue'
 import { formatUptime } from './format'
-import InternalDetail from './InternalDetail.vue'
 import { locale, t } from './messages'
+import MonitorDetail from './MonitorDetail.vue'
 import StatusIcon from './StatusIcon.vue'
 import { toneIcon, toneLabel } from './tones'
+import { componentBasis, explain } from './uptime'
+import UptimeExplain from './UptimeExplain.vue'
 import type { ComponentView } from './view'
 
 /**
- * One component: its 90-day uptime and status now, then 90 daily bars; response times for the
- * team. An operational component shows only the check, the word stays for screen readers.
+ * One component: its 90-day uptime, which explains itself when asked, and status now, then 90 daily bars; response times for the
+ * team, and for visitors where the page shows them. An operational component shows only the check, the word stays for screen readers.
  */
-defineProps<{ component: ComponentView; nested: boolean }>()
+const props = defineProps<{ component: ComponentView; nested: boolean }>()
+
+const explanation = computed(() => explain(componentBasis(props.component.bars)))
 </script>
 
 <template>
@@ -31,13 +35,16 @@ defineProps<{ component: ComponentView; nested: boolean }>()
         >{{ component.description }}</p>
       </div>
       <div class="flex shrink-0 items-center gap-3">
-        <p
+        <UptimeExplain
           v-if="component.uptime !== undefined"
-          class="flex items-baseline gap-1 text-sm text-muted"
+          :explanation="explanation"
+          :label="t('uptime.explain', { name: component.name, value: formatUptime(component.uptime, locale) })"
         >
-          <span class="text-base font-semibold text-primary tabular-nums">{{ formatUptime(component.uptime, locale) }}</span>
-          <span class="max-sm:sr-only">{{ t('components.uptime') }}</span>
-        </p>
+          <span class="flex items-baseline gap-1 text-sm text-muted">
+            <span class="text-base font-semibold text-primary tabular-nums">{{ formatUptime(component.uptime, locale) }}</span>
+            <span class="max-sm:hidden">{{ t('components.uptime') }}</span>
+          </span>
+        </UptimeExplain>
         <span
           :data-tone="component.status"
           data-testid="component-status"
@@ -55,9 +62,10 @@ defineProps<{ component: ComponentView; nested: boolean }>()
       :bars="component.bars"
       :name="component.name"
     />
-    <InternalDetail
+    <MonitorDetail
       v-if="component.detail && (component.detail.probes.length > 0 || component.detail.latency.length > 0)"
       :detail="component.detail"
+      :component="component.id"
       :name="component.name"
     />
   </li>

@@ -26,16 +26,19 @@ use tower::ServiceExt;
 use tower_http::services::{ServeDir, ServeFile};
 use v1per_protocol::envelope::Topic;
 use v1per_protocol::errors::{ErrorCode, FieldErrorCode};
-use v1per_protocol::ids::{MonitorId, PageComponentId, PageId};
+use v1per_protocol::ids::{IncidentId, MonitorId, PageComponentId, PageId};
 use v1per_protocol::limits::{PAGE_EMAIL_LINK_MS, PAGE_PATH};
 use v1per_protocol::live::{LiveEvent, LiveFrame, ResyncReason};
 use v1per_protocol::status_page::{
     Locale, PageAudience, PageBoot, PageEmailBody, PageGate, PagePasswordBody, PageRedeemBody,
+    ResponseRange,
 };
 use v1per_storage::UptimeWindow;
 
 use super::access::{self, Kind, Visitor};
-use super::{PageRow, badge, logo, mail, origin_host, select_page, snapshot, text};
+use super::{
+    PageRow, badge, logo, mail, meta, origin_host, response_times, select_page, snapshot, text,
+};
 use crate::error::{ApiError, FieldErrors};
 use crate::http::client_address;
 use crate::http::operations::same_origin;
@@ -60,11 +63,11 @@ const PRIVATE: &str = "private, no-store";
 struct HostPage(i64);
 
 /// The page a request is for, and the path prefix of its routes.
-struct Located {
-    page: PageRow,
+pub(super) struct Located {
+    pub(super) page: PageRow,
     /// `/s/<slug>`, or empty on a claimed hostname.
-    base: String,
-    claimed: bool,
+    pub(super) base: String,
+    pub(super) claimed: bool,
 }
 
 impl FromRequestParts<AppState> for Located {
@@ -111,15 +114,16 @@ impl FromRequestParts<AppState> for Located {
 }
 
 #[derive(Default, Deserialize)]
-struct Params {
-    token: Option<String>,
-    locale: Option<String>,
+pub(super) struct Params {
+    pub(super) token: Option<String>,
+    pub(super) locale: Option<String>,
     cursor: Option<String>,
     component: Option<String>,
     limit: Option<String>,
+    range: Option<String>,
 }
 
-fn params(parts: &Parts) -> Params {
+pub(super) fn params(parts: &Parts) -> Params {
     serde_html_form::from_str(parts.uri.query().unwrap_or_default()).unwrap_or_default()
 }
 
@@ -130,14 +134,18 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/t/{token}", get(html))
         .route("/incidents", get(html))
         .route("/maintenance", get(html))
+        .route("/incidents/{incident}", get(incident_route))
         .route("/access/email", get(html).post(request_link))
         .route("/access/email/redeem", post(redeem))
         .route("/access/password", post(password))
         .route("/snapshot.json", get(snapshot_json))
         .route("/incidents.json", get(incidents_json))
+        .route("/response-times.json", get(response_times_json))
         .route("/events", get(stream))
         .route("/badge/{name}", get(badge))
         .route("/logo", get(logo_file))
+        .merge(super::subscribers::routes())
+        .merge(super::feeds::routes())
         .layer(DefaultBodyLimit::max(ACCESS_BODY_MAX))
 }
 
@@ -203,7 +211,7 @@ pub(crate) async fn host_routing(
 
 /// The locale a request asks for among the page's: `?locale=`, then `Accept-Language`, then
 /// the page's default.
-fn pick_locale(page: &PageRow, asked: Option<&str>, headers: &HeaderMap) -> Locale {
+pub(super) fn pick_locale(page: &PageRow, asked: Option<&str>, headers: &HeaderMap) -> Locale {
     let enabled = page.locales();
     let accepted = headers
         .get(header::ACCEPT_LANGUAGE)
@@ -221,7 +229,11 @@ fn pick_locale(page: &PageRow, asked: Option<&str>, headers: &HeaderMap) -> Loca
         .unwrap_or_else(|| page.default_locale())
 }
 
-fn visitor<'a>(parts: &'a Parts, address: &'a str, token: Option<&'a str>) -> Visitor<'a> {
+pub(super) fn visitor<'a>(
+    parts: &'a Parts,
+    address: &'a str,
+    token: Option<&'a str>,
+) -> Visitor<'a> {
     Visitor {
         headers: &parts.headers,
         address,
@@ -253,7 +265,7 @@ fn script_json(json: &str) -> String {
         .replace('\u{2029}', "\\u2029")
 }
 
-fn escape_html(text: &str) -> String {
+pub(super) fn escape_html(text: &str) -> String {
     text.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
@@ -261,8 +273,9 @@ fn escape_html(text: &str) -> String {
         .replace('\'', "&#39;")
 }
 
-/// `status.html` with the boot JSON before `</head>`, the page title and the language set.
-fn inject(template: &str, boot: &str, title: &str, locale: Locale) -> String {
+/// `status.html` with `head` and the boot JSON before `</head>`, the page title and the
+/// language set.
+fn inject(template: &str, boot: &str, title: &str, locale: Locale, head: &str) -> String {
     let mut html = template.replacen(
         "<html lang=\"en\">",
         &format!("<html lang=\"{}\">", locale.as_str()),
@@ -274,7 +287,7 @@ fn inject(template: &str, boot: &str, title: &str, locale: Locale) -> String {
         html.replace_range(start + "<title>".len()..end, &escape_html(title));
     }
     let script = format!(
-        "<script id=\"v1per-page\" type=\"application/json\">{}</script>",
+        "{head}<script id=\"v1per-page\" type=\"application/json\">{}</script>",
         script_json(boot)
     );
     match html.find("</head>") {
@@ -304,18 +317,137 @@ async fn gate(state: &AppState, located: &Located, locale: Locale) -> Result<Pag
     })
 }
 
-/// `<base>`, `<base>/t/<token>` and `<base>/access/email`: the page app with its boot JSON.
-async fn html(State(state): State<AppState>, located: Located, request: Request) -> Response {
-    match render(&state, &located, request).await {
+/// What an HTML route opens.
+enum Opened {
+    /// The page at a view's path below the base: empty, `/incidents` or `/maintenance`.
+    View(&'static str),
+    Incident(IncidentId),
+}
+
+/// `<base>`, `<base>/t/<token>`, `<base>/access/email` and the views: the page app with its
+/// boot JSON.
+pub(super) async fn html(
+    State(state): State<AppState>,
+    located: Located,
+    request: Request,
+) -> Response {
+    // Nesting strips `/s/<slug>`, so the path is relative to the base on every host.
+    let path = request.uri().path().trim_end_matches('/');
+    let view = ["/incidents", "/maintenance"]
+        .into_iter()
+        .find(|view| path == *view)
+        .unwrap_or_default();
+    match render(&state, &located, request, Opened::View(view)).await {
         Ok(response) => response,
         Err(error) => error.into_response(),
     }
+}
+
+/// `<base>/incidents/<id>` opens the page app on one incident, `<base>/incidents/<id>.json`
+/// answers it as a `PublicIncident`. Both answer `404` for an incident the visitor's audience
+/// does not see on this page.
+async fn incident_route(
+    State(state): State<AppState>,
+    located: Located,
+    axum::extract::Path(path): axum::extract::Path<Vec<(String, String)>>,
+    request: Request,
+) -> Response {
+    let name = path
+        .iter()
+        .find(|(key, _)| key == "incident")
+        .map(|(_, value)| value.as_str())
+        .unwrap_or_default();
+    let (id, json) = match name.strip_suffix(".json") {
+        Some(id) => (id, true),
+        None => (name, false),
+    };
+    let Ok(id) = id.parse::<IncidentId>() else {
+        return ApiError::not_found().into_response();
+    };
+    let answer = if json {
+        incident_json(&state, &located, request, id).await
+    } else {
+        render(&state, &located, request, Opened::Incident(id)).await
+    };
+    answer.unwrap_or_else(IntoResponse::into_response)
+}
+
+async fn incident_json(
+    state: &AppState,
+    located: &Located,
+    request: Request,
+    id: IncidentId,
+) -> Result<Response, ApiError> {
+    let (parts, _) = request.into_parts();
+    let query = params(&parts);
+    let address = client_address(&parts);
+    let page = &located.page;
+    let audience = access::audience(
+        state,
+        page,
+        &visitor(&parts, &address, query.token.as_deref()),
+    )
+    .await?
+    .ok_or_else(|| ApiError::new(ErrorCode::Unauthenticated))?;
+    let locale = pick_locale(page, query.locale.as_deref(), &parts.headers);
+    let incident = snapshot::incident(state, page, audience, locale, id)
+        .await?
+        .ok_or_else(ApiError::not_found)?;
+    Ok((
+        [
+            (
+                header::CACHE_CONTROL,
+                cache_header(page, Some(audience), &parts.headers),
+            ),
+            (header::VARY, "Cookie, Accept-Language"),
+        ],
+        axum::Json(incident),
+    )
+        .into_response())
+}
+
+/// The link preview tags for what `opened` shows `audience`, in the page's default locale;
+/// `not_found` for an incident it does not see.
+async fn preview(
+    state: &AppState,
+    located: &Located,
+    headers: &HeaderMap,
+    audience: PageAudience,
+    opened: Opened,
+) -> Result<String, ApiError> {
+    let page = &located.page;
+    let locale = page.default_locale();
+    let origin = page_origin(state, located, headers).await?;
+    let preview = match opened {
+        Opened::View(view) => {
+            let built = snapshot::cached(state, page, audience, locale).await?;
+            meta::Preview::page(&built.snapshot, locale).at(
+                origin.as_deref(),
+                &located.base,
+                view,
+                page,
+            )
+        }
+        Opened::Incident(id) => {
+            let incident = snapshot::incident(state, page, audience, locale, id)
+                .await?
+                .ok_or_else(ApiError::not_found)?;
+            meta::Preview::incident(&incident, locale).at(
+                origin.as_deref(),
+                &located.base,
+                &format!("/incidents/{id}"),
+                page,
+            )
+        }
+    };
+    Ok(preview.tags())
 }
 
 async fn render(
     state: &AppState,
     located: &Located,
     request: Request,
+    opened: Opened,
 ) -> Result<Response, ApiError> {
     let (parts, _) = request.into_parts();
     let Some(dir) = &state.config.web_dir else {
@@ -363,6 +495,14 @@ async fn render(
         tx.commit().await?;
     }
 
+    // A visitor without access gets the gate and no preview, so nothing about the page leaks.
+    let mut head = match audience {
+        Some(audience) => preview(state, located, &parts.headers, audience, opened).await?,
+        None => String::new(),
+    };
+    if let Some(links) = super::feeds::alternate_links(page, &located.base) {
+        head.push_str(&links);
+    }
     let boot = match audience {
         Some(audience) => {
             let built = snapshot::cached(state, page, audience, locale).await?;
@@ -387,7 +527,7 @@ async fn render(
             ),
             (header::VARY, "Cookie, Accept-Language"),
         ],
-        inject(&template, &boot, &page.title, locale),
+        inject(&template, &boot, &page.title, locale, &head),
     )
         .into_response();
     if let Some(cookie) = cookie.and_then(|cookie| HeaderValue::from_str(&cookie).ok()) {
@@ -483,6 +623,63 @@ async fn incidents_json(State(state): State<AppState>, located: Located, parts: 
                 (header::VARY, "Cookie, Accept-Language"),
             ],
             axum::Json(history),
+        )
+            .into_response(),
+        Err(error) => error.into_response(),
+    }
+}
+
+/// `<base>/response-times.json?component=&range=`: one monitor component's response times,
+/// with the snapshot's access, audience and caching.
+async fn response_times_json(
+    State(state): State<AppState>,
+    located: Located,
+    parts: Parts,
+) -> Response {
+    let query = params(&parts);
+    let address = client_address(&parts);
+    let page = &located.page;
+    let answer = async {
+        let mut errors = FieldErrors::default();
+        let range = query.range.as_deref().and_then(ResponseRange::parse);
+        match &query.range {
+            None => errors.add("range", FieldErrorCode::Required, None),
+            Some(_) if range.is_none() => errors.add("range", FieldErrorCode::InvalidValue, None),
+            Some(_) => {}
+        }
+        if query.component.is_none() {
+            errors.add("component", FieldErrorCode::Required, None);
+        }
+        errors.finish()?;
+        let audience = access::audience(
+            &state,
+            page,
+            &visitor(&parts, &address, query.token.as_deref()),
+        )
+        .await?
+        .ok_or_else(|| ApiError::new(ErrorCode::Unauthenticated))?;
+        let component: PageComponentId = query
+            .component
+            .as_deref()
+            .unwrap_or_default()
+            .parse()
+            .map_err(|_| ApiError::not_found())?;
+        let locale = pick_locale(page, query.locale.as_deref(), &parts.headers);
+        let range = range.unwrap_or(ResponseRange::Day);
+        let json = response_times::cached(&state, page, audience, locale, component, range).await?;
+        Ok::<_, ApiError>((audience, json))
+    };
+    match answer.await {
+        Ok((audience, json)) => (
+            [
+                (header::CONTENT_TYPE, "application/json"),
+                (
+                    header::CACHE_CONTROL,
+                    cache_header(page, Some(audience), &parts.headers),
+                ),
+                (header::VARY, "Cookie, Accept-Language"),
+            ],
+            json.to_string(),
         )
             .into_response(),
         Err(error) => error.into_response(),
@@ -608,7 +805,11 @@ async fn logo_file(State(state): State<AppState>, located: Located) -> Response 
 }
 
 /// Access requests must come from the page's own origin as JSON.
-fn check_post(state: &AppState, located: &Located, headers: &HeaderMap) -> Result<(), ApiError> {
+pub(super) fn check_post(
+    state: &AppState,
+    located: &Located,
+    headers: &HeaderMap,
+) -> Result<(), ApiError> {
     let rejected = || ApiError::new(ErrorCode::OriginRejected);
     let origin = headers
         .get(header::ORIGIN)
@@ -628,7 +829,7 @@ fn check_post(state: &AppState, located: &Located, headers: &HeaderMap) -> Resul
     if allowed { Ok(()) } else { Err(rejected()) }
 }
 
-fn json_body<T: DeserializeOwned>(body: &[u8]) -> Result<T, ApiError> {
+pub(super) fn json_body<T: DeserializeOwned>(body: &[u8]) -> Result<T, ApiError> {
     serde_json::from_slice(body)
         .map_err(|error| ApiError::with_message(ErrorCode::MalformedRequest, error.to_string()))
 }
@@ -683,6 +884,31 @@ async fn password(
     }
 }
 
+/// Where the page is served: the claimed hostname, or on the instance host its public URL.
+/// The instance host's own `Host` could be forged, so without a public URL there is none.
+pub(super) async fn page_origin(
+    state: &AppState,
+    located: &Located,
+    headers: &HeaderMap,
+) -> Result<Option<String>, ApiError> {
+    let mut conn = state.db.reader.acquire().await?;
+    let public_url = instance::effective(&mut conn, &state.config)
+        .await?
+        .public_url;
+    if !located.claimed {
+        return Ok(public_url);
+    }
+    let scheme = match &public_url {
+        Some(url) if url.starts_with("http://") => "http",
+        _ => "https",
+    };
+    let host = headers
+        .get(header::HOST)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default();
+    Ok(Some(format!("{scheme}://{host}")))
+}
+
 /// `POST <base>/access/email`: mails a sign-in link to an allowed address. Answers `202`
 /// whether or not the address is allowed, so the list cannot be probed.
 async fn request_link(
@@ -702,27 +928,7 @@ async fn request_link(
         if !page.allows_email(&email) {
             return Ok(());
         }
-        let mut conn = state.db.reader.acquire().await?;
-        let public_url = instance::effective(&mut conn, &state.config)
-            .await?
-            .public_url;
-        drop(conn);
-        let origin = if located.claimed {
-            let scheme = match &public_url {
-                Some(url) if url.starts_with("http://") => "http",
-                _ => "https",
-            };
-            let host = parts
-                .headers
-                .get(header::HOST)
-                .and_then(|value| value.to_str().ok())
-                .unwrap_or_default();
-            Some(format!("{scheme}://{host}"))
-        } else {
-            // The request's own Host could be forged, so links name the configured URL only.
-            public_url
-        };
-        let Some(origin) = origin else {
+        let Some(origin) = page_origin(&state, &located, &parts.headers).await? else {
             tracing::warn!(
                 page = page.id,
                 "sign-in links need the instance's public URL"
@@ -1091,6 +1297,7 @@ mod tests {
             boot,
             "A & <B>",
             Locale::De,
+            "",
         );
         assert!(html.starts_with("<html lang=\"de\">"));
         assert!(html.contains("<title>A &amp; &lt;B&gt;</title>"));

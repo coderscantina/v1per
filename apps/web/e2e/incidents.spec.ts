@@ -114,6 +114,15 @@ test('an incident is opened, updated with a new impact and resolved', async ({ b
   await expect(status.locator('[data-affected="Support"] [data-impact="operational"]')).toBeVisible()
   await expect(timeline.locator('[data-update]')).toHaveCount(3)
 
+  // Once resolved, the team writes the postmortem here.
+  const postmortem = page.getByTestId('postmortem')
+  await postmortem.getByLabel('Postmortem text').fill('The card provider had an outage.\nWe added a second provider.')
+  await postmortem.getByRole('button', { name: 'Save postmortem' }).click()
+  await expect(postmortem).toContainText('Saved')
+  await expect(postmortem.getByRole('button', { name: 'Save postmortem' })).toBeDisabled()
+  await expectAccessible(page)
+  if (process.env.V1PER_E2E_SHOTS) await page.screenshot({ path: `${process.env.V1PER_E2E_SHOTS}/admin-postmortem.png`, fullPage: true })
+
   await page.goto(`/n/${ids.node}/incidents`)
   await expect(page.locator('[data-incident="Payments are slow"]')).toHaveCount(0)
   await page.getByRole('radio', { name: 'Resolved' }).click()

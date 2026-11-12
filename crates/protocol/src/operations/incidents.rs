@@ -43,6 +43,11 @@ crate::domain! {
         /// Deletes an incident with its timeline, such as an auto-incident dismissed as a false
         /// alarm. Needs `incidents.manage`.
         "incidents.delete" => incidents_delete (Person, key): IncidentArgs => IncidentDeleted;
+        /// Sets the postmortem of a resolved incident; empty text removes it. Refused with
+        /// `invalid_value` on `postmortem` while the incident is open. Reopening keeps the
+        /// text, but pages show it only while the incident is resolved. Needs
+        /// `incidents.manage`.
+        "incidents.setPostmortem" => incidents_set_postmortem (Person, key): IncidentsSetPostmortemArgs => IncidentResult;
         /// Publishes the incident to a page that shows at least one of its targets
         /// (`invalid_value` on `page` otherwise). Needs `incidents.manage` on the incident's
         /// node and on the page's.
@@ -146,6 +151,26 @@ pub struct IncidentsUpdateArgs {
     /// 1 to 200 characters after trimming.
     pub title: String,
     pub affected: Vec<Target>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, JsonSchema)]
+pub struct IncidentsSetPostmortemArgs {
+    pub incident: IncidentId,
+    /// The incident's `revision` the edit is based on; `stale_revision` with the current one
+    /// otherwise.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub expected_revision: Option<i64>,
+    /// Plain text, up to 20,000 characters after trimming; empty removes the postmortem.
+    pub postmortem: String,
+}
+
+/// What the team wrote about a resolved incident, as plain text.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, JsonSchema)]
+pub struct Postmortem {
+    pub text: String,
+    /// When it was last set.
+    pub published_at: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
@@ -275,6 +300,10 @@ pub struct IncidentDetail {
     pub affected: Vec<AffectedTarget>,
     /// Oldest first.
     pub updates: Vec<IncidentUpdate>,
+    /// Kept while the incident is reopened; pages show it only while it is resolved.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub postmortem: Option<Postmortem>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]

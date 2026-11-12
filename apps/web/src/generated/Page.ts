@@ -48,4 +48,18 @@ locales?: Array<Locale>, auto_incidents?: AutoIncidentMode,
  * 0 to 1,440 minutes an auto-incident stays open before `auto_publish` publishes it.
  * One resolved earlier is not published.
  */
-grace_minutes?: number, };
+grace_minutes?: number, 
+/**
+ * Every visitor gets the monitors' response times, not only grant holders.
+ */
+response_times?: boolean, 
+/**
+ * With `response_times`: visitors also get response times per probe location, named by
+ * the probe's city and country, never by its name. Probes without a location are left
+ * out.
+ */
+probe_locations?: boolean, 
+/**
+ * Visitors may subscribe to the page's incidents and maintenance.
+ */
+subscriptions?: boolean, };

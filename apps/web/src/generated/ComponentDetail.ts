@@ -3,11 +3,15 @@ import type { LatencyPoint } from "./LatencyPoint";
 import type { ProbeView } from "./ProbeView";
 
 /**
- * What grant holders see beyond the public snapshot.
+ * What a monitor shows beyond its bars.
  */
 export type ComponentDetail = { 
 /**
  * Hourly response times over the last 24 hours; per minute over the last 2 hours while
  * there are fewer than two hourly points, as for a new monitor.
  */
-latency: Array<LatencyPoint>, probes: Array<ProbeView>, };
+latency: Array<LatencyPoint>, 
+/**
+ * Each assigned probe's last check. Always empty for the `public` audience.
+ */
+probes: Array<ProbeView>, };

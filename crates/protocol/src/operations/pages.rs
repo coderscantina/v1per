@@ -9,14 +9,18 @@
 //! token. A restricted page without modes is a team-internal page.
 //!
 //! Events go to the `pages:<id>` topic of the page's node and every ancestor: `page.created`,
-//! `page.updated` and `page.deleted`, each with the page's ID. Everything the public snapshot
+//! `page.updated` and `page.deleted`, each with the page's ID, and `page.subscribers_changed`
+//! when an address or webhook starts or stops following the page. Everything the public snapshot
 //! shows also moves the page's own `page:<id>` topic, which the public stream follows.
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::ids::{NodeId, PageComponentId, PageGroupId, PageId, ShareTokenId, SlaId};
+use crate::ids::{
+    NodeId, PageComponentId, PageGroupId, PageId, PageSubscriberId, PageWebhookId, ShareTokenId,
+    SlaId,
+};
 use crate::operations::incidents::Target;
 use crate::operations::monitors::SecretField;
 use crate::status_page::{Accent, Locale, PageAudience, PageSnapshot, PageTheme};
@@ -59,6 +63,14 @@ crate::domain! {
         /// Revokes and deletes a share token; pages opened with it close at the next check.
         /// Needs `pages.manage`.
         "pages.revokeShareToken" => pages_revoke_share_token (Person): ShareTokenArgs => ShareTokenRevoked;
+        /// Deletes an email subscriber; it gets no more mail. Needs `pages.manage`.
+        "pages.removeSubscriber" => pages_remove_subscriber (Person): PageSubscriberArgs => PageSubscriberRemoved;
+        /// Adds a URL the page posts a `PageNotification` to for its incidents and
+        /// maintenance, optionally only for some components. `http` or `https` only
+        /// (`invalid_format` on `url`), at most 20 per page. Needs `pages.manage`.
+        "pages.addWebhook" => pages_add_webhook (Person): PagesAddWebhookArgs => PageWebhook;
+        /// Deletes a webhook subscriber. Needs `pages.manage`.
+        "pages.removeWebhook" => pages_remove_webhook (Person): PageWebhookArgs => PageWebhookRemoved;
     }
     queries {
         /// The pages of a node, or with `subtree` of the node and every node below it, by
@@ -70,6 +82,9 @@ crate::domain! {
         /// The snapshot `audience` would get, in `locale` or the page's default. Needs
         /// `node.read`. On the page's `page:<id>` topic.
         "pages.preview" => pages_preview (Person, key): PagesPreviewArgs => PagePreview;
+        /// The page's confirmed email subscribers, newest first, and its webhooks. Needs
+        /// `pages.manage`. On the page node's `pages:<id>` topic.
+        "pages.subscribers" => pages_subscribers (Person): PageArgs => PageSubscribers;
     }
 }
 
@@ -125,6 +140,20 @@ pub struct PageSettings {
     #[serde(default)]
     #[ts(as = "Option<u32>", optional)]
     pub grace_minutes: u32,
+    /// Every visitor gets the monitors' response times, not only grant holders.
+    #[serde(default)]
+    #[ts(as = "Option<bool>", optional)]
+    pub response_times: bool,
+    /// With `response_times`: visitors also get response times per probe location, named by
+    /// the probe's city and country, never by its name. Probes without a location are left
+    /// out.
+    #[serde(default)]
+    #[ts(as = "Option<bool>", optional)]
+    pub probe_locations: bool,
+    /// Visitors may subscribe to the page's incidents and maintenance.
+    #[serde(default)]
+    #[ts(as = "Option<bool>", optional)]
+    pub subscriptions: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, JsonSchema)]
@@ -402,4 +431,61 @@ pub struct PageList {
 #[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
 pub struct PagePreview {
     pub snapshot: PageSnapshot,
+}
+
+/// Who follows a page. Unconfirmed addresses are not listed and are deleted after 24 hours.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSubscribers {
+    pub subscribers: Vec<PageSubscriber>,
+    pub webhooks: Vec<PageWebhook>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSubscriber {
+    pub id: PageSubscriberId,
+    pub email: String,
+    /// What it follows; empty: the whole page.
+    pub components: Vec<PageComponentId>,
+    pub confirmed_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageWebhook {
+    pub id: PageWebhookId,
+    /// The URL's host. The URL itself is stored sealed and never answered, since it may carry a
+    /// token.
+    pub host: String,
+    /// What it follows; empty: the whole page.
+    pub components: Vec<PageComponentId>,
+    pub created_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSubscriberArgs {
+    pub subscriber: PageSubscriberId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSubscriberRemoved {
+    pub subscriber: PageSubscriberId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PagesAddWebhookArgs {
+    pub page: PageId,
+    pub url: String,
+    /// Components of the page not marked internal; absent or empty: the whole page.
+    #[serde(default)]
+    #[ts(as = "Option<Vec<PageComponentId>>", optional)]
+    pub components: Vec<PageComponentId>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageWebhookArgs {
+    pub webhook: PageWebhookId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageWebhookRemoved {
+    pub webhook: PageWebhookId,
 }

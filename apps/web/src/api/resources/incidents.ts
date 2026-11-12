@@ -1,4 +1,11 @@
-import type { IncidentId, IncidentsAddUpdateArgs, IncidentsCreateArgs, IncidentsListArgs, IncidentsUpdateArgs } from '~/generated'
+import type {
+  IncidentId,
+  IncidentsAddUpdateArgs,
+  IncidentsCreateArgs,
+  IncidentsListArgs,
+  IncidentsSetPostmortemArgs,
+  IncidentsUpdateArgs,
+} from '~/generated'
 
 import { api } from '..'
 
@@ -12,5 +19,6 @@ export const incidentsResource = {
   create: (args: IncidentsCreateArgs) => api.command('incidents.create', args),
   addUpdate: (args: IncidentsAddUpdateArgs) => api.command('incidents.addUpdate', args),
   update: (args: IncidentsUpdateArgs) => api.command('incidents.update', args),
+  setPostmortem: (args: IncidentsSetPostmortemArgs) => api.command('incidents.setPostmortem', args),
   delete: (incident: IncidentId) => api.command('incidents.delete', { incident }),
 }

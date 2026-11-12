@@ -9,16 +9,24 @@
 
 mod access;
 mod badge;
+pub(crate) mod deliveries;
+mod feeds;
 mod logo;
 mod mail;
+mod meta;
 mod public;
 pub(crate) mod publish;
+mod response_times;
 mod snapshot;
+mod subscribers;
+mod subscription_text;
 mod text;
 
+pub use deliveries::run as run_deliveries;
 pub(crate) use logo::upload as upload_logo;
 pub(crate) use public::{host_routing, hostname_router, instance_routes};
 pub use publish::run as run_auto_publish;
+pub use response_times::ResponseTimesCache;
 pub use snapshot::SnapshotCache;
 
 use std::collections::{HashMap, HashSet};
@@ -46,6 +54,10 @@ use v1per_protocol::operations::pages::{
     PagesCreateShareTokenArgs, PagesHandlers, PagesHostnameArgs, PagesListArgs, PagesPreviewArgs,
     PagesUpdateAccessArgs, PagesUpdateArgs, PagesUpdateLayoutArgs, PagesUpdateSlasArgs,
     ShareTokenArgs, ShareTokenCreated, ShareTokenRevoked,
+};
+use v1per_protocol::operations::pages::{
+    PageSubscriberArgs, PageSubscriberRemoved, PageSubscribers, PageWebhook, PageWebhookArgs,
+    PageWebhookRemoved, PagesAddWebhookArgs,
 };
 use v1per_protocol::registry::Snapshot;
 use v1per_protocol::status_page::{Accent, Locale, PageTheme};
@@ -87,6 +99,9 @@ pub(crate) struct PageRow {
     pub locales: String,
     pub auto_incidents: String,
     pub grace_minutes: i64,
+    pub response_times: bool,
+    pub probe_locations: bool,
+    pub subscriptions: bool,
     pub public: bool,
     pub password_hash: Option<String>,
     pub allowed_emails: String,
@@ -102,8 +117,8 @@ pub(crate) struct PageRow {
 macro_rules! select_page {
     () => {
         "SELECT id, node_id, slug, title, description, footer, theme, accent, timezone,
-                default_locale, locales, auto_incidents, grace_minutes, public, password_hash,
-                allowed_emails, allowed_domains, logo_type, length(logo) AS logo_size,
+                default_locale, locales, auto_incidents, grace_minutes, response_times, probe_locations,
+                subscriptions, public, password_hash, allowed_emails, allowed_domains, logo_type, length(logo) AS logo_size,
                 logo_updated_at, revision, created_at, updated_at
          FROM pages"
     };
@@ -461,14 +476,17 @@ async fn store_settings(
         Ok(_) => {
             "UPDATE pages SET slug = ?1, title = ?2, description = ?3, footer = ?4, theme = ?5,
                               accent = ?6, timezone = ?7, default_locale = ?8, locales = ?9,
-                              auto_incidents = ?10, grace_minutes = ?11, updated_at = ?13
+                              auto_incidents = ?10, grace_minutes = ?11, updated_at = ?13,
+                              response_times = ?14, probe_locations = ?15, subscriptions = ?16
              WHERE id = ?12 RETURNING id"
         }
         Err(_) => {
             "INSERT INTO pages (slug, title, description, footer, theme, accent, timezone,
                                 default_locale, locales, auto_incidents, grace_minutes, node_id,
-                                public, revision, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, 1, ?13, ?13)
+                                public, revision, created_at, updated_at, response_times,
+                                probe_locations, subscriptions)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, 1, ?13, ?13, ?14, ?15,
+                     ?16)
              RETURNING id"
         }
     };
@@ -486,6 +504,9 @@ async fn store_settings(
         .bind(i64::from(settings.grace_minutes))
         .bind(page.map_or_else(NodeId::get, PageId::get))
         .bind(now)
+        .bind(settings.response_times)
+        .bind(settings.response_times && settings.probe_locations)
+        .bind(settings.subscriptions)
         .fetch_one(ctx.conn())
         .await?;
     Ok(PageId::new(id))
@@ -599,6 +620,9 @@ async fn detail(conn: &mut SqliteConnection, page: PageId) -> Result<PageDetail,
                 locales: row.locales(),
                 auto_incidents: enum_from(&row.auto_incidents)?,
                 grace_minutes: row.grace_minutes as u32,
+                response_times: row.response_times,
+                probe_locations: row.probe_locations,
+                subscriptions: row.subscriptions,
             },
             access: PageAccess {
                 public: row.public,
@@ -1273,5 +1297,37 @@ impl PagesHandlers for AppState {
                 snapshot: (*built.snapshot).clone(),
             },
         })
+    }
+
+    async fn pages_subscribers(
+        &self,
+        ctx: &mut QueryCtx,
+        args: PageArgs,
+    ) -> Result<Snapshot<PageSubscribers>, ApiError> {
+        subscribers::list(ctx, args).await
+    }
+
+    async fn pages_remove_subscriber(
+        &self,
+        ctx: &mut CommandCtx,
+        args: PageSubscriberArgs,
+    ) -> Result<PageSubscriberRemoved, ApiError> {
+        subscribers::remove_subscriber(ctx, args).await
+    }
+
+    async fn pages_add_webhook(
+        &self,
+        ctx: &mut CommandCtx,
+        args: PagesAddWebhookArgs,
+    ) -> Result<PageWebhook, ApiError> {
+        subscribers::add_webhook(self, ctx, args).await
+    }
+
+    async fn pages_remove_webhook(
+        &self,
+        ctx: &mut CommandCtx,
+        args: PageWebhookArgs,
+    ) -> Result<PageWebhookRemoved, ApiError> {
+        subscribers::remove_webhook(ctx, args).await
     }
 }

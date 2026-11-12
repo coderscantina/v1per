@@ -750,3 +750,154 @@ async fn down_minutes_count_each_minute_once() {
     );
     storage.close().await.unwrap();
 }
+
+/// Probe groups merge their rollups per step, and every series gets the average and
+/// percentiles of its own up checks from raw heartbeats.
+#[tokio::test(flavor = "multi_thread")]
+async fn response_times_merge_probe_groups_with_percentiles() {
+    let dir = tempfile::tempdir().unwrap();
+    let storage = open(&dir).await;
+    let mut beats = Vec::new();
+    let mut statuses = Vec::new();
+    for hour in 0..8 {
+        let at = NOW_MS + hour * HOUR_MS;
+        for probe in 1..=3 {
+            let latency = (10 * probe + hour) as u32;
+            beats.push(probe_beat(
+                Some(ProbeId(probe)),
+                1,
+                at + probe * MINUTE_MS,
+                Status::Up,
+                Some(latency),
+            ));
+        }
+        beats.push(probe_beat(
+            Some(ProbeId(1)),
+            1,
+            at + 30 * MINUTE_MS,
+            Status::Down,
+            Some(900),
+        ));
+        statuses.push(MonitorStatus {
+            monitor: MonitorId(1),
+            time_ms: at,
+            status: Status::Up,
+            latency_ms: Some(100 + hour as u32),
+        });
+    }
+    let admitted = storage
+        .admit_evaluated(None, &beats, &statuses)
+        .await
+        .unwrap();
+    storage
+        .watermark()
+        .wait_for(|w| w.sequence >= admitted.sequence)
+        .await
+        .unwrap();
+
+    let groups = vec![vec![ProbeId(1)], vec![ProbeId(2), ProbeId(3)]];
+    let times = storage
+        .response_times(
+            MonitorId(1),
+            groups,
+            Resolution::Hour,
+            4 * HOUR_MS,
+            NOW_MS,
+            NOW_MS + 8 * HOUR_MS,
+        )
+        .await
+        .unwrap()
+        .value;
+    let averages = |points: &[LatencyPoint]| -> Vec<(i64, f64)> {
+        points
+            .iter()
+            .map(|p| (p.bucket_ms - NOW_MS, p.latency.avg_ms))
+            .collect()
+    };
+    let step = 4 * HOUR_MS;
+    assert_eq!(averages(&times.overall.points), [(0, 101.5), (step, 105.5)]);
+    assert_eq!(averages(&times.groups[0].points), [(0, 11.5), (step, 15.5)]);
+    assert_eq!(averages(&times.groups[1].points), [(0, 26.5), (step, 30.5)]);
+    assert_eq!(times.groups[1].points[0].latency.min_ms, 20.0);
+    assert_eq!(times.groups[1].points[0].latency.max_ms, 33.0);
+
+    // Probe 1 checked 10 to 17 ms; its down beats do not count.
+    let vienna = times.groups[0].summary.unwrap();
+    assert_eq!(vienna.checks, 8);
+    assert_eq!(vienna.avg_ms, 13.5);
+    assert_eq!(vienna.p50_ms, 13.5);
+    assert!((vienna.p95_ms - 16.65).abs() < 1e-9);
+    assert!((vienna.p99_ms - 16.93).abs() < 1e-9);
+    assert_eq!(times.groups[1].summary.unwrap().checks, 16);
+    let overall = times.overall.summary.unwrap();
+    assert_eq!(
+        (overall.checks, overall.avg_ms, overall.p50_ms),
+        (24, 23.5, 23.5)
+    );
+
+    let empty = storage
+        .response_times(
+            MonitorId(1),
+            vec![vec![ProbeId(9)]],
+            Resolution::Hour,
+            HOUR_MS,
+            NOW_MS - DAY_MS,
+            NOW_MS,
+        )
+        .await
+        .unwrap()
+        .value;
+    assert!(empty.overall.points.is_empty() && empty.overall.summary.is_none());
+    assert_eq!(empty.groups[0], Default::default());
+    storage.close().await.unwrap();
+}
+
+/// Compaction rewrites each closed day once and keeps every heartbeat.
+#[tokio::test(flavor = "multi_thread")]
+async fn compaction_rewrites_closed_days_once() {
+    let dir = tempfile::tempdir().unwrap();
+    let storage = open(&dir).await;
+    let mut beats = Vec::new();
+    for minute in 0..(3 * 24 * 6) {
+        let at = NOW_MS + minute * 10 * MINUTE_MS;
+        for monitor in 1..=3 {
+            beats.push(probe_beat(
+                Some(ProbeId(1)),
+                monitor,
+                at + monitor,
+                Status::Up,
+                Some((minute % 50) as u32),
+            ));
+        }
+    }
+    admit_visible(&storage, &beats).await;
+    let now = NOW_MS + 2 * DAY_MS + HOUR_MS;
+    let everything = || async {
+        let mut all = Vec::new();
+        for monitor in 1..=3 {
+            let page = storage
+                .heartbeats(MonitorId(monitor), None, 10_000, None)
+                .await
+                .unwrap()
+                .value;
+            all.extend(page.heartbeats);
+        }
+        all
+    };
+    let before = everything().await;
+    let compacted = storage
+        .compact(v1per_storage::Retention::default(), now)
+        .await
+        .unwrap();
+    // Every closed day in the 90 days, empty ones too, and not today.
+    assert_eq!(compacted, 90);
+    assert_eq!(
+        storage
+            .compact(v1per_storage::Retention::default(), now)
+            .await
+            .unwrap(),
+        0
+    );
+    assert_eq!(everything().await, before);
+    storage.close().await.unwrap();
+}

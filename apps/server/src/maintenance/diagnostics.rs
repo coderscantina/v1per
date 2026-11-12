@@ -303,7 +303,7 @@ pub fn render(ops: &InstanceOperations) -> String {
 /// One line of what a retention run removed or would remove.
 pub fn counts(counts: &RetentionCounts) -> String {
     format!(
-        "{} heartbeats, {} minute rollups, {} probe batch IDs, {} deliveries, {} sessions, {} login steps, {} page sessions, {} sign-in links, {} command answers, {} jobs",
+        "{} heartbeats, {} minute rollups, {} probe batch IDs, {} deliveries, {} sessions, {} login steps, {} page sessions, {} sign-in links, {} unconfirmed subscribers, {} command answers, {} jobs",
         counts.heartbeats,
         counts.minute_rollups,
         counts.agent_batches,
@@ -312,6 +312,7 @@ pub fn counts(counts: &RetentionCounts) -> String {
         counts.login_challenges,
         counts.page_sessions,
         counts.page_email_codes,
+        counts.unconfirmed_subscribers,
         counts.idempotency_keys,
         counts.jobs
     )

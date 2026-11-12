@@ -1,7 +1,9 @@
 //! Retention: heartbeats per [`Retention::default`] (raw 90 days, minute rollups kept until
 //! Mike decides, decision 0002), probe batch IDs after a day, finished deliveries and
 //! maintenance jobs after 30 days, and ended sessions, sign-in steps, page sessions, sign-in
-//! links and command answers. Queries already ignore what ended; this gives the space back.
+//! links, page subscriptions left unconfirmed for 24 hours and command answers. Queries already
+//! ignore what ended; this gives the space back. It also compacts each closed day of raw
+//! heartbeats once, for response time percentiles.
 //! Every step finds nothing to do when it already ran, so an interrupted or failed run is
 //! finished by the next one.
 
@@ -9,7 +11,9 @@ use std::path::Path;
 use std::time::Duration;
 
 use sqlx::Row;
-use v1per_protocol::limits::{IDEMPOTENCY_WINDOW_MS, SESSION_IDLE_MS};
+use v1per_protocol::limits::{
+    IDEMPOTENCY_WINDOW_MS, PAGE_SUBSCRIPTION_CONFIRM_MS, SESSION_IDLE_MS,
+};
 use v1per_protocol::operations::instance::RetentionCounts;
 use v1per_storage::Retention;
 
@@ -27,7 +31,7 @@ pub async fn run(state: &AppState, dry_run: bool) -> Result<RetentionCounts, Fai
     let now = state.clock.now_ms();
     let dir = &state.config.data_dir;
     let mut counts = RetentionCounts::default();
-    let sweeps: [(&mut u64, &str, &str, Vec<i64>); 7] = [
+    let sweeps: [(&mut u64, &str, &str, Vec<i64>); 8] = [
         (
             &mut counts.deliveries,
             "notification_outbox",
@@ -57,6 +61,12 @@ pub async fn run(state: &AppState, dry_run: bool) -> Result<RetentionCounts, Fai
             "page_email_codes",
             "expires_at <= ?",
             vec![now],
+        ),
+        (
+            &mut counts.unconfirmed_subscribers,
+            "page_subscribers",
+            "confirmed_at IS NULL AND created_at <= ?",
+            vec![now - PAGE_SUBSCRIPTION_CONFIRM_MS],
         ),
         (
             &mut counts.idempotency_keys,
@@ -105,6 +115,13 @@ pub async fn run(state: &AppState, dry_run: bool) -> Result<RetentionCounts, Fai
     .map_err(|e| storage_failure(dir, e))?;
     counts.heartbeats = expired.heartbeats;
     counts.minute_rollups = expired.minute_rollups;
+    if !dry_run {
+        let compacted = storage
+            .compact(Retention::default(), now)
+            .await
+            .map_err(|e| storage_failure(dir, e))?;
+        tracing::info!(days = compacted, "compacted raw heartbeats");
+    }
     // Batch IDs carry the inbox's own receive time, not the application clock.
     let wall = crate::db::now_ms();
     counts.agent_batches = if dry_run {

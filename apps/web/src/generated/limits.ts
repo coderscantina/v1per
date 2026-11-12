@@ -108,6 +108,9 @@ export const LATENCY_POINTS_MAX = 1500
 /** Most daily bars one request may hold. */
 export const DAY_BARS_MAX = 90
 
+/** Longest incident postmortem, in characters. */
+export const INCIDENT_POSTMORTEM_MAX_CHARS = 20000
+
 /** Longest status page slug, in characters: lowercase letters, digits and inner dashes. */
 export const PAGE_SLUG_MAX_CHARS = 64
 
@@ -143,6 +146,15 @@ export const PAGE_EMAIL_LINK_MS = 900000
 
 /** Wrong page passwords and sign-in link requests per client address per minute. */
 export const PAGE_ACCESS_ATTEMPTS_PER_MINUTE = 10
+
+/** Email subscribers per status page, confirmed or waiting for confirmation. */
+export const PAGE_SUBSCRIBERS_MAX = 5000
+
+/** Webhook subscribers per status page. */
+export const PAGE_WEBHOOKS_MAX = 20
+
+/** How long a subscription waits for its confirmation, in milliseconds. */
+export const PAGE_SUBSCRIPTION_CONFIRM_MS = 86400000
 
 /** Header every API call sends. Commands without it are refused with `origin_rejected`. */
 export const REQUEST_MARKER_HEADER = 'x-v1per-request'

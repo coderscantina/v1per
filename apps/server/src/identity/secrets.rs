@@ -126,6 +126,14 @@ impl SecretKey {
         [nonce.as_slice(), &sealed].concat()
     }
 
+    /// A secret for `context` the server can derive again, for links it mails more than once:
+    /// the keyed BLAKE3 hash under a key derived from this one, so the sealing key is never
+    /// used for anything else.
+    pub fn derive(&self, context: &str) -> [u8; 32] {
+        let key = blake3::derive_key("v1per link secrets", &self.bytes);
+        *blake3::keyed_hash(&key, context.as_bytes()).as_bytes()
+    }
+
     /// `None` when the ciphertext belongs to another context or another key.
     pub fn open(&self, context: &str, sealed: &[u8]) -> Option<Vec<u8>> {
         let (nonce, ciphertext) = sealed.split_at_checked(NONCE_BYTES)?;
