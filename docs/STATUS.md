@@ -1,10 +1,21 @@
 # Status
 
-Updated 2026-10-20. Read by agents at the start of a thread; rewrite it before handing back (`project-status` skill).
+Updated 2026-11-12. Read by agents at the start of a thread; rewrite it before handing back (`project-status` skill).
 
 ## Branches
 
-`main` is the only branch, 12 commits ahead of `origin/main` (`58edc2c`) and not pushed. The latest published release is `v26.10.19-ec3e93b`. The release attempt for `58edc2c` (slim probe agent) failed: its release commit only changed `CHANGELOG.md`, CI skipped it, and `release.yml` timed out waiting for CI. The tag was removed.
+`main` is the only branch. No worktrees. The release before this work is `v26.10.20-da7bf8e` (2026-10-20).
+
+Merged into `main` on 2026-11-12: milestone 14 (SLAs, evidence in `docs/evidence/m14-slas.md`) and the status page upgrades of [decision 0013](decisions/0013-status-page-upgrades.md):
+
+- Response times for visitors as a page setting, per probe location as a second one, with 24 hour, 7, 30 and 90 day ranges, p50, p95 and p99, and incidents and maintenance marked on the chart (`response-times.json`).
+- Page subscribers: email with double opt-in, Atom and RSS feeds, a maintenance calendar, and webhooks added by page managers.
+- Incident pages at `/incidents/<id>`, postmortems, link preview tags.
+- Check counts behind every uptime figure and a "How uptime is counted" block.
+
+Migrations 0014 to 0018 move the control schema from 13 to 18. Storage gains a `compacted_days` marker table without a version bump.
+
+Checked on the merged tree before the merge to `main`, which then added docs only: fmt, clippy, `export-types --check`, `cargo test --workspace` (72 test binaries, all passing), web typecheck, lint and 162 unit tests, and the full e2e suite (59 tests; the probe spec passed on a rerun once `v1per-probe` was built).
 
 ## Recent work
 
@@ -14,26 +25,28 @@ Design rules settled along the way are in [design.md](design.md).
 
 Also committed on 2026-10-20: `c394f8c` the status page in Status, Maintenance and Incidents views, and `43719a9` the "V1Per" spelling across docs and code.
 
-Uncommitted, from the 2026-10-20 PWA thread: the admin app installs to the home screen. `apps/web/public` has the manifest, icons from Mike's favicon, and the favicon itself. `apps/web/service-worker.js` is built into `dist/sw.js` by a plugin in `vite.config.ts` that lists the files to precache; it serves the shell offline, sends `/api`, `/config.json` and `/s/` to the network, and only runs in production builds. The theme color follows the color mode. App.vue shows a "you're offline" screen while the first navigation waits for the network. AppBrand draws the V1P logo in the accent color. Rule in [design.md](design.md#brand). Checked: web typecheck, lint, unit tests, all 50 e2e, and a Playwright run against a built server (no installability errors, 138 files precached, offline screen, status pages bypass the worker).
+Committed in `93a45ee`, from the 2026-10-20 PWA thread: the admin app installs to the home screen. `apps/web/public` has the manifest, icons from Mike's favicon, and the favicon itself. `apps/web/service-worker.js` is built into `dist/sw.js` by a plugin in `vite.config.ts` that lists the files to precache; it serves the shell offline, sends `/api`, `/config.json` and `/s/` to the network, and only runs in production builds. The theme color follows the color mode. App.vue shows a "you're offline" screen while the first navigation waits for the network. AppBrand draws the V1P logo in the accent color. Rule in [design.md](design.md#brand). Checked: web typecheck, lint, unit tests, all 50 e2e, and a Playwright run against a built server (no installability errors, 138 files precached, offline screen, status pages bypass the worker).
 
-Uncommitted, from the 2026-10-20 release thread: `ci.yml` now runs for `CHANGELOG.md`, so a second release on the same day no longer hangs. The stale `## 26.10.19` probe section is gone from `CHANGELOG.md`; the next release lists the probe again. The AGENTS.md gotcha says how same-day releases behave now. The highlights for the next release are in `/tmp/v1per-release-highlights.md` (it covers the PWA work too). Checked: actionlint and `scripts/release.sh --dry-run`.
+`fc1761c` makes `ci.yml` run for `CHANGELOG.md`, so a second release on the same day no longer hangs. Not yet exercised by a real same-day release.
 
 ## Running
 
-The review demo, listed in `.demo/pids`: `v1per serve` on 127.0.0.1:8790 (still on the build before the status page views, so a direct load of `/s/<slug>/incidents` 404s until it restarts; restarted earlier on the new build, data upgraded to control schema 13, backup in `.demo/pre-probe-location-20261020.backup`) with `--web-dir apps/web --public-url http://localhost:5190`, and vite on http://localhost:5190 (5173 and 5174 belong to other projects). Data is Mike's Kuma import in `kuma/demo/data`, channels off. The built-in probe there has a sample location (Vienna, Home lab) to show the feature. The previous demo data is in `kuma/demo/data.prev-20261020`.
+Nothing local. The review demo is stopped; its data is in `kuma/demo/data` (control schema 13, needs `v1per upgrade` before the next start). Production runs on ops01.coderscantina.com under Coolify from `ghcr.io/coderscantina/v1per:latest`.
 
 ## Waiting on Mike
 
-- Push `main`. It holds 12 local commits.
+- The amendment to decision 0002: status page percentiles read raw heartbeats, compacted once per closed day. Recommendation: accept.
+- An outbound address policy for webhooks. None exists for page webhooks or webhook notification channels.
+- SLA edit rule reach: a client Admin on `autohaus` can edit SLAs on `schmidt` below it. Recommendation: keep the strict-ancestor rule and put client SLAs on the client's top node.
+- SLA alert language: taken from the first status page showing the SLA, else English. Recommendation: a language setting on channels later.
 - Three choices from the UX thread. Each has a recommendation in that thread's final report:
   - Dragging a folder when access changes: confirm, or open the Move dialog.
   - Warn when moving a monitor drops its probes, channels and maintenance windows. Recommendation: yes.
   - Whether API keys may call `monitors.move`.
-- Commit the PWA work and the release fix, then release with `scripts/release.sh /tmp/v1per-release-highlights.md`. That also pushes the local commits.
 - Product decisions: 8 open in the [milestone index](milestones/README.md#open-decisions). The Kuma proxies item is settled in practice.
 
 ## Next
 
-1. Release 26.10.20.
-2. Bring the milestone index up to date. 03 to 09 have evidence directories but are still listed as in progress with no link.
+1. Bring the milestone index up to date. 03 to 09 have evidence directories but are still listed as in progress with no link, and the status page upgrades have no milestone entry.
+2. Follow-ups from the upgrade work: `scripts/demo-seed.ts` still calls `v1per probe`; one SMTP connection per subscriber mail; "Only some components" with none ticked subscribes to everything; German mails say "Sie" while the page says "du"; the first series colour is close to the overall line on blue accents.
 3. Milestone 12, the integrated release gate.
