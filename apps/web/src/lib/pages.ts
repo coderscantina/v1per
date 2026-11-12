@@ -8,6 +8,7 @@ import type {
   PageStatus,
   PageTheme,
   PagesUpdateAccessArgs,
+  ResponseRange,
   PagesUpdateArgs,
 } from '~/generated'
 import { PAGE_ALLOWED_EMAILS_MAX, PAGE_GRACE_MAX_MINUTES, PAGE_SLUG_MAX_CHARS } from '~/generated/limits'
@@ -19,6 +20,7 @@ export const themes = ['auto', 'light', 'dark'] as const satisfies readonly Page
 export const accents = ['indigo', 'blue', 'violet', 'rose', 'orange', 'amber', 'emerald', 'cyan'] as const satisfies readonly Accent[]
 export const pageLocales = ['en', 'de'] as const satisfies readonly Locale[]
 export const autoIncidentModes = ['draft', 'auto_publish'] as const satisfies readonly AutoIncidentMode[]
+export const publicRanges = ['24h', '7d', '30d', '90d'] as const satisfies readonly ResponseRange[]
 
 /** Language names in their own language, as visitors pick them. */
 export const localeNames: Record<Locale, string> = { en: 'English', de: 'Deutsch' }
@@ -61,6 +63,8 @@ export interface SettingsForm {
   responseTimes: boolean
   /** With `responseTimes`: also per probe location. */
   probeLocations: boolean
+  /** The longest time frame visitors may pick. */
+  publicRange: ResponseRange
   /** Visitors may subscribe to incidents and maintenance. */
   subscriptions: boolean
 }
@@ -81,6 +85,7 @@ export function settingsFromPage(page: Page): SettingsForm {
     graceMinutes: String(page.grace_minutes ?? 0),
     responseTimes: page.response_times ?? false,
     probeLocations: page.probe_locations ?? false,
+    publicRange: page.public_range ?? '90d',
     subscriptions: page.subscriptions ?? false,
   }
 }
@@ -114,6 +119,7 @@ export function toUpdateArgs(form: SettingsForm, page: Page, basedOn: number): P
     grace_minutes: form.autoIncidents === 'auto_publish' ? Number(form.graceMinutes) : (page.grace_minutes ?? 0),
     response_times: form.responseTimes,
     probe_locations: form.responseTimes && form.probeLocations,
+    public_range: form.publicRange,
     subscriptions: form.subscriptions,
   }
 }

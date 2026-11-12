@@ -25,6 +25,7 @@ import {
   autoIncidentModes,
   localeNames,
   pageLocales,
+  publicRanges,
   settingsFromPage,
   themes,
   toUpdateArgs,
@@ -111,6 +112,7 @@ const enabledLocales = computed({
     if (form.value) form.value.locales = next
   },
 })
+const rangeOptions = computed(() => publicRanges.map((value) => ({ value, label: t(`pages.settings.ranges.${value}`) })))
 const modeOptions = computed(() => autoIncidentModes.map((value) => ({ value, label: t(`pages.settings.autoModes.${value}`) })))
 
 const logoInput = ref<HTMLInputElement | null>(null)
@@ -310,6 +312,20 @@ const shownFields = ['title', 'slug', 'description', 'footer', 'timezone', 'grac
           :label="t('pages.settings.timezone')"
           :placeholder="t('pages.settings.timezonePlaceholder')"
           :error="errorFor('timezone')"
+        />
+      </SettingsSection>
+
+      <SettingsSection
+        id="page-history"
+        :title="t('pages.settings.history')"
+        :description="t('pages.settings.historyHint')"
+      >
+        <SelectField
+          id="page-public-range"
+          v-model="form.publicRange"
+          :label="t('pages.settings.publicRange')"
+          :description="t('pages.settings.publicRangeHint')"
+          :options="rangeOptions"
         />
       </SettingsSection>
 
