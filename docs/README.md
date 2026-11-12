@@ -46,4 +46,4 @@ Pinned in [sources/manifest.json](../sources/manifest.json):
 
 Keep milestone status and evidence links in the milestone index. Store result reports under `docs/evidence/`, named `mNN-<slug>.md`, with screenshots in `docs/evidence/mNN/`. Keep real Kuma databases, secrets and large workloads outside Git. A report states source revision, command, fixture, machine, engine versions, result and what was not verified.
 
-Milestone 01 is complete, 02 through 11 are in progress and 12 is pending; see the [milestone index](milestones/README.md).
+Milestone 01 is complete, 02 through 11 and 13 are in progress, and 12 and 14 are pending; see the [milestone index](milestones/README.md).

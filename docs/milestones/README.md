@@ -1,6 +1,6 @@
 # Implementation milestones
 
-Milestone 01 is complete; 02 through 11 and 13 are in progress. Mark one complete only after its acceptance criteria pass and an evidence report is linked here. The [technical briefing](../technical-briefing.md) owns product scope. The [workflow](../development-workflow.md) defines ownership and handoffs.
+Milestone 01 is complete; 02 through 11 and 13 are in progress, 12 is pending, and 14 is complete on `feature/slas` waiting to merge. Mark one complete only after its acceptance criteria pass and an evidence report is linked here. The [technical briefing](../technical-briefing.md) owns product scope. The [workflow](../development-workflow.md) defines ownership and handoffs.
 
 ## Sequence and gates
 
@@ -17,8 +17,9 @@ Milestone 01 is complete; 02 through 11 and 13 are in progress. Mark one complet
 | 09  | [Status pages](09-status-pages.md)                                         | 04, 05, 08         | Integration and frontend         | In progress |
 | 10  | [Kuma import and cutover](10-kuma-import-and-cutover.md)                   | 05, 07, 08, 09     | Storage and import               | In progress: [evidence](../evidence/m10-kuma-import-and-cutover.md) |
 | 11  | [Operations and recovery](11-operations-and-recovery.md)                   | 02, 04; 10 for import state | Storage and import      | In progress: [evidence](../evidence/m11-operations-and-recovery.md) |
-| 12  | [Integrated release gate](12-integrated-release-gate.md)                   | 01 through 11      | Integration                      | Pending |
+| 12  | [Integrated release gate](12-integrated-release-gate.md)                   | 01 through 11, 14  | Integration                      | Pending |
 | 13  | [Slim probe agent](13-slim-probe-agent.md)                                 | 06                 | Monitoring and integration       | In progress: [evidence](../evidence/m13-slim-probe-agent.md) |
+| 14  | [SLAs](14-slas.md)                                                         | 04, 07, 08, 09     | Monitoring and frontend          | Complete on `feature/slas`, not merged: [evidence](../evidence/m14-slas.md) |
 
 02 and 03 run in parallel once 01 has settled the protocol envelope and status semantics. The storage gate authorizes the engine design, not a capacity claim; 12 repeats the workload with agents, notifications and pages running.
 
@@ -34,7 +35,7 @@ Decisions waiting for Mike. Remove a line once its record says Adopted.
 - Probe offline rule and public bar coloring: proposals in [0008](../decisions/0008-monitoring-rules.md) items 12 and 13.
 - Domain expiry alerts: Kuma 2.5.0 also sends domain registration expiry alerts (RDAP lookups), which [0005](../decisions/0005-notifications.md) does not list. 35 of Mike's 69 monitors have them on. Recommendation: add them to the first release as a daily RDAP check per domain in milestone 07, so these alerts do not stop at cutover.
 - Release gate targets in the [briefing](../technical-briefing.md) are proposals. Confirm or adjust in 02.
-- Minute rollup retention: the agreed default keeps all rollups forever. Measured in 02: 6.3 million minute rows a day, 2.3 billion rows and about 23 GB a year at the target size, and only the 24 h uptime reads them ([m02 evidence](../evidence/m02-storage-gate.md)). Recommendation: keep minute rollups as long as raw heartbeats (90 days), hour and day rollups forever ([0002](../decisions/0002-storage-split-and-retention.md)).
+- Minute rollup retention: the agreed default keeps all rollups forever. Measured in 02: 6.3 million minute rows a day, 2.3 billion rows and about 23 GB a year at the target size, and only the 24 h uptime reads them. SLAs read minute rollups only for the open day through a daily tally ([0012](../decisions/0012-slas.md)), so they do not need longer retention ([m02 evidence](../evidence/m02-storage-gate.md)). Recommendation: keep minute rollups as long as raw heartbeats (90 days), hour and day rollups forever ([0002](../decisions/0002-storage-split-and-retention.md)).
 - Kuma HTTP proxies: Mike's database has no proxies (checked 2026-10-18), so this no longer blocks the cutover. Recommendation: leave proxies out of the first release; monitors that use one import paused ([0007](../decisions/0007-kuma-import.md)).
 
 ## Known gaps

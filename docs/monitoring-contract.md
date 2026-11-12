@@ -57,3 +57,18 @@ For a component at a moment, take the worst of:
 The page status is the worst component status. A daily bar shows the worst state that day and its uptime; its tooltip lists incidents and maintenance that touched the day. Static components have no monitor and take their color from incidents and maintenance only.
 
 Proposed, awaiting Mike: whether a short down blip with no published incident colors a public daily bar, or only lowers the uptime number. Recommendation: color the bar by uptime thresholds (100 % operational, at least 99 % degraded, below that partial outage, below 95 % major outage) and let published incidents override. Kuma has no daily bars to match.
+
+## SLAs
+
+Confirmed with Mike on 2026-10-23 ([decision 0012](decisions/0012-slas.md)). Times are in the SLA's timezone; a period is a calendar month, quarter or year there, and days and period edges with non-hour offsets follow the page rule above.
+
+- Availability in `each` mode: per covered monitor, `up / (up + down)` over the monitor-level series for the period, pending counted as down and maintenance excluded, as for page uptime. The SLA misses when any monitor is below the target.
+- Availability in `any_down` mode: over minute buckets of the monitor-level rollups, a minute counts when any covered monitor has an up or down beat in it, and is down when any covered monitor has a down or pending beat in it. Availability is `(counted - down) / counted`. The tally stores counted and down minutes per SLA per day once the day ends; a period sums its days. Days without minute rollups have no data.
+- Downtime budget: `(1 - target)` times the expected count. In `any_down` mode the expected count is the minutes in the period. In `each` mode it is the period length divided by the monitor's interval, per monitor. The warning fires when down reaches 75 % of the budget, the availability breach when it passes the budget or the period closes below target.
+- Incidents counted: those, drafts included, that name a covered monitor and started in the period. The worst impact is the highest impact any update set on a covered monitor; an auto-incident starts at `major_outage`.
+- Business time between two instants counts the weekly hours, minus holiday dates. Without hours it is the plain duration. Maintenance does not pause it.
+- Response: business time from `started_at` to the first update with an author. Missed when the incident is open at `started_at` plus the target in business time with no such update. Resolved before that without one, it is not counted as met or missed.
+- Resolution: business time from `started_at` to `resolved_at`. Missed when an open incident passes its deadline or a resolved one took longer than the target.
+- Latency: per covered monitor of a latency type, `latency_sum / latency_count` over the monitor-level rollups for the period. The SLA misses when any monitor's average is above the target. Checked at period close.
+- Outcomes per commitment and overall: `met`, `missed`, `on_track`, `at_risk` and `no_data`; overall takes the worst (missed, at risk, on track, met). A running period is at risk when 75 % of the downtime budget is used and not yet exceeded, or when its average latency is above target. A period in which no covered monitor has data and no incident counted is `no_data`, its clocks too; with data and no incidents the clocks are met. A clock for an impact without a target is `no_target`, a response that a self-healed incident did not need is `not_needed`.
+- A period freezes one hour after it closes, so late agent results are in. A frozen result changes only through an explicit recompute.

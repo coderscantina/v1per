@@ -6,7 +6,7 @@ The complete product meets the release gate in the [technical briefing](../techn
 
 ## Dependencies and ownership
 
-Requires 01 through 11. Integration owns the gate run and report; every owner fixes failures in their modules.
+Requires 01 through 11 and 14. Integration owns the gate run and report; every owner fixes failures in their modules.
 
 ## Work
 
