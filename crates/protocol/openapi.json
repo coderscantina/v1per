@@ -15587,6 +15587,11 @@
             "description": "With `response_times`: visitors also get response times per probe location, named by\nthe probe's city and country, never by its name. Probes without a location are left\nout.",
             "default": false
           },
+          "public_range": {
+            "$ref": "#/components/schemas/ResponseRange",
+            "description": "The longest time frame visitors may pick for bars, uptime and response times. Grant\nholders always get 90 days. Absent: 90 days.",
+            "default": "90d"
+          },
           "subscriptions": {
             "type": "boolean",
             "description": "Visitors may subscribe to the page's incidents and maintenance.",
@@ -15693,6 +15698,16 @@
             "description": "Auto-incidents still open after `grace_minutes` are published to the page."
           }
         ]
+      },
+      "ResponseRange": {
+        "type": "string",
+        "enum": [
+          "24h",
+          "7d",
+          "30d",
+          "90d"
+        ],
+        "description": "The span `<base>/response-times.json` covers, ending now; also the time frame of a page's bars."
       },
       "PageAccess": {
         "type": "object",
@@ -15930,6 +15945,11 @@
             "type": "boolean",
             "description": "With `response_times`: visitors also get response times per probe location, named by\nthe probe's city and country, never by its name. Probes without a location are left\nout.",
             "default": false
+          },
+          "public_range": {
+            "$ref": "#/components/schemas/ResponseRange",
+            "description": "The longest time frame visitors may pick for bars, uptime and response times. Grant\nholders always get 90 days. Absent: 90 days.",
+            "default": "90d"
           },
           "subscriptions": {
             "type": "boolean",
@@ -16187,6 +16207,10 @@
           "audience": {
             "$ref": "#/components/schemas/PageAudience"
           },
+          "range_max": {
+            "$ref": "#/components/schemas/ResponseRange",
+            "description": "The longest range this audience may pick: `90d` for the `internal` one, the page's\n`public_range` for the `public` one. Bars and response times reach no further back."
+          },
           "status": {
             "$ref": "#/components/schemas/PageStatus",
             "description": "The worst status of the visible components."
@@ -16245,6 +16269,7 @@
           "timezone",
           "locale",
           "audience",
+          "range_max",
           "status",
           "groups",
           "incidents",
@@ -16356,20 +16381,27 @@
             ],
             "description": "Absent while a monitor has no status, for example when paused."
           },
-          "uptime_90d": {
+          "uptime": {
             "type": [
               "number",
               "null"
             ],
             "format": "double",
-            "description": "Over the 90 bars; absent without up or down heartbeats and for static components."
+            "description": "Over the daily bars; absent without up or down heartbeats and for static components."
           },
           "bars": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PageBar"
             },
-            "description": "90 local days in `timezone`, oldest first, today last."
+            "description": "Local days in `timezone`, oldest first, today last: 90, or as many as `range_max`\ncovers (1, 7, 30 or 90)."
+          },
+          "hours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PageHour"
+            },
+            "description": "The last 24 UTC hours, oldest first, the current hour last."
           },
           "detail": {
             "anyOf": [
@@ -16404,7 +16436,8 @@
           "id",
           "name",
           "description",
-          "bars"
+          "bars",
+          "hours"
         ],
         "description": "The monitor-level checks behind an uptime figure. Uptime is `up / (up + down)`; checks\nunder maintenance are left out of it. Each count is absent while zero."
       },
@@ -16470,6 +16503,66 @@
           "day"
         ],
         "description": "The monitor-level checks behind an uptime figure. Uptime is `up / (up + down)`; checks\nunder maintenance are left out of it. Each count is absent while zero."
+      },
+      "PageHour": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Start of the hour, Unix milliseconds."
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absent for an hour without data."
+          },
+          "uptime": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "maintenance": {
+            "type": "boolean",
+            "description": "Heartbeats that hour were under maintenance."
+          },
+          "incidents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentId"
+            },
+            "description": "Published incidents that touched the component that hour."
+          },
+          "up": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "down": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Pending checks, still retrying, count as down."
+          },
+          "maint": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Checks under maintenance."
+          }
+        },
+        "required": [
+          "at"
+        ],
+        "description": "One hour of a component, colored by the same rules as a day."
       },
       "ComponentDetail": {
         "type": "object",
@@ -17259,6 +17352,11 @@
             "type": "boolean",
             "description": "With `response_times`: visitors also get response times per probe location, named by\nthe probe's city and country, never by its name. Probes without a location are left\nout.",
             "default": false
+          },
+          "public_range": {
+            "$ref": "#/components/schemas/ResponseRange",
+            "description": "The longest time frame visitors may pick for bars, uptime and response times. Grant\nholders always get 90 days. Absent: 90 days.",
+            "default": "90d"
           },
           "subscriptions": {
             "type": "boolean",

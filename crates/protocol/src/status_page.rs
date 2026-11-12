@@ -157,6 +157,9 @@ pub struct PageSnapshot {
     /// The locale incident titles and server-written texts are rendered in.
     pub locale: Locale,
     pub audience: PageAudience,
+    /// The longest range this audience may pick: `90d` for the `internal` one, the page's
+    /// `public_range` for the `public` one. Bars and response times reach no further back.
+    pub range_max: ResponseRange,
     /// The worst status of the visible components.
     pub status: PageStatus,
     pub groups: Vec<PublicGroup>,
@@ -195,18 +198,21 @@ pub struct PublicComponent {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub status: Option<PageStatus>,
-    /// Over the 90 bars; absent without up or down heartbeats and for static components.
+    /// Over the daily bars; absent without up or down heartbeats and for static components.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
-    pub uptime_90d: Option<f64>,
-    /// 90 local days in `timezone`, oldest first, today last.
+    pub uptime: Option<f64>,
+    /// Local days in `timezone`, oldest first, today last: 90, or as many as `range_max`
+    /// covers (1, 7, 30 or 90).
     pub bars: Vec<PageBar>,
+    /// The last 24 UTC hours, oldest first, the current hour last.
+    pub hours: Vec<PageHour>,
     /// Monitors only: response times and per-probe status for the `internal` audience, and
     /// response times alone for the `public` one on a page with `response_times` set.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub detail: Option<ComponentDetail>,
-    /// The checks behind `uptime_90d`: the sums of the bars' counts.
+    /// The checks behind `uptime`: the sums of the bars' counts.
     #[serde(flatten)]
     pub counts: PageCounts,
 }
@@ -260,6 +266,31 @@ pub struct PageBar {
     pub counts: PageCounts,
 }
 
+/// One hour of a component, colored by the same rules as a day.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageHour {
+    /// Start of the hour, Unix milliseconds.
+    pub at: i64,
+    /// Absent for an hour without data.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub status: Option<PageStatus>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub uptime: Option<f64>,
+    /// Heartbeats that hour were under maintenance.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[ts(as = "Option<bool>", optional)]
+    pub maintenance: bool,
+    /// Published incidents that touched the component that hour.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[ts(as = "Option<Vec<IncidentId>>", optional)]
+    pub incidents: Vec<IncidentId>,
+    /// The checks behind `uptime`.
+    #[serde(flatten)]
+    pub counts: PageCounts,
+}
+
 /// What a monitor shows beyond its bars.
 #[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
 pub struct ComponentDetail {
@@ -280,8 +311,22 @@ pub struct ProbeView {
     pub checked_at: i64,
 }
 
-/// The span `<base>/response-times.json` covers, ending now.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS, JsonSchema)]
+/// The span `<base>/response-times.json` covers, ending now; also the time frame of a page's bars.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    TS,
+    JsonSchema,
+)]
 pub enum ResponseRange {
     #[serde(rename = "24h")]
     Day,
@@ -290,6 +335,7 @@ pub enum ResponseRange {
     #[serde(rename = "30d")]
     Month,
     #[serde(rename = "90d")]
+    #[default]
     Quarter,
 }
 
@@ -307,6 +353,16 @@ impl ResponseRange {
 
     pub fn parse(value: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|range| range.as_str() == value)
+    }
+
+    /// Whole days the range spans; `24h` counts as one.
+    pub fn days(self) -> u32 {
+        match self {
+            Self::Day => 1,
+            Self::Week => 7,
+            Self::Month => 30,
+            Self::Quarter => 90,
+        }
     }
 }
 
@@ -332,10 +388,15 @@ pub struct PageResponseTimes {
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
 pub struct ResponseSeries {
-    /// The probe's name, with its location when set, or "City, CC"; absent on `overall`.
+    /// The probe's name for the `internal` audience, "City, CC" for the `public` one; absent on
+    /// `overall`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub label: Option<String>,
+    /// The probe's "City, CC" beside its name, `internal` audience only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub place: Option<String>,
     /// ISO 3166-1 alpha-2, when the series has one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]

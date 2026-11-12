@@ -64,7 +64,7 @@ struct Entry {
 pub struct ResponseTimesCache(Mutex<HashMap<Key, Entry>>);
 
 /// The answer for `component` over `range`, from the cache when still current. `404` when the
-/// audience gets no response times for it.
+/// audience gets no response times for it, or `range` reaches back further than the page lets it.
 pub(super) async fn cached(
     state: &AppState,
     page: &PageRow,
@@ -73,7 +73,9 @@ pub(super) async fn cached(
     component: PageComponentId,
     range: ResponseRange,
 ) -> Result<Arc<str>, ApiError> {
-    if audience == PageAudience::Public && !page.response_times {
+    if (audience == PageAudience::Public && !page.response_times)
+        || range > page.range_max(audience)
+    {
         return Err(ApiError::not_found());
     }
     let now = state.clock.now_ms();
@@ -126,9 +128,10 @@ fn location(city: Option<&str>, country: Option<&str>) -> Option<String> {
     }
 }
 
-/// A series the audience sees: its label, country and the probes it merges.
+/// A series the audience sees: its label, place, country and the probes it merges.
 struct Group {
     label: String,
+    place: Option<String>,
     country: Option<String>,
     probes: Vec<ProbeId>,
 }
@@ -148,10 +151,8 @@ fn groups(probes: Vec<ProbeRow>, internal: bool) -> Vec<Group> {
         return probes
             .into_iter()
             .map(|probe| Group {
-                label: match location(probe.city.as_deref(), probe.country.as_deref()) {
-                    Some(place) => format!("{} ({place})", probe.name),
-                    None => probe.name,
-                },
+                place: location(probe.city.as_deref(), probe.country.as_deref()),
+                label: probe.name,
                 country: probe.country,
                 probes: vec![ProbeId(probe.id)],
             })
@@ -170,6 +171,7 @@ fn groups(probes: Vec<ProbeRow>, internal: bool) -> Vec<Group> {
         .into_iter()
         .map(|((country, city), probes)| Group {
             label: location(city.as_deref(), Some(&country)).unwrap_or_default(),
+            place: None,
             country: Some(country),
             probes,
         })
@@ -191,10 +193,13 @@ fn points(points: Vec<storage::LatencyPoint>) -> Vec<LatencyPoint> {
 }
 
 fn series(latency: storage::SeriesLatency, group: Option<Group>) -> ResponseSeries {
-    let (label, country) = group.map_or((None, None), |group| (Some(group.label), group.country));
+    let (label, place, country) = group.map_or((None, None, None), |group| {
+        (Some(group.label), group.place, group.country)
+    });
     let summary = latency.summary;
     ResponseSeries {
         label,
+        place,
         country,
         points: points(latency.points),
         avg_ms: summary.map(|s| s.avg_ms),

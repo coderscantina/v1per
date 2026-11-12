@@ -7,6 +7,7 @@ import type { PageAccess } from "./PageAccess";
 import type { PageId } from "./PageId";
 import type { PageLogo } from "./PageLogo";
 import type { PageTheme } from "./PageTheme";
+import type { ResponseRange } from "./ResponseRange";
 
 export type Page = { id: PageId, node: NodeId, access: PageAccess, hostnames: Array<string>, logo?: PageLogo, 
 /**
@@ -59,6 +60,11 @@ response_times?: boolean,
  * out.
  */
 probe_locations?: boolean, 
+/**
+ * The longest time frame visitors may pick for bars, uptime and response times. Grant
+ * holders always get 90 days. Absent: 90 days.
+ */
+public_range?: ResponseRange, 
 /**
  * Visitors may subscribe to the page's incidents and maintenance.
  */

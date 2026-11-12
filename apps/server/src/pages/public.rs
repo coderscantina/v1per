@@ -774,10 +774,8 @@ async fn render_badge(
         "uptime-90d.svg" => badge::uptime(
             locale,
             "90d",
-            match shown {
-                Some(shown) => shown.uptime_90d,
-                None => snapshot::uptime_90d(state, page, &monitors).await?,
-            },
+            // Read on its own: the snapshot's bars stop at the page's `public_range`.
+            snapshot::uptime_90d(state, page, &monitors).await?,
         ),
         _ => return Err(ApiError::not_found()),
     };

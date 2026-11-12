@@ -205,14 +205,18 @@ impl Setup {
     }
 
     async fn settings(&self, response_times: bool, probe_locations: bool) {
-        self.harness
-            .ok(
-                &self.admin,
-                "pages.update",
-                json!({ "page": self.page["page"]["id"], "slug": "acme", "title": "Acme",
-                        "response_times": response_times, "probe_locations": probe_locations }),
-            )
-            .await;
+        self.update(
+            json!({ "response_times": response_times, "probe_locations": probe_locations }),
+        )
+        .await;
+    }
+
+    async fn update(&self, settings: Value) {
+        let mut args = json!({ "page": self.page["page"]["id"], "slug": "acme", "title": "Acme" });
+        args.as_object_mut()
+            .unwrap()
+            .extend(settings.as_object().unwrap().clone());
+        self.harness.ok(&self.admin, "pages.update", args).await;
     }
 
     async fn read(&self, component: &str, range: &str, internal: bool) -> Answer {
@@ -241,13 +245,20 @@ fn labels(answer: &Value) -> Vec<&str> {
 async fn series_follow_the_audience_and_merge_locations() {
     let setup = Setup::new().await;
     let internal = setup.read(&setup.api, "24h", true).await.json();
+    assert_eq!(labels(&internal), ["vie-a", "vie-b", "fra", "lab"]);
+    let places: Vec<&Value> = internal["series"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|series| &series["place"])
+        .collect();
     assert_eq!(
-        labels(&internal),
+        places,
         [
-            "vie-a (Vienna, AT)",
-            "vie-b (Vienna, AT)",
-            "fra (DE)",
-            "lab (Graz)"
+            &json!("Vienna, AT"),
+            &json!("Vienna, AT"),
+            &json!("DE"),
+            &json!("Graz")
         ]
     );
     assert_eq!(internal["overall"]["avg_ms"], 40.0);
@@ -357,4 +368,52 @@ async fn refuses_what_the_audience_does_not_get() {
     assert_eq!(bad.code(), "invalid_arguments");
     let missing = get(&setup.harness, "/s/acme/response-times.json?range=7d", None).await;
     assert_eq!(missing.code(), "invalid_arguments");
+}
+
+/// Visitors get no range longer than the page's `public_range`; grant holders always get 90
+/// days, and the snapshot's bars stop where the visitor's range does.
+#[tokio::test]
+async fn visitors_stop_at_the_public_range() {
+    let setup = Setup::new().await;
+    setup
+        .update(json!({ "response_times": true, "public_range": "7d" }))
+        .await;
+    for (range, status) in [
+        ("24h", StatusCode::OK),
+        ("7d", StatusCode::OK),
+        ("30d", StatusCode::NOT_FOUND),
+        ("90d", StatusCode::NOT_FOUND),
+    ] {
+        assert_eq!(
+            setup.read(&setup.api, range, false).await.status,
+            status,
+            "{range}"
+        );
+    }
+    assert_eq!(
+        setup.read(&setup.api, "90d", true).await.status,
+        StatusCode::OK
+    );
+
+    let public = get(&setup.harness, "/s/acme/snapshot.json", None)
+        .await
+        .json();
+    assert_eq!(public["range_max"], "7d");
+    let api = &public["groups"][0]["components"][0];
+    assert_eq!(api["bars"].as_array().unwrap().len(), 7);
+    assert_eq!(api["hours"].as_array().unwrap().len(), 24);
+    // Three hours of checks end in the current hour.
+    assert!(api["hours"][23]["up"].as_u64().is_some() || api["hours"][22]["up"].as_u64().is_some());
+
+    let internal = get(&setup.harness, "/s/acme/snapshot.json", Some(&setup.admin))
+        .await
+        .json();
+    assert_eq!(internal["range_max"], "90d");
+    assert_eq!(
+        internal["groups"][0]["components"][0]["bars"]
+            .as_array()
+            .unwrap()
+            .len(),
+        90
+    );
 }

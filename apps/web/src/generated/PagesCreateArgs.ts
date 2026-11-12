@@ -4,6 +4,7 @@ import type { AutoIncidentMode } from "./AutoIncidentMode";
 import type { Locale } from "./Locale";
 import type { NodeId } from "./NodeId";
 import type { PageTheme } from "./PageTheme";
+import type { ResponseRange } from "./ResponseRange";
 
 export type PagesCreateArgs = { node: NodeId, 
 /**
@@ -47,6 +48,11 @@ response_times?: boolean,
  * out.
  */
 probe_locations?: boolean, 
+/**
+ * The longest time frame visitors may pick for bars, uptime and response times. Grant
+ * holders always get 90 days. Absent: 90 days.
+ */
+public_range?: ResponseRange, 
 /**
  * Visitors may subscribe to the page's incidents and maintenance.
  */

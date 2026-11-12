@@ -141,9 +141,9 @@ const percent = (ratio: number) => `${(ratio * 100).toFixed(2)} %`
             {{ t('pages.preview.withDetail') }}
           </Badge>
           <span
-            v-if="component.uptime_90d !== undefined"
+            v-if="component.uptime !== undefined"
             class="text-muted tabular-nums"
-          >{{ percent(component.uptime_90d) }}</span>
+          >{{ percent(component.uptime) }}</span>
           <span
             v-if="component.status"
             class="inline-flex items-center gap-2 whitespace-nowrap text-foreground"

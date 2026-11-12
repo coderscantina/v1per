@@ -60,7 +60,7 @@ use v1per_protocol::operations::pages::{
     PageWebhookRemoved, PagesAddWebhookArgs,
 };
 use v1per_protocol::registry::Snapshot;
-use v1per_protocol::status_page::{Accent, Locale, PageTheme};
+use v1per_protocol::status_page::{Accent, Locale, PageAudience, PageTheme, ResponseRange};
 
 use crate::context::{CommandCtx, QueryCtx};
 use crate::error::{ApiError, FieldErrors};
@@ -101,6 +101,7 @@ pub(crate) struct PageRow {
     pub grace_minutes: i64,
     pub response_times: bool,
     pub probe_locations: bool,
+    pub public_range: String,
     pub subscriptions: bool,
     pub public: bool,
     pub password_hash: Option<String>,
@@ -118,7 +119,7 @@ macro_rules! select_page {
     () => {
         "SELECT id, node_id, slug, title, description, footer, theme, accent, timezone,
                 default_locale, locales, auto_incidents, grace_minutes, response_times, probe_locations,
-                subscriptions, public, password_hash, allowed_emails, allowed_domains, logo_type, length(logo) AS logo_size,
+                public_range, subscriptions, public, password_hash, allowed_emails, allowed_domains, logo_type, length(logo) AS logo_size,
                 logo_updated_at, revision, created_at, updated_at
          FROM pages"
     };
@@ -176,6 +177,19 @@ impl PageRow {
 
     pub fn email_access(&self) -> bool {
         !self.emails().is_empty() || !self.domains().is_empty()
+    }
+
+    /// The longest range the `public` audience may pick.
+    pub fn public_range(&self) -> ResponseRange {
+        ResponseRange::parse(&self.public_range).unwrap_or_default()
+    }
+
+    /// The longest range `audience` may pick: 90 days for grant holders.
+    pub fn range_max(&self, audience: PageAudience) -> ResponseRange {
+        match audience {
+            PageAudience::Internal => ResponseRange::Quarter,
+            PageAudience::Public => self.public_range(),
+        }
     }
 
     /// `/s/<slug>`.
@@ -477,16 +491,17 @@ async fn store_settings(
             "UPDATE pages SET slug = ?1, title = ?2, description = ?3, footer = ?4, theme = ?5,
                               accent = ?6, timezone = ?7, default_locale = ?8, locales = ?9,
                               auto_incidents = ?10, grace_minutes = ?11, updated_at = ?13,
-                              response_times = ?14, probe_locations = ?15, subscriptions = ?16
+                              response_times = ?14, probe_locations = ?15, subscriptions = ?16,
+                              public_range = ?17
              WHERE id = ?12 RETURNING id"
         }
         Err(_) => {
             "INSERT INTO pages (slug, title, description, footer, theme, accent, timezone,
                                 default_locale, locales, auto_incidents, grace_minutes, node_id,
                                 public, revision, created_at, updated_at, response_times,
-                                probe_locations, subscriptions)
+                                probe_locations, subscriptions, public_range)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, 1, ?13, ?13, ?14, ?15,
-                     ?16)
+                     ?16, ?17)
              RETURNING id"
         }
     };
@@ -507,6 +522,7 @@ async fn store_settings(
         .bind(settings.response_times)
         .bind(settings.response_times && settings.probe_locations)
         .bind(settings.subscriptions)
+        .bind(settings.public_range.as_str())
         .fetch_one(ctx.conn())
         .await?;
     Ok(PageId::new(id))
@@ -622,6 +638,7 @@ async fn detail(conn: &mut SqliteConnection, page: PageId) -> Result<PageDetail,
                 grace_minutes: row.grace_minutes as u32,
                 response_times: row.response_times,
                 probe_locations: row.probe_locations,
+                public_range: row.public_range(),
                 subscriptions: row.subscriptions,
             },
             access: PageAccess {

@@ -23,7 +23,7 @@ use crate::ids::{
 };
 use crate::operations::incidents::Target;
 use crate::operations::monitors::SecretField;
-use crate::status_page::{Accent, Locale, PageAudience, PageSnapshot, PageTheme};
+use crate::status_page::{Accent, Locale, PageAudience, PageSnapshot, PageTheme, ResponseRange};
 
 crate::domain! {
     pub trait PagesHandlers;
@@ -150,6 +150,11 @@ pub struct PageSettings {
     #[serde(default)]
     #[ts(as = "Option<bool>", optional)]
     pub probe_locations: bool,
+    /// The longest time frame visitors may pick for bars, uptime and response times. Grant
+    /// holders always get 90 days. Absent: 90 days.
+    #[serde(default)]
+    #[ts(as = "Option<ResponseRange>", optional)]
+    pub public_range: ResponseRange,
     /// Visitors may subscribe to the page's incidents and maintenance.
     #[serde(default)]
     #[ts(as = "Option<bool>", optional)]

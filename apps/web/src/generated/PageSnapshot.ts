@@ -8,6 +8,7 @@ import type { PageSubscriptions } from "./PageSubscriptions";
 import type { PublicGroup } from "./PublicGroup";
 import type { PublicIncident } from "./PublicIncident";
 import type { PublicMaintenance } from "./PublicMaintenance";
+import type { ResponseRange } from "./ResponseRange";
 
 /**
  * One page as one audience sees it.
@@ -21,6 +22,11 @@ timezone: string,
  * The locale incident titles and server-written texts are rendered in.
  */
 locale: Locale, audience: PageAudience, 
+/**
+ * The longest range this audience may pick: `90d` for the `internal` one, the page's
+ * `public_range` for the `public` one. Bars and response times reach no further back.
+ */
+range_max: ResponseRange, 
 /**
  * The worst status of the visible components.
  */

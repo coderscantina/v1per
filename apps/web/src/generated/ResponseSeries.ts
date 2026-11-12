@@ -3,9 +3,14 @@ import type { LatencyPoint } from "./LatencyPoint";
 
 export type ResponseSeries = { 
 /**
- * The probe's name, with its location when set, or "City, CC"; absent on `overall`.
+ * The probe's name for the `internal` audience, "City, CC" for the `public` one; absent on
+ * `overall`.
  */
 label?: string, 
+/**
+ * The probe's "City, CC" beside its name, `internal` audience only.
+ */
+place?: string, 
 /**
  * ISO 3166-1 alpha-2, when the series has one.
  */

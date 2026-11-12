@@ -21,8 +21,8 @@ use v1per_protocol::operations::incidents::{Impact, IncidentState, Postmortem};
 use v1per_protocol::operations::monitors::LatencyPoint;
 use v1per_protocol::status_page::PageNamedComponent;
 use v1per_protocol::status_page::{
-    ComponentDetail, Locale, PageAppearance, PageAudience, PageBar, PageCounts, PageIncidents,
-    PageSnapshot, PageStatus, ProbeView, PublicComponent, PublicGroup, PublicImpact,
+    ComponentDetail, Locale, PageAppearance, PageAudience, PageBar, PageCounts, PageHour,
+    PageIncidents, PageSnapshot, PageStatus, ProbeView, PublicComponent, PublicGroup, PublicImpact,
     PublicIncident, PublicIncidentUpdate, PublicMaintenance,
 };
 use v1per_storage::{self as storage, Counts, ReadError, Resolution, Series};
@@ -40,6 +40,8 @@ const HOUR_MS: i64 = 3_600_000;
 const MAINTENANCE_AHEAD_MS: i64 = 14 * DAY_MS;
 /// The span of per-minute response times for monitors without two hourly points yet.
 const RECENT_MS: i64 = 2 * HOUR_MS;
+/// Hourly bars per component.
+const HOURS: u32 = 24;
 /// Published incidents a snapshot lists at most.
 pub(super) const INCIDENTS_MAX: i64 = 100;
 /// A cached snapshot is rebuilt after this long even when nothing it reads moved, so the day
@@ -479,10 +481,13 @@ async fn build(
     let internal = audience == PageAudience::Internal;
     let zone = page.zone();
     let today = local_day(now, zone);
+    let range_max = page.range_max(audience);
+    // The audience sees no further back than its longest range.
+    let day_count = range_max.days().min(DAY_BARS_MAX);
     let first = today
-        .checked_sub_days(Days::new(u64::from(DAY_BARS_MAX - 1)))
+        .checked_sub_days(Days::new(u64::from(day_count - 1)))
         .unwrap_or(today);
-    let window_start = now - i64::from(DAY_BARS_MAX + 1) * DAY_MS;
+    let window_start = now - i64::from(day_count + 1) * DAY_MS;
 
     let mut tx = state.db.reader.begin().await?;
     let head = events::head(&mut tx, &Topic::page(page.page())).await?;
@@ -536,10 +541,17 @@ async fn build(
         .collect();
     let mut day_bars = state
         .storage
-        .day_bars(&storage_ids, Series::Monitor, zone, today, DAY_BARS_MAX)
+        .day_bars(&storage_ids, Series::Monitor, zone, today, day_count)
         .await
         .map_err(read_failed)?
         .value;
+    let mut hourly = state
+        .storage
+        .hourly(&storage_ids, now, HOURS)
+        .await
+        .map_err(read_failed)?
+        .value;
+    let hours_from = hourly.from_ms;
     let mut latency: HashMap<i64, Vec<LatencyPoint>> = HashMap::new();
     if internal || page.response_times {
         for monitor in &storage_ids {
@@ -559,7 +571,7 @@ async fn build(
         }
     }
 
-    let days: Vec<NaiveDate> = first.iter_days().take(DAY_BARS_MAX as usize).collect();
+    let days: Vec<NaiveDate> = first.iter_days().take(day_count as usize).collect();
     let mut components: BTreeMap<i64, Vec<PublicComponent>> = BTreeMap::new();
     for row in &rows {
         let id = PageComponentId::new(row.id);
@@ -627,6 +639,45 @@ async fn build(
                 }
             })
             .collect();
+        let hour_counts = row
+            .monitor_id
+            .and_then(|monitor| hourly.counts.remove(&storage::MonitorId(monitor)))
+            .unwrap_or_else(|| vec![Counts::default(); HOURS as usize]);
+        let hours = hour_counts
+            .iter()
+            .enumerate()
+            .map(|(index, counts)| {
+                let at = hours_from + index as i64 * HOUR_MS;
+                let touching: Vec<&Published> = published
+                    .iter()
+                    .filter(|p| p.incident.components.contains(&id))
+                    .filter(|p| {
+                        p.incident.started_at < at + HOUR_MS
+                            && p.incident.resolved_at.unwrap_or(now) >= at
+                    })
+                    .collect();
+                let uptime = uptime_of(counts);
+                let maintenance = counts.maintenance > 0;
+                PageHour {
+                    at,
+                    status: bar_status(&Day {
+                        uptime,
+                        maintenance,
+                        incident: touching
+                            .iter()
+                            .filter_map(|p| p.peak.get(&id))
+                            .copied()
+                            .max(),
+                        has_monitor,
+                        existed: row.created_at.is_none_or(|created| created < at + HOUR_MS),
+                    }),
+                    uptime,
+                    maintenance,
+                    incidents: touching.iter().map(|p| p.incident.id).collect(),
+                    counts: page_counts(counts),
+                }
+            })
+            .collect();
         // `probes` is only loaded for the internal audience, so a public detail has none.
         let detail = row
             .monitor_id
@@ -654,8 +705,9 @@ async fn build(
                 name: row.name.clone(),
                 description: row.description.clone(),
                 status,
-                uptime_90d: has_monitor.then(|| uptime_of(&total)).flatten(),
+                uptime: has_monitor.then(|| uptime_of(&total)).flatten(),
                 bars,
+                hours,
                 detail,
                 counts: page_counts(&total),
             });
@@ -691,6 +743,7 @@ async fn build(
         timezone: page.timezone.clone(),
         locale,
         audience,
+        range_max,
         status,
         groups,
         incidents: published.into_iter().map(|p| p.incident).collect(),

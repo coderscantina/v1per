@@ -2,6 +2,7 @@
 import type { ComponentDetail } from "./ComponentDetail";
 import type { PageBar } from "./PageBar";
 import type { PageComponentId } from "./PageComponentId";
+import type { PageHour } from "./PageHour";
 import type { PageStatus } from "./PageStatus";
 
 export type PublicComponent = { id: PageComponentId, name: string, 
@@ -14,13 +15,18 @@ description: string,
  */
 status?: PageStatus, 
 /**
- * Over the 90 bars; absent without up or down heartbeats and for static components.
+ * Over the daily bars; absent without up or down heartbeats and for static components.
  */
-uptime_90d?: number, 
+uptime?: number, 
 /**
- * 90 local days in `timezone`, oldest first, today last.
+ * Local days in `timezone`, oldest first, today last: 90, or as many as `range_max`
+ * covers (1, 7, 30 or 90).
  */
 bars: Array<PageBar>, 
+/**
+ * The last 24 UTC hours, oldest first, the current hour last.
+ */
+hours: Array<PageHour>, 
 /**
  * Monitors only: response times and per-probe status for the `internal` audience, and
  * response times alone for the `public` one on a page with `response_times` set.

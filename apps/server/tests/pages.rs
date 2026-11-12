@@ -234,7 +234,7 @@ async fn every_access_mode_admits_its_audience_with_its_fields() {
     assert_eq!(component_names(snapshot), ["API", "Email"]);
     assert_eq!(
         component_keys(snapshot),
-        ["bars", "description", "id", "name", "status"]
+        ["bars", "description", "hours", "id", "name", "status"]
     );
     assert_eq!(
         snapshot["groups"][0]["components"][0]["bars"]
@@ -1155,7 +1155,7 @@ async fn bars_start_when_their_component_does() {
     let components = &snapshot["groups"][0]["components"];
     let (api, email) = (&components[0], &components[1]);
     assert_eq!(api["bars"][89]["status"], "operational");
-    assert_eq!(api["uptime_90d"], 1.0);
+    assert_eq!(api["uptime"], 1.0);
     // The checks behind the figures: up only, so down and maintenance are left out as zero.
     let up = api["bars"][89]["up"].as_u64().unwrap();
     assert!(up >= 1);
