@@ -263,7 +263,9 @@ pub struct RetentionCounts {
     pub login_challenges: u64,
     pub page_sessions: u64,
     pub page_email_codes: u64,
-    /// Status page subscriptions not confirmed within 24 hours.
+    /// Status page subscriptions not confirmed within 24 hours. Zero in a stored run from a
+    /// release before 26.11.12, which did not count them.
+    #[serde(default)]
     pub unconfirmed_subscribers: u64,
     /// Command answers past their replay window.
     pub idempotency_keys: u64,

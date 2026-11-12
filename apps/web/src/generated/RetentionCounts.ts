@@ -21,7 +21,8 @@ deliveries: number,
  */
 sessions: number, login_challenges: number, page_sessions: number, page_email_codes: number, 
 /**
- * Status page subscriptions not confirmed within 24 hours.
+ * Status page subscriptions not confirmed within 24 hours. Zero in a stored run from a
+ * release before 26.11.12, which did not count them.
  */
 unconfirmed_subscribers: number, 
 /**
