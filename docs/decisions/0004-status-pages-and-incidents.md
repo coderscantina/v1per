@@ -8,7 +8,7 @@ Kuma's status pages have one free-text banner per page and no incident lifecycle
 
 ## Constraints
 
-Pages for the public, for clients and for teams. Auto-incidents from monitors. Scheduled maintenance. No page subscribers in the first release. OpenStatus is a model, not a code source.
+Pages for the public, for clients and for teams. Auto-incidents from monitors. Scheduled maintenance. No page subscribers in the first release; [decision 0013](0013-status-page-upgrades.md) adds them. OpenStatus is a model, not a code source.
 
 ## Choice
 
