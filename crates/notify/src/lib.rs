@@ -13,6 +13,7 @@ mod http;
 mod js;
 mod providers;
 mod secret;
+mod sla;
 mod template;
 
 use std::time::Duration;
@@ -28,6 +29,7 @@ pub use event::{
     ProbeOffline,
 };
 pub use secret::Secret;
+pub use sla::{Language, SlaAlert, SlaAlertKind, SlaIncident};
 pub use template::{TemplateError, check_template};
 
 /// Shared resources and limits for sending. Build once and reuse; it holds the HTTP client.

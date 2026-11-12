@@ -7,6 +7,7 @@ import type { MaintenanceId } from "./MaintenanceId";
 import type { MonitorId } from "./MonitorId";
 import type { PageId } from "./PageId";
 import type { ProbeId } from "./ProbeId";
+import type { SlaId } from "./SlaId";
 
 /**
  * One state event of a topic. Read the snapshot again to see what changed; the ID fields say
@@ -48,4 +49,8 @@ component?: ComponentId,
 /**
  * The page of a `page.*` event on a `pages:<id>` topic.
  */
-page?: PageId, };
+page?: PageId, 
+/**
+ * The SLA of an `sla.*` event.
+ */
+sla?: SlaId, };

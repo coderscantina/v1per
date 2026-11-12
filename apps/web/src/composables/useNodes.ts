@@ -56,6 +56,7 @@ export const nodeRouteNames = [
   'node-monitors',
   'node-incidents',
   'node-maintenance',
+  'node-slas',
   'node-members',
   'node-probes',
   'node-channels',
@@ -76,6 +77,10 @@ const itemSections: Record<string, NodeRouteName> = {
   'node-incident-edit': 'node-incidents',
   'node-maintenance-new': 'node-maintenance',
   'node-maintenance-edit': 'node-maintenance',
+  'node-sla-new': 'node-slas',
+  'node-sla-edit': 'node-slas',
+  'node-sla': 'node-slas',
+  'node-sla-report': 'node-slas',
   'node-channel': 'node-channels',
   'node-channel-new': 'node-channels',
   'node-channel-edit': 'node-channels',
@@ -85,6 +90,7 @@ const itemSections: Record<string, NodeRouteName> = {
   'node-page-hostnames': 'node-pages',
   'node-page-preview': 'node-pages',
   'node-page-incidents': 'node-pages',
+  'node-page-slas': 'node-pages',
 }
 
 /** The section a node switch keeps: the route itself, the list for an item's page, else the overview. */

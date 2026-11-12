@@ -16,7 +16,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::ids::{NodeId, PageComponentId, PageGroupId, PageId, ShareTokenId};
+use crate::ids::{NodeId, PageComponentId, PageGroupId, PageId, ShareTokenId, SlaId};
 use crate::operations::incidents::Target;
 use crate::operations::monitors::SecretField;
 use crate::status_page::{Accent, Locale, PageAudience, PageSnapshot, PageTheme};
@@ -39,6 +39,9 @@ crate::domain! {
         /// (`invalid_value` on `groups`). Needs `pages.manage` and the page's current
         /// `revision`.
         "pages.updateLayout" => pages_update_layout (Person): PagesUpdateLayoutArgs => PageDetail;
+        /// Replaces the SLAs the page shows, in order. Each must be on the page's node or below
+        /// and listed once (`invalid_value` on `slas`). Needs `pages.manage`.
+        "pages.updateSlas" => pages_update_slas (Person): PagesUpdateSlasArgs => PageDetail;
         /// Routes requests whose `Host` is `hostname` to the page. The hostname must be
         /// unclaimed and not this instance's own (`invalid_value` on `hostname`). Needs
         /// `pages.manage`.
@@ -215,6 +218,16 @@ pub struct PagesUpdateLayoutArgs {
     pub groups: Vec<PageGroupInput>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PagesUpdateSlasArgs {
+    pub page: PageId,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub expected_revision: Option<i64>,
+    /// Up to 20 SLAs, in the order the page shows them.
+    pub slas: Vec<SlaId>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
 pub struct PagesHostnameArgs {
     pub page: PageId,
@@ -282,7 +295,7 @@ pub struct Page {
     pub logo: Option<PageLogo>,
     /// `/s/<slug>` on this instance.
     pub path: String,
-    /// Rises with every change to settings, access, layout, hostnames or logo. Pass it as
+    /// Rises with every change to settings, access, layout, SLAs, hostnames or logo. Pass it as
     /// `expected_revision`.
     pub revision: i64,
     pub created_at: i64,
@@ -328,6 +341,8 @@ pub struct PageDetail {
     pub page: Page,
     pub groups: Vec<PageGroup>,
     pub share_tokens: Vec<PageShareToken>,
+    /// The SLAs the page shows, in order.
+    pub slas: Vec<SlaId>,
     /// The instance can send sign-in links: SMTP is set up.
     pub smtp_configured: bool,
 }

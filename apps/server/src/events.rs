@@ -9,6 +9,7 @@ use tokio::sync::{Semaphore, broadcast, watch};
 use v1per_protocol::envelope::Topic;
 use v1per_protocol::ids::{
     ChannelId, ComponentId, DeliveryId, IncidentId, MaintenanceId, MonitorId, PageId, ProbeId,
+    SlaId,
 };
 use v1per_protocol::live::LiveEvent;
 
@@ -57,6 +58,7 @@ struct Subjects {
     maintenance: Option<MaintenanceId>,
     component: Option<ComponentId>,
     page: Option<PageId>,
+    sla: Option<SlaId>,
 }
 
 /// Up to `limit` events of `topic` after `after`, in sequence order.
@@ -90,6 +92,7 @@ pub async fn after(
                 maintenance: subjects.maintenance,
                 component: subjects.component,
                 page: subjects.page,
+                sla: subjects.sla,
             }
         })
         .collect())

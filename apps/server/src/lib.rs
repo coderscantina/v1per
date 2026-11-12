@@ -23,6 +23,7 @@ pub mod nodes;
 pub mod notifications;
 pub mod pages;
 pub mod probes;
+pub mod slas;
 pub mod state;
 
 pub use http::router;

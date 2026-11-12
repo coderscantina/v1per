@@ -34,6 +34,9 @@ pub struct NodeScope {
     /// How many path entries, counted from the node upward, the caller can read.
     readable: usize,
     role: Role,
+    /// The highest role from grants on strict ancestors, owner for the instance admin. `None`
+    /// for API keys.
+    above: Option<Role>,
     capabilities: Vec<Capability>,
 }
 
@@ -68,6 +71,21 @@ impl NodeScope {
     /// `forbidden` when the scope lacks the capability; the node is already known to be visible.
     pub fn require(&self, capability: Capability) -> Result<(), ApiError> {
         if self.can(capability) {
+            Ok(())
+        } else {
+            Err(ApiError::new(ErrorCode::Forbidden))
+        }
+    }
+
+    /// `forbidden` unless the caller holds Admin or Owner through a grant on a strict ancestor
+    /// of the node, or is the instance admin. A grant on the node itself does not count, so a
+    /// client Admin cannot change what their own node is held to (decision 0012). API keys
+    /// never pass.
+    pub fn require_admin_above(&self) -> Result<(), ApiError> {
+        if self
+            .above
+            .is_some_and(|role| role.rank() >= Role::Admin.rank())
+        {
             Ok(())
         } else {
             Err(ApiError::new(ErrorCode::Forbidden))
@@ -117,6 +135,7 @@ pub async fn resolve(
             }
             Ok(NodeScope {
                 readable: scope.readable.min(at + 1),
+                above: None,
                 capabilities,
                 ..scope
             })
@@ -143,12 +162,16 @@ pub(crate) async fn person(
     .await?;
     let instance_admin = rows.first().is_some_and(|(_, _, admin)| *admin);
     let mut role: Option<Role> = instance_admin.then_some(Role::Owner);
+    let mut above = role;
     let mut readable = if instance_admin { rows.len() } else { 0 };
     for (index, (_, granted, _)) in rows.iter().enumerate() {
         let Some(granted) = granted else { continue };
         let granted = parse_role(granted)?;
         if role.is_none_or(|role| role.rank() < granted.rank()) {
             role = Some(granted);
+        }
+        if index > 0 && above.is_none_or(|above| above.rank() < granted.rank()) {
+            above = Some(granted);
         }
         readable = readable.max(index + 1);
     }
@@ -157,8 +180,20 @@ pub(crate) async fn person(
         path: rows.iter().map(|(id, ..)| NodeId::new(*id)).collect(),
         readable,
         role,
-        capabilities: role.capabilities().to_vec(),
+        above,
+        capabilities: person_capabilities(role, above),
     })
+}
+
+/// A person's capabilities from their effective role and the highest role granted on a strict
+/// ancestor (owner for the instance admin): the role's set, plus `slas.manage` for Admin or
+/// Owner above the node. The rule of [`NodeScope::require_admin_above`].
+pub(crate) fn person_capabilities(role: Role, above: Option<Role>) -> Vec<Capability> {
+    let mut capabilities = role.capabilities().to_vec();
+    if above.is_some_and(|above| above.rank() >= Role::Admin.rank()) {
+        capabilities.push(Capability::SlasManage);
+    }
+    capabilities
 }
 
 /// A role as stored. Anything else is a broken row, so `internal`.

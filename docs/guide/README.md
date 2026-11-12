@@ -13,6 +13,7 @@ This guide is for the people who install and run an instance, and for the admins
 | [Migrate from Uptime Kuma](kuma-migration.md) | `v1per import kuma`, what it brings over, push URLs and a cutover checklist |
 | [Probes](probes.md) | The built-in probe, remote probe agents and how the quorum decides a monitor's status |
 | [Status pages](status-pages.md) | Access modes, custom domains, badges, languages, incidents, maintenance and who sees what |
+| [SLAs](slas.md) | Availability, response, resolution and latency targets per client, periods, reports and SLA alerts |
 | [Notifications](notifications.md) | Channel setup per provider, the webhook payload, the test button and the delivery log |
 | [Operations](operations.md) | Backup, restore, upgrade, retention, diagnostics, the data directory, health and logs |
 
@@ -23,6 +24,7 @@ This guide is for the people who install and run an instance, and for the admins
 - **Monitors.** Supported types are http, keyword, json-query, port, ping, dns, push, group and manual. Http monitors can also warn before a TLS certificate expires.
 - **Probes.** The server checks monitors itself. Remote probe agents run the same image elsewhere and check from other networks.
 - **Status pages.** A page shows monitors and static components from its node and the nodes below, with incidents and maintenance.
+- **SLAs.** An SLA on a node holds a client's targets and tracks each period against them.
 
 ## Getting help
 

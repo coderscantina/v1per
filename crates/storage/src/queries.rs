@@ -6,7 +6,7 @@
 //! bucket and native rows count only from there on, so uptime for imported periods matches
 //! Kuma.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use chrono::{DateTime, Days, NaiveDate, Offset};
 use chrono_tz::Tz;
@@ -568,6 +568,172 @@ pub(crate) fn day_bars(
         });
     }
     Ok(bars)
+}
+
+/// One monitor's monitor-level beats over a period, for SLA availability and latency.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct PeriodTotals {
+    pub up: u64,
+    /// Down beats with pending folded in, as page uptime counts them.
+    pub down: u64,
+    /// The pending part of `down`, for display. Imported Kuma rows carry none.
+    pub pending: u64,
+    pub maintenance: u64,
+    /// Latency of up beats; the average is `latency_sum / latency_count`.
+    pub latency_sum: f64,
+    pub latency_count: u64,
+    /// Any rollup row fell in the period.
+    pub has_data: bool,
+    /// A Kuma day row counted whole although the period ends inside its UTC day.
+    pub utc_approximate: bool,
+}
+
+impl PeriodTotals {
+    /// `up / (up + down)`; `None` without an up or down beat. Equal to [`Counts::uptime`].
+    pub fn uptime(&self) -> Option<f64> {
+        let total = self.up + self.down;
+        (total > 0).then(|| self.up as f64 / total as f64)
+    }
+}
+
+/// Totals per requested monitor over `[from_ms, to_ms)`, whose edges are whole UTC hours.
+///
+/// Reads the monitor series from hour rollups, Kuma's hourly rows included. Like
+/// [`day_bars`], a UTC day that starts before the monitor's first hourly row in the range
+/// takes Kuma's `stat_daily` row plus the native hours of that day. A Kuma day row counts
+/// whole when its UTC day starts inside the range, so consecutive periods never count one
+/// twice. An edge inside such a day cannot be split: the row is used whole and the totals
+/// are marked `utc_approximate` when the day reaches past `to_ms`.
+pub(crate) fn period_totals(
+    conn: &Connection,
+    monitors: &[MonitorId],
+    from_ms: i64,
+    to_ms: i64,
+) -> duckdb::Result<BTreeMap<MonitorId, PeriodTotals>> {
+    if monitors.is_empty() || from_ms >= to_ms {
+        return Ok(BTreeMap::new());
+    }
+    let mut totals: BTreeMap<MonitorId, (Sum, bool)> = monitors
+        .iter()
+        .map(|&monitor| (monitor, (Sum::default(), false)))
+        .collect();
+    let ids = id_list(monitors);
+    let hours = summed(
+        conn,
+        &series_sql(Resolution::Hour, Series::Monitor, &ids),
+        from_ms,
+        to_ms,
+        true,
+    )?;
+    let mut first_hour: BTreeMap<MonitorId, i64> = BTreeMap::new();
+    for (monitor, hour, _) in &hours {
+        first_hour.entry(*monitor).or_insert(*hour);
+    }
+    let day_start = |ms: i64| ms.div_euclid(DAY_MS) * DAY_MS;
+    let kuma_days = format!(
+        "SELECT {KUMA_ROW} FROM kuma_stats AS n
+         WHERE n.resolution = {kuma} AND n.monitor_id IN ({ids}) AND {RANGE}",
+        kuma = Resolution::Day.kuma_code(),
+    );
+    let mut daily: BTreeSet<(MonitorId, i64)> = BTreeSet::new();
+    for (monitor, day, sum) in summed(conn, &kuma_days, from_ms, to_ms, true)? {
+        let before_hourly = first_hour
+            .get(&monitor)
+            .is_none_or(|first| day <= day_start(first - HOUR_MS));
+        if before_hourly {
+            let (total, approximate) = totals.get_mut(&monitor).expect("asked for");
+            total.add(&sum);
+            *approximate |= day + DAY_MS > to_ms;
+            daily.insert((monitor, day));
+        }
+    }
+    for (monitor, hour, sum) in hours {
+        if !daily.contains(&(monitor, day_start(hour))) {
+            totals.get_mut(&monitor).expect("asked for").0.add(&sum);
+        }
+    }
+    if !daily.is_empty() {
+        // Kuma's day ends at the import: native hours after it still count in that day.
+        let native = native_monitor_sql(Resolution::Hour, &ids);
+        for (monitor, hour, sum) in summed(conn, &native, from_ms, to_ms, true)? {
+            if daily.contains(&(monitor, day_start(hour))) {
+                totals.get_mut(&monitor).expect("asked for").0.add(&sum);
+            }
+        }
+    }
+    Ok(totals
+        .into_iter()
+        .map(|(monitor, (sum, utc_approximate))| {
+            let totals = PeriodTotals {
+                up: sum.up,
+                down: sum.down + sum.pending,
+                pending: sum.pending,
+                maintenance: sum.maintenance,
+                latency_sum: sum.latency_sum,
+                latency_count: sum.latency_count,
+                has_data: sum.up + sum.down + sum.pending + sum.maintenance > 0,
+                utc_approximate,
+            };
+            (monitor, totals)
+        })
+        .collect())
+}
+
+/// Minutes of a service made of several monitors, from the monitor series of the minute
+/// rollups.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct DownMinutes {
+    /// Minutes where at least one monitor has an up or down beat (pending counts as down).
+    pub counted: u64,
+    /// Minutes where at least one monitor has a down or pending beat.
+    pub down: u64,
+    /// Minute rollups of the monitors reach back to the start of the range, so it is not
+    /// missing minutes to retention or a late import. Without it the caller treats the range
+    /// as no data.
+    pub covered: bool,
+}
+
+/// Counted and down minutes of `monitors` taken together over `[from_ms, to_ms)`, each minute
+/// once however many monitors beat in it. Maintenance-only minutes are not counted.
+pub(crate) fn down_minutes(
+    conn: &Connection,
+    monitors: &[MonitorId],
+    from_ms: i64,
+    to_ms: i64,
+) -> duckdb::Result<DownMinutes> {
+    if monitors.is_empty() || from_ms >= to_ms {
+        return Ok(DownMinutes::default());
+    }
+    let ids = id_list(monitors);
+    let rows = series_sql(Resolution::Minute, Series::Monitor, &ids);
+    let (counted, down): (i64, i64) = conn.query_row(
+        &format!(
+            "SELECT count(DISTINCT bucket) FILTER (WHERE up + down + pending > 0),
+                    count(DISTINCT bucket) FILTER (WHERE down + pending > 0)
+             FROM ({rows}) AS rows (monitor_id, bucket, up, down, pending, maintenance,
+                                    latency_min, latency_max, latency_sum, latency_count)"
+        ),
+        [ts(from_ms), ts(to_ms)],
+        |r| Ok((r.get(0)?, r.get(1)?)),
+    )?;
+    let covered: bool = conn.query_row(
+        &format!(
+            "SELECT EXISTS (
+                 SELECT 1 FROM rollup_minute
+                 WHERE monitor_id IN ({ids}) AND probe_id IS NULL AND bucket <= $1
+                 UNION ALL
+                 SELECT 1 FROM kuma_stats
+                 WHERE resolution = {kuma} AND monitor_id IN ({ids}) AND bucket <= $1)",
+            kuma = Resolution::Minute.kuma_code()
+        ),
+        [ts(from_ms)],
+        |r| r.get(0),
+    )?;
+    Ok(DownMinutes {
+        counted: counted as u64,
+        down: down as u64,
+        covered,
+    })
 }
 
 /// Latency of one monitor's series per bucket in `[from_ms, to_ms)`: up heartbeats, or the

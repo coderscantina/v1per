@@ -25,7 +25,20 @@ struct Person {
     instance_admin: bool,
     grants: BTreeMap<String, String>,
     sees: BTreeMap<String, String>,
+    /// Nodes where the person also holds `slas.manage`.
+    #[serde(default)]
+    manage_slas: BTreeSet<String>,
     placeholders: BTreeSet<String>,
+}
+
+/// The capabilities `person` holds on `node` with `role` there: the role's set from the
+/// fixture, then `slas.manage` where a grant above allows it.
+fn capabilities(fixture: &Fixture, person: &Person, node: &str, role: &str) -> Value {
+    let mut capabilities = fixture.roles[role].clone();
+    if person.manage_slas.contains(node) {
+        capabilities.push("slas.manage".to_owned());
+    }
+    serde_json::json!(capabilities)
 }
 
 /// Creates `tree` below `parent` as the admin, recording every node's ID by name.
@@ -86,7 +99,12 @@ async fn every_grant_shows_exactly_its_nodes_and_capabilities() {
             match node["role"].as_str() {
                 Some(role) => {
                     assert_eq!(node["name"], name.as_str());
-                    assert_eq!(node["capabilities"], serde_json::json!(fixture.roles[role]));
+                    assert_eq!(
+                        node["capabilities"],
+                        capabilities(&fixture, person, &name, role),
+                        "{} {name}",
+                        person.name
+                    );
                     sees.insert(name, role.to_owned());
                 }
                 None => {
@@ -112,7 +130,9 @@ async fn every_grant_shows_exactly_its_nodes_and_capabilities() {
                     assert_eq!(node.json()["node"]["role"], role.as_str());
                     assert_eq!(
                         node.json()["node"]["capabilities"],
-                        serde_json::json!(fixture.roles[role])
+                        capabilities(&fixture, person, name, role),
+                        "{} {name}",
+                        person.name
                     );
                 }
                 None => assert_eq!(

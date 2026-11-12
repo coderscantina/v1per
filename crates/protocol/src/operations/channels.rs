@@ -565,6 +565,16 @@ pub enum DeliveryEvent {
     CertificateExpiry,
     ProbeOffline,
     Test,
+    /// 75 % of an SLA's downtime budget used in a period.
+    SlaBudgetWarning,
+    /// An SLA's availability target missed, by the service or one monitor.
+    SlaAvailabilityBreach,
+    /// An incident under an SLA without a response by its deadline.
+    SlaResponseMissed,
+    /// An incident under an SLA not resolved by its deadline.
+    SlaResolutionMissed,
+    /// A monitor's average latency above an SLA's target at period close.
+    SlaLatencyBreach,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, JsonSchema)]
@@ -588,6 +598,7 @@ pub struct Delivery {
     #[ts(optional)]
     pub channel: Option<ChannelId>,
     pub event: DeliveryEvent,
+    /// The monitor the message is about; for SLA events only a per-monitor breach has one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub monitor: Option<MonitorId>,

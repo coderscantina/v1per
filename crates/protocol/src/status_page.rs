@@ -5,7 +5,8 @@
 //! same [`LiveFrame`](crate::live::LiveFrame)s as `/api/subscribe` on the page's topic.
 //!
 //! Every type here is built per audience. None carries a node, a monitor or static component
-//! ID, a monitor's target, a person, a probe of a public page, or a draft incident.
+//! ID, a monitor's target, a person, a probe of a public page, a draft incident, or an SLA's
+//! ID, monitors, channels or incidents.
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -14,6 +15,7 @@ use ts_rs::TS;
 use crate::ids::{IncidentId, PageComponentId, PageGroupId};
 use crate::operations::incidents::{Impact, IncidentState};
 use crate::operations::monitors::{HeartbeatStatus, LatencyPoint};
+use crate::operations::slas::{SlaCombine, SlaOutcome, SlaPeriodKind};
 
 /// The color of a component, a day or the whole page, from best to worst. Maintenance ranks
 /// above operational and below every outage (monitoring contract, Component color and page
@@ -162,6 +164,8 @@ pub struct PageSnapshot {
     pub incidents: Vec<PublicIncident>,
     /// Maintenance under way or starting within 14 days.
     pub maintenance: Vec<PublicMaintenance>,
+    /// The SLAs the page shows, in the page's order.
+    pub slas: Vec<PageSla>,
     /// `page:<id>@<seq>`: subscribe to `<base>/events` from here to follow the snapshot.
     pub cursor: String,
     pub generated_at: i64,
@@ -300,6 +304,136 @@ pub struct PublicMaintenance {
     #[ts(optional)]
     pub ends_at: Option<i64>,
     pub components: Vec<PageComponentId>,
+}
+
+/// An SLA as a page shows it: targets and aggregates per period, never an incident or a
+/// monitor the page does not show.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSla {
+    pub name: String,
+    /// IANA zone the periods are counted in.
+    pub timezone: String,
+    pub period: SlaPeriodKind,
+    pub combine: SlaCombine,
+    /// The running period, as of the snapshot; absent before the contract starts.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub current: Option<PageSlaPeriod>,
+    /// Up to 12 closed periods, newest first. A period is listed once frozen, an hour after
+    /// it closes.
+    pub history: Vec<PageSlaPeriod>,
+}
+
+/// One period against the targets it was computed with.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSlaPeriod {
+    /// `YYYY-MM-DD`, the first day in the SLA's timezone.
+    pub start: String,
+    /// First instant of the period.
+    pub starts_at: i64,
+    /// First instant after the period.
+    pub ends_at: i64,
+    /// The worst commitment: missed, at risk, on track or met. No data when none has data.
+    pub outcome: SlaOutcome,
+    /// Absent without an availability target.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub availability: Option<PageSlaAvailability>,
+    /// Absent without a latency target.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub latency: Option<PageSlaLatency>,
+    /// Absent without a response target.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub response: Option<PageSlaClock>,
+    /// Absent without a resolution target.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub resolution: Option<PageSlaClock>,
+    /// Per covered monitor the page shows, by its page component. `internal` audience only.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[ts(as = "Option<Vec<PageSlaMonitor>>", optional)]
+    pub monitors: Vec<PageSlaMonitor>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSlaAvailability {
+    /// In percent.
+    pub target: f64,
+    pub outcome: SlaOutcome,
+    /// In percent: the service in `any_down` mode, the lowest monitor in `each` mode. Absent:
+    /// no data.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub actual: Option<f64>,
+    /// Share of the downtime budget used, 1 being all of it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub budget_used: Option<f64>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSlaLatency {
+    /// Average over up beats, in milliseconds.
+    pub target_ms: u32,
+    pub outcome: SlaOutcome,
+    /// The highest monitor average, in milliseconds. Absent: no data.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub actual_ms: Option<f64>,
+}
+
+/// Response or resolution times of the incidents that started in the period.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSlaClock {
+    pub targets: PageSlaTargets,
+    pub outcome: SlaOutcome,
+    /// Incidents that met or missed the target.
+    pub counted: u32,
+    pub met: u32,
+    /// `met / counted`; absent while none is counted.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub within_target: Option<f64>,
+    /// Average business milliseconds of the counted incidents.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub average_ms: Option<i64>,
+}
+
+/// Business minutes per worst impact; absent: no target for that impact.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSlaTargets {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub major_outage: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub partial_outage: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub degraded: Option<u32>,
+}
+
+/// One covered monitor, named by the page component that shows it.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, JsonSchema)]
+pub struct PageSlaMonitor {
+    pub component: PageComponentId,
+    /// In percent. Absent: no data.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub availability: Option<f64>,
+    /// In `each` mode against the availability target.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub availability_outcome: Option<SlaOutcome>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub latency_ms: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub latency_outcome: Option<SlaOutcome>,
 }
 
 /// `POST <base>/access/password`.

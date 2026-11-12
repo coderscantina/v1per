@@ -614,3 +614,139 @@ async fn hourly_keeps_each_monitor_by_hour_with_empty_hours() {
     );
     storage.close().await.unwrap();
 }
+
+/// Period totals are the numbers the page's 30-day uptime shows for the same days, for
+/// native and imported monitors, and a range edge inside a Kuma-only day uses that day whole.
+#[tokio::test(flavor = "multi_thread")]
+async fn period_totals_equal_the_page_uptime() {
+    let dir = tempfile::tempdir().unwrap();
+    let storage = open(&dir).await;
+    let daily: Vec<KumaStat> = (5..=10)
+        .map(|days_ago| KumaStat {
+            bucket_ms: NOW_MS - days_ago * DAY_MS,
+            ping: Some(20.0),
+            ping_min: Some(10.0),
+            ping_max: Some(40.0),
+            up: 90,
+            down: 10,
+            extras: (days_ago == 5).then(|| r#"{"maintenance":4}"#.to_owned()),
+        })
+        .collect();
+    storage
+        .import_kuma_stats(MonitorId(2), Resolution::Day, daily)
+        .await
+        .unwrap();
+    admit_visible(
+        &storage,
+        &[
+            beat(1, NOW_MS - 20 * DAY_MS, Status::Up, Some(10)),
+            beat(1, NOW_MS - 3 * HOUR_MS, Status::Up, Some(30)),
+            beat(1, NOW_MS - 2 * HOUR_MS, Status::Pending, None),
+            beat(1, NOW_MS - HOUR_MS, Status::Maintenance, None),
+            beat(1, NOW_MS, Status::Down, None),
+            beat(2, NOW_MS - HOUR_MS, Status::Up, Some(30)),
+        ],
+    )
+    .await;
+    let monitors = [MonitorId(1), MonitorId(2), MonitorId(3)];
+    // The 30 UTC days ending with the day that holds NOW_MS.
+    let to = NOW_MS + DAY_MS;
+    let totals = storage
+        .period_totals(&monitors, to - 30 * DAY_MS, to)
+        .await
+        .unwrap()
+        .value;
+    let page = storage
+        .uptime(&monitors, Series::Monitor, UptimeWindow::Month, NOW_MS)
+        .await
+        .unwrap()
+        .value;
+    for monitor in [MonitorId(1), MonitorId(2)] {
+        let (total, counts) = (totals[&monitor], page[&monitor]);
+        assert_eq!(total.up, counts.up);
+        assert_eq!(total.down, counts.down + counts.pending);
+        assert_eq!(total.pending, counts.pending);
+        assert_eq!(total.maintenance, counts.maintenance);
+        assert_eq!(total.uptime(), counts.uptime());
+        assert_eq!(
+            total.latency_sum / total.latency_count as f64,
+            counts.latency.unwrap().avg_ms
+        );
+        assert!(total.has_data && !total.utc_approximate);
+    }
+    assert_eq!(
+        (totals[&MonitorId(1)].up, totals[&MonitorId(1)].down),
+        (2, 2)
+    );
+    assert_eq!(totals[&MonitorId(2)].up, 541);
+    assert!(!totals[&MonitorId(3)].has_data);
+
+    // The range starts mid-day 10 days ago and ends mid-day 6 days ago: the Kuma days that
+    // start inside count whole, the one that starts before the range does not.
+    let cut = storage
+        .period_totals(
+            &[MonitorId(2)],
+            NOW_MS - 8 * DAY_MS + 6 * HOUR_MS,
+            NOW_MS - 6 * DAY_MS + 6 * HOUR_MS,
+        )
+        .await
+        .unwrap()
+        .value[&MonitorId(2)];
+    assert_eq!((cut.up, cut.down), (180, 20));
+    assert!(cut.utc_approximate);
+    storage.close().await.unwrap();
+}
+
+/// Each minute counts once however many monitors beat in it; maintenance-only minutes are
+/// not counted, and a range the minute rollups do not reach back to is reported as uncovered.
+#[tokio::test(flavor = "multi_thread")]
+async fn down_minutes_count_each_minute_once() {
+    let dir = tempfile::tempdir().unwrap();
+    let storage = open(&dir).await;
+    let at = |minute: i64| NOW_MS + minute * MINUTE_MS;
+    let mut beats = Vec::new();
+    for minute in 0..30 {
+        let first = if (10..20).contains(&minute) {
+            Status::Down
+        } else {
+            Status::Up
+        };
+        beats.push(beat(1, at(minute), first, None));
+        if minute < 25 {
+            let second = if minute >= 15 {
+                Status::Down
+            } else {
+                Status::Up
+            };
+            beats.push(beat(2, at(minute), second, None));
+        }
+    }
+    beats.extend([
+        // Disjoint outages, one of them pending.
+        beat(1, at(50), Status::Down, None),
+        beat(2, at(52), Status::Pending, None),
+        // Counted by nobody.
+        beat(1, at(40), Status::Maintenance, None),
+    ]);
+    admit_visible(&storage, &beats).await;
+    let monitors = [MonitorId(1), MonitorId(2)];
+    let minutes = storage
+        .down_minutes(&monitors, NOW_MS, NOW_MS + HOUR_MS)
+        .await
+        .unwrap()
+        .value;
+    // Minutes 0..30 and 50 and 52 are counted; 10..25, 50 and 52 are down (15 overlapping).
+    assert_eq!((minutes.counted, minutes.down), (32, 17));
+    assert!(minutes.covered);
+
+    let earlier = storage
+        .down_minutes(&monitors, NOW_MS - DAY_MS, NOW_MS)
+        .await
+        .unwrap()
+        .value;
+    assert_eq!(
+        (earlier.counted, earlier.down, earlier.covered),
+        (0, 0, false)
+    );
+    storage.close().await.unwrap();
+}

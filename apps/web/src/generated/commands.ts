@@ -69,6 +69,7 @@ import type { PagesHostnameArgs } from './PagesHostnameArgs'
 import type { PagesUpdateAccessArgs } from './PagesUpdateAccessArgs'
 import type { PagesUpdateArgs } from './PagesUpdateArgs'
 import type { PagesUpdateLayoutArgs } from './PagesUpdateLayoutArgs'
+import type { PagesUpdateSlasArgs } from './PagesUpdateSlasArgs'
 import type { Preferences } from './Preferences'
 import type { ProbeArgs } from './ProbeArgs'
 import type { ProbeCreated } from './ProbeCreated'
@@ -82,6 +83,13 @@ import type { SecondFactorProof } from './SecondFactorProof'
 import type { ShareTokenArgs } from './ShareTokenArgs'
 import type { ShareTokenCreated } from './ShareTokenCreated'
 import type { ShareTokenRevoked } from './ShareTokenRevoked'
+import type { SlaArgs } from './SlaArgs'
+import type { SlaDeleted } from './SlaDeleted'
+import type { SlaPeriodArgs } from './SlaPeriodArgs'
+import type { SlaPeriodResult } from './SlaPeriodResult'
+import type { SlaResult } from './SlaResult'
+import type { SlasCreateArgs } from './SlasCreateArgs'
+import type { SlasUpdateArgs } from './SlasUpdateArgs'
 import type { TwoFactorConfirmArgs } from './TwoFactorConfirmArgs'
 import type { TwoFactorEnrollment } from './TwoFactorEnrollment'
 import type { TwoFactorStatus } from './TwoFactorStatus'
@@ -144,13 +152,18 @@ export interface Commands {
   'pages.update': { args: PagesUpdateArgs; result: PageDetail; access: 'person'; key: false; reauth: 'never' }
   'pages.updateAccess': { args: PagesUpdateAccessArgs; result: PageDetail; access: 'person'; key: false; reauth: 'never' }
   'pages.updateLayout': { args: PagesUpdateLayoutArgs; result: PageDetail; access: 'person'; key: false; reauth: 'never' }
+  'pages.updateSlas': { args: PagesUpdateSlasArgs; result: PageDetail; access: 'person'; key: false; reauth: 'never' }
   'probes.create': { args: ProbesCreateArgs; result: ProbeCreated; access: 'person'; key: false; reauth: 'never' }
   'probes.revoke': { args: ProbeArgs; result: ProbeResult; access: 'person'; key: false; reauth: 'never' }
   'probes.update': { args: ProbesUpdateArgs; result: ProbeResult; access: 'person'; key: false; reauth: 'never' }
+  'slas.create': { args: SlasCreateArgs; result: SlaResult; access: 'person'; key: false; reauth: 'never' }
+  'slas.delete': { args: SlaArgs; result: SlaDeleted; access: 'person'; key: false; reauth: 'never' }
+  'slas.recompute': { args: SlaPeriodArgs; result: SlaPeriodResult; access: 'person'; key: false; reauth: 'never' }
+  'slas.update': { args: SlasUpdateArgs; result: SlaResult; access: 'person'; key: false; reauth: 'never' }
   'twoFactor.begin': { args: Empty; result: TwoFactorEnrollment; access: 'person'; key: false; reauth: 'handler' }
   'twoFactor.confirm': { args: TwoFactorConfirmArgs; result: RecoveryCodes; access: 'person'; key: false; reauth: 'handler' }
   'twoFactor.disable': { args: Empty; result: TwoFactorStatus; access: 'person'; key: false; reauth: 'always' }
   'twoFactor.regenerateRecoveryCodes': { args: Empty; result: RecoveryCodes; access: 'person'; key: false; reauth: 'always' }
 }
 
-export const commandNames = ['account.changePassword', 'account.updatePreferences', 'apiKeys.create', 'apiKeys.revoke', 'auth.login', 'auth.logout', 'auth.reauthenticate', 'auth.verifySecondFactor', 'channels.create', 'channels.delete', 'channels.test', 'channels.update', 'components.create', 'components.delete', 'components.update', 'incidents.addUpdate', 'incidents.create', 'incidents.delete', 'incidents.publish', 'incidents.unpublish', 'incidents.update', 'instance.testSmtp', 'instance.updateSettings', 'instance.updateSmtp', 'invitations.accept', 'maintenance.create', 'maintenance.delete', 'maintenance.pause', 'maintenance.resume', 'maintenance.update', 'members.invite', 'members.remove', 'members.revokeInvitation', 'members.updateRole', 'monitors.create', 'monitors.delete', 'monitors.move', 'monitors.pause', 'monitors.resume', 'monitors.setManualStatus', 'monitors.update', 'nodes.create', 'nodes.delete', 'nodes.move', 'nodes.rename', 'nodes.reorder', 'nodes.requireTwoFactor', 'pages.claimHostname', 'pages.create', 'pages.createShareToken', 'pages.delete', 'pages.releaseHostname', 'pages.removeLogo', 'pages.revokeShareToken', 'pages.update', 'pages.updateAccess', 'pages.updateLayout', 'probes.create', 'probes.revoke', 'probes.update', 'twoFactor.begin', 'twoFactor.confirm', 'twoFactor.disable', 'twoFactor.regenerateRecoveryCodes'] as const satisfies readonly (keyof Commands)[]
+export const commandNames = ['account.changePassword', 'account.updatePreferences', 'apiKeys.create', 'apiKeys.revoke', 'auth.login', 'auth.logout', 'auth.reauthenticate', 'auth.verifySecondFactor', 'channels.create', 'channels.delete', 'channels.test', 'channels.update', 'components.create', 'components.delete', 'components.update', 'incidents.addUpdate', 'incidents.create', 'incidents.delete', 'incidents.publish', 'incidents.unpublish', 'incidents.update', 'instance.testSmtp', 'instance.updateSettings', 'instance.updateSmtp', 'invitations.accept', 'maintenance.create', 'maintenance.delete', 'maintenance.pause', 'maintenance.resume', 'maintenance.update', 'members.invite', 'members.remove', 'members.revokeInvitation', 'members.updateRole', 'monitors.create', 'monitors.delete', 'monitors.move', 'monitors.pause', 'monitors.resume', 'monitors.setManualStatus', 'monitors.update', 'nodes.create', 'nodes.delete', 'nodes.move', 'nodes.rename', 'nodes.reorder', 'nodes.requireTwoFactor', 'pages.claimHostname', 'pages.create', 'pages.createShareToken', 'pages.delete', 'pages.releaseHostname', 'pages.removeLogo', 'pages.revokeShareToken', 'pages.update', 'pages.updateAccess', 'pages.updateLayout', 'pages.updateSlas', 'probes.create', 'probes.revoke', 'probes.update', 'slas.create', 'slas.delete', 'slas.recompute', 'slas.update', 'twoFactor.begin', 'twoFactor.confirm', 'twoFactor.disable', 'twoFactor.regenerateRecoveryCodes'] as const satisfies readonly (keyof Commands)[]

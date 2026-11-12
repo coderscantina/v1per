@@ -4517,7 +4517,17 @@ dependencies = [
  "v1per-notify",
  "v1per-probe-core",
  "v1per-protocol",
+ "v1per-sla",
  "v1per-storage",
+]
+
+[[package]]
+name = "v1per-sla"
+version = "26.10.20"
+dependencies = [
+ "chrono",
+ "chrono-tz",
+ "thiserror",
 ]
 
 [[package]]

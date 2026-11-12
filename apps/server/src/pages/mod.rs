@@ -31,7 +31,7 @@ use v1per_protocol::envelope::Topic;
 use v1per_protocol::errors::FieldErrorCode;
 use v1per_protocol::ids::{
     ComponentId, IncidentId, MaintenanceId, MonitorId, NodeId, PageComponentId, PageGroupId,
-    PageId, ShareTokenId,
+    PageId, ShareTokenId, SlaId,
 };
 use v1per_protocol::limits::{
     NAME_MAX_CHARS, PAGE_ALLOWED_EMAILS_MAX, PAGE_COMPONENTS_MAX, PAGE_DESCRIPTION_MAX_CHARS,
@@ -44,8 +44,8 @@ use v1per_protocol::operations::pages::{
     Page, PageAccess, PageAccessMode, PageArgs, PageComponent, PageDeleted, PageDetail, PageGroup,
     PageList, PageLogo, PagePreview, PageSettings, PageShareToken, PageSummary, PagesCreateArgs,
     PagesCreateShareTokenArgs, PagesHandlers, PagesHostnameArgs, PagesListArgs, PagesPreviewArgs,
-    PagesUpdateAccessArgs, PagesUpdateArgs, PagesUpdateLayoutArgs, ShareTokenArgs,
-    ShareTokenCreated, ShareTokenRevoked,
+    PagesUpdateAccessArgs, PagesUpdateArgs, PagesUpdateLayoutArgs, PagesUpdateSlasArgs,
+    ShareTokenArgs, ShareTokenCreated, ShareTokenRevoked,
 };
 use v1per_protocol::registry::Snapshot;
 use v1per_protocol::status_page::{Accent, Locale, PageTheme};
@@ -572,6 +572,11 @@ async fn detail(conn: &mut SqliteConnection, page: PageId) -> Result<PageDetail,
     .bind(row.id)
     .fetch_all(&mut *conn)
     .await?;
+    let slas: Vec<i64> =
+        sqlx::query_scalar("SELECT sla_id FROM page_slas WHERE page_id = ? ORDER BY position")
+            .bind(row.id)
+            .fetch_all(&mut *conn)
+            .await?;
     let smtp_configured: bool = sqlx::query_scalar(
         "SELECT smtp_host IS NOT NULL AND smtp_from IS NOT NULL FROM instance_settings WHERE id = 1",
     )
@@ -627,6 +632,7 @@ async fn detail(conn: &mut SqliteConnection, page: PageId) -> Result<PageDetail,
                 created_at: token.created_at,
             })
             .collect(),
+        slas: slas.into_iter().map(SlaId::new).collect(),
         smtp_configured,
     })
 }
@@ -922,6 +928,36 @@ impl PagesHandlers for AppState {
         )
         .bind(row.id)
         .bind(serde_json::to_string(&kept_groups).map_err(ApiError::internal)?)
+        .execute(ctx.conn())
+        .await?;
+        bump(ctx, args.page).await?;
+        changed(ctx, &row, "page.updated").await?;
+        detail(ctx.conn(), args.page).await
+    }
+
+    async fn pages_update_slas(
+        &self,
+        ctx: &mut CommandCtx,
+        args: PagesUpdateSlasArgs,
+    ) -> Result<PageDetail, ApiError> {
+        let row = locate(
+            ctx,
+            args.page,
+            Capability::PagesManage,
+            args.expected_revision,
+        )
+        .await?;
+        let slas = crate::slas::check_page_selection(ctx.conn(), row.node(), &args.slas).await?;
+        sqlx::query("DELETE FROM page_slas WHERE page_id = ?")
+            .bind(row.id)
+            .execute(ctx.conn())
+            .await?;
+        sqlx::query(
+            "INSERT INTO page_slas (page_id, sla_id, position)
+             SELECT ?1, value, key FROM json_each(?2)",
+        )
+        .bind(row.id)
+        .bind(serde_json::to_string(&slas).map_err(ApiError::internal)?)
         .execute(ctx.conn())
         .await?;
         bump(ctx, args.page).await?;

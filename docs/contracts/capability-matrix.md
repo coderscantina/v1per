@@ -8,6 +8,7 @@ Milestone 04 finalizes the role meaning proposed in [0001](../decisions/0001-nod
 - The effective role on a node is the highest grant on the node or any ancestor. Grants only add; there are no deny rules.
 - The instance admin acts as owner of the root, so as owner everywhere.
 - Every node-scoped operation resolves a `NodeScope` first. A node the caller cannot read answers `not_found`, byte for byte like a node that does not exist. A readable node without the needed capability answers `forbidden`.
+- SLA writes are the one rule that looks at where a grant sits, not only at the effective role: they need Admin through a grant above the SLA's node ([0012](../decisions/0012-slas.md)).
 - Checks run in a fixed order: scope (`not_found`), capability (`forbidden`), rank (`forbidden`), fresh login (`reauthentication_required`), expected revision (`stale_revision`). A refusal never says more than the caller may know.
 
 ## Roles and capabilities
@@ -25,6 +26,9 @@ Milestone 04 finalizes the role meaning proposed in [0001](../decisions/0001-nod
 | `members.manage`     | Invite, change and remove grants under the rank rule, require 2FA      |        |        |   x   |   x   |
 | `node.move`          | Move the node to another parent                                        |        |        |       |   x   |
 | `node.delete`        | Delete the node and, with confirmation, its subtree                    |        |        |       |   x   |
+| `slas.manage`        | Create, change, delete and recompute SLAs ([0012](../decisions/0012-slas.md)) |        |        |  x*   |  x*   |
+
+\* `slas.manage` is not part of a role. A node lists it when the person holds Admin or Owner through a grant on a strict ancestor, or is the instance admin. A client Admin on their own node lacks it there, and API keys never hold it.
 
 Capabilities without an operation yet are the contract for the milestones named in the table.
 
@@ -74,6 +78,9 @@ Capabilities without an operation yet are the contract for the milestones named 
 | `components.create`, `components.update`, `components.delete` | `pages.manage` on the component's node                              | admin and up                   |
 | `pages.list`, `pages.get`, `pages.preview` | `node.read` on the page's node                                                    | viewer and up                  |
 | `pages.create`, `pages.update`, `pages.updateAccess`, `pages.updateLayout`, `pages.claimHostname`, `pages.releaseHostname`, `pages.removeLogo`, `pages.delete`, `pages.createShareToken`, `pages.revokeShareToken`, logo upload | `pages.manage` on the page's node; layout targets on that node or below | admin and up |
+| `slas.list`, `slas.get`, `slas.period` | `node.read` on the SLA's node                                                             | viewer and up                  |
+| `slas.create`, `slas.update`, `slas.delete`, `slas.recompute` | `slas.manage`: Admin or Owner through a grant on a strict ancestor of the SLA's node, or the instance admin. A grant on the node itself does not count, so a client Admin there reads only; `monitors` on the node or below, `channels` on the node or an ancestor | admin and up on an ancestor |
+| `pages.updateSlas`                     | `pages.manage` on the page's node; each SLA on that node or below                         | admin and up                   |
 | `incidents.publications`               | `node.read` on the incident's node; lists only pages on nodes the caller reads            | viewer and up                  |
 | `incidents.publish`, `incidents.unpublish` | `incidents.manage` on the incident's node and on the page's node; publishing needs the page to show one of the incident's targets | member and up |
 | `incidents.create` (publication)       | Publishes to the pages showing a target on whose node the author has `incidents.manage`  | member and up                  |
@@ -91,7 +98,7 @@ Taken from holocron's R-RANK and applied to effective roles on the node:
 
 ## API keys
 
-A key reaches one node and its subtree, with a set of capabilities. On every request it acts as its owner with the owner's current role there, never more: the scope is the owner's capabilities on the node intersected with the key's. A key cannot hold `members.manage`, `node.move` or `node.delete`: who may access a node and whether it exists stay with people. Keys call only operations marked `key` in the registry (`nodes.tree`, `nodes.get`, `nodes.create`, `nodes.rename`, `nodes.reorder`, every `monitors.*`, `incidents.*` and `maintenance.*` operation, `probes.list`, `probes.available`, `channels.available`, `components.list`, `pages.list`, `pages.get` and `pages.preview`); anything else is `operation_not_granted`.
+A key reaches one node and its subtree, with a set of capabilities. On every request it acts as its owner with the owner's current role there, never more: the scope is the owner's capabilities on the node intersected with the key's. A key cannot hold `members.manage`, `node.move`, `node.delete` or `slas.manage`: who may access a node, whether it exists and what it is held to stay with people. Keys call only operations marked `key` in the registry (`nodes.tree`, `nodes.get`, `nodes.create`, `nodes.rename`, `nodes.reorder`, every `monitors.*`, `incidents.*` and `maintenance.*` operation, `probes.list`, `probes.available`, `channels.available`, `components.list`, `pages.list`, `pages.get` and `pages.preview`); anything else is `operation_not_granted`.
 
 ## Status page visitors
 

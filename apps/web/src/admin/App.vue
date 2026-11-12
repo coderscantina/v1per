@@ -9,6 +9,7 @@ import { useI18n } from '~/plugins/i18n'
 
 import AppLayout from './layouts/AppLayout.vue'
 import GuestLayout from './layouts/GuestLayout.vue'
+import PrintLayout from './layouts/PrintLayout.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -18,8 +19,8 @@ const online = useOnline()
 
 /** Nothing renders before the first navigation resolves, so no shell query runs signed out. */
 const ready = computed(() => route.matched.length > 0)
-const bare = computed(() => !!(route.meta.guest || route.meta.public || route.meta.enrollment))
-const layout = computed(() => (bare.value ? GuestLayout : AppLayout))
+const bare = computed(() => !!(route.meta.guest || route.meta.public || route.meta.enrollment || route.meta.print))
+const layout = computed(() => (route.meta.print ? PrintLayout : bare.value ? GuestLayout : AppLayout))
 const inShell = computed(() => ready.value && !bare.value)
 
 /**

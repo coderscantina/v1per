@@ -10,6 +10,7 @@ A notification channel sends alerts to email, chat or your own endpoint. Channel
 | Up | A down monitor recovers |
 | Certificate | An http monitor's TLS certificate is about to expire |
 | Probe offline | A remote probe has had no contact for 90 seconds |
+| SLA budget, availability, response, resolution, latency | An SLA is at risk or missed a target, see [SLAs](slas.md#alerts) |
 | Test | You press the test button |
 
 - A monitor alerts the channels linked to it. A new monitor where you pick no channels gets every **Default channel** on its node and the nodes above.
@@ -17,6 +18,7 @@ A notification channel sends alerts to email, chat or your own endpoint. Channel
 - Down and up alerts of a monitor under maintenance are not sent. They show as Suppressed in the delivery log.
 - Certificate alerts are turned on per monitor with **Alert before the certificate expires**. The days come from the instance setting **Certificate warnings**, 7, 14 and 21 by default. They do nothing while the monitor accepts invalid certificates.
 - Probe offline alerts go to every active channel on the probe's own node.
+- SLA alerts go to the channels picked on the SLA.
 - Incidents and maintenance windows do not send alerts themselves.
 
 ## Create a channel
@@ -155,7 +157,7 @@ The channel page has a **Delivery log**, newest first. A monitor's page shows **
 | Column | Shows |
 | --- | --- |
 | State | Pending, Delivered, Failed or Suppressed |
-| Event | Down, Up, Certificate, Probe offline or Test |
+| Event | Down, Up, Certificate, Probe offline, one of the SLA alerts, or Test |
 | Message | The alert text, with the error in red or the provider's answer |
 | Attempts | How many tries so far |
 | When | When it was queued. Pending rows show the next try |
