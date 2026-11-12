@@ -4,7 +4,7 @@ Updated 2026-11-12. Read by agents at the start of a thread; rewrite it before h
 
 ## Branches
 
-`main` is the only branch. No worktrees. The release before this work is `v26.10.20-da7bf8e` (2026-10-20).
+`main` is the only branch, one commit ahead of `origin/main`: `c718657`, a fix that lets `diagnostics` read retention runs stored before 26.11.12. It is not pushed or released. No worktrees. The latest release is `v26.11.12-b392970` (2026-11-12); CI needed three runs because of the flaky crash tests listed under Next.
 
 Merged into `main` on 2026-11-12: milestone 14 (SLAs, evidence in `docs/evidence/m14-slas.md`) and the status page upgrades of [decision 0013](decisions/0013-status-page-upgrades.md):
 
@@ -31,7 +31,7 @@ Committed in `93a45ee`, from the 2026-10-20 PWA thread: the admin app installs t
 
 ## Running
 
-Nothing local. The review demo is stopped; its data is in `kuma/demo/data` (control schema 13, needs `v1per upgrade` before the next start). Production runs on ops01.coderscantina.com under Coolify from `ghcr.io/coderscantina/v1per:latest`.
+Nothing local. The review demo is stopped; its data is in `kuma/demo/data` (control schema 13, needs `v1per upgrade` before the next start). Production runs 26.11.12 on ops01.coderscantina.com (https://monitoring.coderscantina.com) under Coolify from `ghcr.io/coderscantina/v1per:latest`, with `V1PER_MIGRATE=true`. Deployed on 2026-11-12 by `docker compose pull` and `up -d` in `/data/coolify/services/nodkztgpbc5uiss108enwhyn` over ssh as `ubuntu`; the control schema went from 13 to 18 at start. The backup taken just before is `~ubuntu/backups/v1per-pre-26.11.12.tar` on the host, without the secrets key. Until the first hourly retention run after the deploy, `v1per diagnostics` there fails on the old stored run; `c718657` fixes that for later upgrades.
 
 ## Waiting on Mike
 
@@ -49,4 +49,6 @@ Nothing local. The review demo is stopped; its data is in `kuma/demo/data` (cont
 
 1. Bring the milestone index up to date. 03 to 09 have evidence directories but are still listed as in progress with no link, and the status page upgrades have no milestone entry.
 2. Follow-ups from the upgrade work: `scripts/demo-seed.ts` still calls `v1per probe`; one SMTP connection per subscriber mail; "Only some components" with none ticked subscribes to everything; German mails say "Sie" while the page says "du"; the first series colour is close to the overall line on blue accents.
-3. Milestone 12, the integrated release gate.
+3. Flaky crash tests on the CI runners, seen before this work too: `an_import_killed_in_each_step_resumes_without_duplicates` (the server's read-only inbox connection meets a database that still needs recovery, SQLite code 776) and the `failpoints` tests (`child was not killed`).
+4. `AGENTS.md` says parallel worktrees share one `CARGO_TARGET_DIR`. That let one branch's build reuse another's crates and filled the disk on 2026-11-11. Give each worktree its own.
+5. Milestone 12, the integrated release gate.
