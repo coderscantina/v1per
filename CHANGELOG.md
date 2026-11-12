@@ -7,6 +7,23 @@ Commits follow the [Gitmoji](https://gitmoji.dev/) convention.
 
 ### Features
 
+- ✨ cap how far back visitors see and send hourly bars
+- ✨ pick one time frame for the whole status page
+- ✨ set the longest time frame visitors may pick
+
+### Fixes
+
+- 🐛 read retention runs stored by releases before 26.11.12
+
+### Other changes
+
+- 📝 record the 26.11.12 release and the ops01 deploy
+- 📝 document the page time frame and its visitor cap
+
+## 26.11.12
+
+### Features
+
 - ✨ add the sla rules crate
 - ✨ read sla period totals and down minutes
 - ✨ add the sla schema, protocol and crud
