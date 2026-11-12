@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { ResponseRange } from '~/generated'
+
 import ComponentRow from './ComponentRow.vue'
 import { t } from './messages'
 import StatusIcon from './StatusIcon.vue'
@@ -9,7 +11,7 @@ import type { GroupView } from './view'
  * A named group folds open and shut, open at first as the page says; an unnamed one is a plain
  * card. The bars' time axis is labeled once, below the last component.
  */
-defineProps<{ group: GroupView }>()
+defineProps<{ group: GroupView; range: ResponseRange }>()
 </script>
 
 <template>
@@ -42,14 +44,15 @@ defineProps<{ group: GroupView }>()
         :key="component.id"
         :component="component"
         :nested="true"
+        :range="range"
       />
     </ul>
     <p
       aria-hidden="true"
       class="flex justify-between px-4 pb-3.5 text-[13px] text-muted"
     >
-      <span>{{ t('components.daysAgo') }}</span>
-      <span>{{ t('components.today') }}</span>
+      <span>{{ t(`range.ago.${range}`) }}</span>
+      <span>{{ range === '24h' ? t('chart.now') : t('components.today') }}</span>
     </p>
   </details>
   <div
@@ -62,14 +65,15 @@ defineProps<{ group: GroupView }>()
         :key="component.id"
         :component="component"
         :nested="false"
+        :range="range"
       />
     </ul>
     <p
       aria-hidden="true"
       class="flex justify-between px-4 pb-3.5 text-[13px] text-muted"
     >
-      <span>{{ t('components.daysAgo') }}</span>
-      <span>{{ t('components.today') }}</span>
+      <span>{{ t(`range.ago.${range}`) }}</span>
+      <span>{{ range === '24h' ? t('chart.now') : t('components.today') }}</span>
     </p>
   </div>
 </template>

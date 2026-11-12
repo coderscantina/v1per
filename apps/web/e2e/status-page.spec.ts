@@ -190,7 +190,7 @@ test('the page renders from its injected JSON, with keyboard-reachable bars', as
   await expect(page.getByTestId('monitor-detail')).toHaveCount(0)
 
   // One tab stop per strip, today first; arrows move by day, and the label says it all.
-  const strip = page.getByRole('group', { name: 'Last 90 days of API' })
+  const strip = page.getByRole('group', { name: 'History of API over the last 90 days' })
   await expect(strip.locator('[tabindex="0"]')).toHaveCount(1)
   const today = strip.locator('[data-day]').last()
   await today.focus()
@@ -209,6 +209,17 @@ test('the page renders from its injected JSON, with keyboard-reachable bars', as
   await component(page, 'Support').locator('[data-day]').last().hover()
   await expect(page.getByTestId('bar-popover')).toContainText('Operational')
   await capture(page, 'bar-tooltip-desktop-light', false)
+
+  // One time frame for the whole page, kept in the address: 24 hours shows hourly bars.
+  const switcher = page.getByRole('group', { name: 'Time frame' })
+  await switcher.getByRole('button', { name: '24 h' }).click()
+  await expect(page).toHaveURL(/[?&]range=24h/)
+  await expect(component(page, 'API').locator('[data-hour]')).toHaveCount(24)
+  await expect(page.getByTestId('page-figures')).toContainText('Uptime, 24 hours')
+  await page.reload()
+  await expect(switcher.getByRole('button', { name: '24 h' })).toHaveAttribute('aria-pressed', 'true')
+  await switcher.getByRole('button', { name: '7 d' }).click()
+  await expect(component(page, 'API').locator('[data-day]')).toHaveCount(7)
   await context.close()
 
   for (const [name, viewport] of Object.entries(viewports)) {
@@ -247,9 +258,10 @@ test('a grant holder sees internal components, response times and probes', async
       const detail = component(page, 'API').getByTestId('monitor-detail')
       await expect(detail).toContainText('Response time')
       // Points come from rollups, so a fresh monitor may have none yet.
-      await expect(detail.getByRole('img', { name: /over the last 24 hours/ }).or(detail.getByText('No response times in the last 24 hours.'))).toBeVisible()
+      // The team opens on the longest time frame, 90 days.
+      await expect(detail.getByRole('img', { name: /over the last 90 days/ }).or(detail.getByText('No response times in the last 90 days.'))).toBeVisible()
       // The team gets a line per probe, named by the probe.
-      await expect(detail.getByRole('list', { name: 'Shown lines' }).getByRole('button')).not.toHaveCount(0)
+      await expect(detail.getByRole('list', { name: 'Lines' }).getByRole('button')).not.toHaveCount(0)
       await expect(detail.locator('[data-probe]').first()).toContainText('Up')
       await expectAccessible(page)
       await capture(page, `internal-${name}-${colorScheme}`)
@@ -259,7 +271,7 @@ test('a grant holder sees internal components, response times and probes', async
 })
 
 test('a visitor sees response times, never probes, once the page shows them to everyone', async ({ browser }) => {
-  await command('pages.update', { page: ids.private, slug: privateSlug, title: 'Partner status', locales: ['en', 'de'], response_times: true })
+  await command('pages.update', { page: ids.private, slug: privateSlug, title: 'Partner status', locales: ['en', 'de'], response_times: true, public_range: '30d' })
   // Points come from rollups, so wait for the first one.
   await expect
     .poll(async () => {
@@ -272,13 +284,17 @@ test('a visitor sees response times, never probes, once the page shows them to e
 
   const page = await visit(browser, `/s/${privateSlug}/t/${shareToken}`, { colorScheme: 'dark' })
   const detail = component(page, 'Partner API').getByTestId('monitor-detail')
-  await expect(detail.getByRole('img', { name: /Average .* over the last 24 hours/ })).toBeVisible()
+  // Visitors open on the page's longest time frame.
+  await expect(detail.getByRole('img', { name: /Average .* over the last 30 days/ })).toBeVisible()
   // Percentiles arrive with the full answer; no location is shown without the page's say.
   const p95 = detail.locator('dd').nth(2)
   await expect(p95).toHaveText(/\d+(\.\d+)? (ms|s)/)
-  await expect(detail.getByRole('list', { name: 'Shown lines' })).toHaveCount(0)
-  await detail.getByRole('button', { name: '7 d' }).click()
-  await expect(detail.getByRole('button', { name: '7 d' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(detail.getByRole('list', { name: 'Lines' })).toHaveCount(0)
+  const switcher = page.getByRole('group', { name: 'Time frame' })
+  // The page lets visitors go back 30 days.
+  await expect(switcher.getByRole('button', { name: '90 d' })).toHaveCount(0)
+  await switcher.getByRole('button', { name: '7 d' }).click()
+  await expect(switcher.getByRole('button', { name: '7 d' })).toHaveAttribute('aria-pressed', 'true')
   await expect(detail.getByRole('img', { name: /over the last 7 days/ }).or(detail.getByText('No response times in the last 7 days.'))).toBeVisible()
   await expect(p95).toHaveText(/\d+(\.\d+)? (ms|s)/)
   await expect(detail.locator('[data-probe]')).toHaveCount(0)

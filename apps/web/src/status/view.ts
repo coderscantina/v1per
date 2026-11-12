@@ -3,22 +3,28 @@ import type {
   Impact,
   IncidentState,
   PageAudience,
+  PageBar,
+  PageHour,
   PageSnapshot,
   PageStatus,
   Postmortem,
   PublicIncident,
   PublicIncidentUpdate,
+  ResponseRange,
 } from '~/generated'
 
+import { rangeDays, rangeSpan } from './range'
 import { slaView, type SlaView } from './sla'
-import { countsOf, pageBasis, type Counts, type UptimeBasis } from './uptime'
+import { componentBasis, countsOf, pageBasis, uptimeOf, type Counts, type UptimeBasis } from './uptime'
 
 /** A status as the page paints it: one of the page statuses, or `none` for a day or monitor without data. */
 export type Tone = PageStatus | 'none'
 
+/** When a bar starts: a local day of the page (`YYYY-MM-DD`), or a UTC hour (Unix ms). */
+export type BarTime = { day: string } | { hour: number }
+
 export interface BarView {
-  /** `YYYY-MM-DD` in the page timezone. */
-  day: string
+  time: BarTime
   status: Tone
   uptime?: number
   approximate: boolean
@@ -33,8 +39,10 @@ export interface ComponentView {
   name: string
   description: string
   status: Tone
-  uptime?: number
-  bars: BarView[]
+  /** Local days, oldest first, as far back as the audience's longest range. */
+  days: BarView[]
+  /** The last 24 hours, oldest first. */
+  hours: BarView[]
   detail?: ComponentDetail
 }
 
@@ -92,13 +100,13 @@ export interface MaintenanceView {
   components: string[]
 }
 
-/** The page's headline figures. */
+/** The page's headline figures over its time frame. */
 export interface PageFigures {
-  /** The mean of the components' 90-day uptime; absent when none has data. */
+  /** The mean of the components' uptime; absent when none has data. */
   uptime?: number
   /** What `uptime` stands on. */
   basis: UptimeBasis
-  /** Incidents open now or resolved within the bars' 90 days. */
+  /** Incidents open now or resolved within the time frame. */
   incidents: number
   /** When the next maintenance starts: `now` while one is under way, absent when none is planned. */
   maintenance?: number | 'now'
@@ -119,8 +127,31 @@ export interface PageView {
   maintenance: MaintenanceView[]
   /** The SLAs the page shows, in the page's order. */
   slas: SlaView[]
-  figures: PageFigures
+  /** When each listed incident started and ended, for counting them per time frame. */
+  incidentSpans: { startedAt: number; resolvedAt?: number }[]
+  /** When the next maintenance starts: `now` while one is under way, absent when none is planned. */
+  nextMaintenance?: number | 'now'
+  /** The longest time frame the audience may pick. */
+  rangeMax: ResponseRange
   generatedAt: number
+}
+
+/** A component's bars over `range`: hours over 24 hours, days otherwise. */
+export function barsIn(component: ComponentView, range: ResponseRange): BarView[] {
+  return range === '24h' ? component.hours : component.days.slice(-rangeDays[range])
+}
+
+/** The headline figures over `range`, at `now`. */
+export function pageFigures(view: PageView, range: ResponseRange, now: number): PageFigures {
+  const bases = view.groups.flatMap((group) => group.components.map((component) => componentBasis(barsIn(component, range))))
+  const uptimes = bases.flatMap((basis) => uptimeOf(basis.counts) ?? [])
+  const since = now - rangeSpan(range)
+  return {
+    uptime: uptimes.length > 0 ? uptimes.reduce((sum, uptime) => sum + uptime, 0) / uptimes.length : undefined,
+    basis: pageBasis(bases),
+    incidents: view.incidentSpans.filter((span) => (span.resolvedAt ?? now) >= since).length,
+    maintenance: view.nextMaintenance,
+  }
 }
 
 const rank: Record<Tone, number> = {
@@ -218,6 +249,16 @@ export function pageView(snapshot: PageSnapshot, base: string): PageView {
   for (const group of snapshot.groups) for (const component of group.components) names.set(component.id, component.name)
   const titles = new Map(snapshot.incidents.map((incident) => [incident.id, incident.title]))
 
+  const bar = (wire: PageBar | PageHour, time: BarTime): BarView => ({
+    time,
+    status: wire.status ?? 'none',
+    uptime: wire.uptime,
+    approximate: 'utc_approximate' in wire ? (wire.utc_approximate ?? false) : false,
+    maintenance: wire.maintenance ?? false,
+    incidents: (wire.incidents ?? []).flatMap((id) => titles.get(id) ?? []),
+    counts: countsOf(wire),
+  })
+
   const groups = snapshot.groups.map((group): GroupView => {
     const components = group.components.map(
       (component): ComponentView => ({
@@ -225,17 +266,9 @@ export function pageView(snapshot: PageSnapshot, base: string): PageView {
         name: component.name,
         description: component.description,
         status: component.status ?? 'none',
-        uptime: component.uptime_90d,
         detail: component.detail,
-        bars: component.bars.map((bar) => ({
-          day: bar.day,
-          status: bar.status ?? 'none',
-          uptime: bar.uptime,
-          approximate: bar.utc_approximate ?? false,
-          maintenance: bar.maintenance ?? false,
-          incidents: (bar.incidents ?? []).flatMap((id) => titles.get(id) ?? []),
-          counts: countsOf(bar),
-        })),
+        days: component.bars.map((day) => bar(day, { day: day.day })),
+        hours: component.hours.map((hour) => bar(hour, { hour: hour.at })),
       })
     )
     return {
@@ -263,7 +296,6 @@ export function pageView(snapshot: PageSnapshot, base: string): PageView {
     // Under way first, then by start.
     .sort((a, b) => Number(b.active) - Number(a.active) || (a.startsAt ?? 0) - (b.startsAt ?? 0))
 
-  const uptimes = groups.flatMap((group) => group.components.flatMap((component) => component.uptime ?? []))
   const next = maintenance[0]
 
   return {
@@ -278,12 +310,9 @@ export function pageView(snapshot: PageSnapshot, base: string): PageView {
     names,
     maintenance,
     slas: snapshot.slas.map((sla) => slaView(sla, names)),
-    figures: {
-      uptime: uptimes.length > 0 ? uptimes.reduce((sum, uptime) => sum + uptime, 0) / uptimes.length : undefined,
-      basis: pageBasis(groups.flatMap((group) => group.components)),
-      incidents: snapshot.incidents.length,
-      maintenance: next?.active ? 'now' : next?.startsAt,
-    },
+    incidentSpans: snapshot.incidents.map((incident) => ({ startedAt: incident.started_at, resolvedAt: incident.resolved_at })),
+    nextMaintenance: next?.active ? 'now' : next?.startsAt,
+    rangeMax: snapshot.range_max,
     generatedAt: snapshot.generated_at,
   }
 }

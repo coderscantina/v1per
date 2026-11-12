@@ -1,6 +1,7 @@
 import type { Locale } from '~/generated/Locale'
 
 import { t } from './messages'
+import type { BarTime } from './view'
 
 /**
  * An uptime ratio as a percentage with up to two decimals, rounded down so a day with one
@@ -14,6 +15,25 @@ export function formatUptime(ratio: number, locale: Locale): string {
 /** A bar's `YYYY-MM-DD` as a date. The day is already local to the page, so it is read as UTC. */
 export function formatDay(day: string, locale: Locale): string {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${day}T00:00:00Z`))
+}
+
+const HOUR_MS = 3_600_000
+
+const hourFormat = (locale: Locale) => new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+/** Where a bar starts: its day, or the start of its hour in the visitor's timezone. */
+export function formatBarStart(time: BarTime, locale: Locale): string {
+  return 'day' in time ? formatDay(time.day, locale) : hourFormat(locale).format(time.hour)
+}
+
+/** Where an hour's bar ends, in the visitor's timezone. */
+export function formatBarEnd(time: { hour: number }, locale: Locale): string {
+  return hourFormat(locale).format(time.hour + HOUR_MS)
+}
+
+/** A bar's whole span: its day, or its hour as "Nov 12, 14:00 – 15:00". */
+export function formatBar(time: BarTime, locale: Locale): string {
+  return 'day' in time ? formatDay(time.day, locale) : hourFormat(locale).formatRange(time.hour, time.hour + HOUR_MS)
 }
 
 /** A moment in the visitor's own timezone, named. */

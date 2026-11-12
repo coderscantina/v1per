@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest'
 import type { PageBar, PageSnapshot, PublicComponent } from '~/generated'
 
 import { formatAge, formatUptime } from './format'
-import { byMonth, pageView, worst } from './view'
+import { byMonth, pageFigures, pageView, worst } from './view'
 
 const day = (index: number): PageBar => ({ day: `2026-07-${String(index + 1).padStart(2, '0')}` })
 
 function component(id: string, name: string, extra: Partial<PublicComponent> = {}): PublicComponent {
-  return { id, name, description: '', bars: [day(0), day(1)], ...extra }
+  return { id, name, description: '', bars: [day(0), day(1)], hours: [], ...extra }
 }
 
 function snapshot(extra: Partial<PageSnapshot> = {}): PageSnapshot {
@@ -19,6 +19,7 @@ function snapshot(extra: Partial<PageSnapshot> = {}): PageSnapshot {
     timezone: 'Europe/Vienna',
     locale: 'en',
     audience: 'public',
+    range_max: '90d',
     status: 'operational',
     groups: [],
     incidents: [],
@@ -58,9 +59,9 @@ describe('pageView', () => {
       '/s/acme'
     )
     const [api, email] = view.groups[0]?.components ?? []
-    expect(api?.bars).toEqual([
+    expect(api?.days).toEqual([
       {
-        day: '2026-07-01',
+        time: { day: '2026-07-01' },
         status: 'none',
         uptime: undefined,
         approximate: false,
@@ -69,7 +70,7 @@ describe('pageView', () => {
         counts: { up: 0, down: 0, maint: 0 },
       },
       {
-        day: '2026-07-02',
+        time: { day: '2026-07-02' },
         status: 'partial_outage',
         uptime: 0.97,
         approximate: true,
@@ -148,7 +149,8 @@ describe('pageView', () => {
     ])
   })
 
-  it('sums up uptime, incidents and the next maintenance', () => {
+  it('sums up uptime, incidents and the next maintenance over the time frame', () => {
+    const now = Date.UTC(2026, 6, 10)
     const view = pageView(
       snapshot({
         groups: [
@@ -156,10 +158,17 @@ describe('pageView', () => {
             id: 'g',
             name: '',
             default_open: true,
-            components: [component('c1', 'API', { uptime_90d: 0.99 }), component('c2', 'Email', { uptime_90d: 0.97 }), component('c3', 'New')],
+            components: [
+              component('c1', 'API', { bars: [{ day: '2026-07-01', up: 1, down: 1 }, { day: '2026-07-02', up: 99, down: 1 }], hours: [{ at: now, up: 4, down: 1 }] }),
+              component('c2', 'Email', { bars: [{ day: '2026-07-02', up: 97, down: 3 }] }),
+              component('c3', 'New'),
+            ],
           },
         ],
-        incidents: [{ id: 'i1', title: 'Slow', state: 'resolved', started_at: 0, resolved_at: 1, components: [], updates: [] }],
+        incidents: [
+          { id: 'i1', title: 'Slow', state: 'resolved', started_at: now - 9 * 86_400_000, resolved_at: now - 8 * 86_400_000, components: [], updates: [] },
+          { id: 'i2', title: 'Down', state: 'investigating', started_at: now - 3_600_000, components: [], updates: [] },
+        ],
         maintenance: [
           { title: 'Later', description: '', active: false, starts_at: 900, components: [] },
           { title: 'Sooner', description: '', active: false, starts_at: 500, components: [] },
@@ -167,10 +176,11 @@ describe('pageView', () => {
       }),
       ''
     )
-    expect(view.figures.uptime).toBeCloseTo(0.98)
-    expect(view.figures.incidents).toBe(1)
-    expect(view.figures.maintenance).toBe(500)
-    expect(pageView(snapshot(), '').figures).toMatchObject({ uptime: undefined, incidents: 0, maintenance: undefined })
+    // One day each: the API's last day, 99 %, and Email's, 97 %.
+    expect(pageFigures(view, '24h', now)).toMatchObject({ uptime: 0.8, incidents: 1, maintenance: 500 })
+    expect(pageFigures(view, '7d', now).uptime).toBeCloseTo((101 / 102 + 0.97) / 2)
+    expect(pageFigures(view, '30d', now).incidents).toBe(2)
+    expect(pageFigures(pageView(snapshot(), ''), '90d', now)).toMatchObject({ uptime: undefined, incidents: 0, maintenance: undefined })
   })
 
   it('places the logo below the base', () => {

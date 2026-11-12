@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import { formatDay, formatUptime } from './format'
+import type { ResponseRange } from '~/generated'
+
+import { formatBar, formatUptime } from './format'
 import { locale, t } from './messages'
 import { toneLabel } from './tones'
 import { explainDay } from './uptime'
-import type { BarView } from './view'
+import type { BarView, BarTime } from './view'
 
 /**
- * 90 daily bars with a popover for the day under the pointer or the keyboard. The strip is one
- * tab stop: arrow keys, Home and End move between days, Escape closes the popover. Each bar's
- * label carries everything the popover shows, the checks behind the day's uptime included, so
- * the popover itself stays out of the accessibility tree.
+ * The bars of the page's time frame, days or hours, with a popover for the bar under the pointer
+ * or the keyboard. The strip is one tab stop: arrow keys, Home and End move between bars, Escape
+ * closes the popover. Each bar's label carries everything the popover shows, the checks behind
+ * its uptime included, so the popover itself stays out of the accessibility tree.
  */
-const props = defineProps<{ bars: BarView[]; name: string }>()
+const props = defineProps<{ bars: BarView[]; name: string; range: ResponseRange }>()
 
 const strip = useTemplateRef<HTMLElement>('strip')
 const buttons = useTemplateRef<HTMLButtonElement[]>('buttons')
@@ -21,19 +23,30 @@ const active = ref<number | null>(null)
 const current = ref(props.bars.length - 1)
 const left = ref(0)
 
+// A new time frame starts over at its newest bar.
+watch(
+  () => props.range,
+  () => {
+    current.value = props.bars.length - 1
+    active.value = null
+  }
+)
+
+const key = (time: BarTime) => ('day' in time ? time.day : String(time.hour))
+
 const POPOVER_WIDTH = 240
 
 /** The checks the day counted, then what applied to it. */
 function details(bar: BarView): { facts: string[]; notes: string[] } {
   const { facts, rules } = explainDay(bar.counts)
   const notes: string[] = []
-  if (bar.maintenance) notes.push(t('bar.maintenance'))
+  if (bar.maintenance) notes.push(t('hour' in bar.time ? 'bar.maintenanceHour' : 'bar.maintenance'))
   if (bar.approximate) notes.push(t('bar.approximate'))
   return { facts, notes: [...notes, ...rules] }
 }
 
 function label(bar: BarView): string {
-  const date = formatDay(bar.day, locale.value)
+  const date = formatBar(bar.time, locale.value)
   const status = bar.status === 'none' ? t('bar.noData') : t(toneLabel[bar.status])
   const head =
     bar.uptime === undefined
@@ -105,7 +118,7 @@ function onFocusout(event: FocusEvent) {
     <div
       ref="strip"
       role="group"
-      :aria-label="t('components.history', { name })"
+      :aria-label="t('components.history', { name, span: t(`chart.span.${range}`) })"
       class="flex h-8 items-stretch gap-px sm:gap-[2px]"
       @keydown="onKeydown"
       @pointermove="onPointer"
@@ -116,10 +129,12 @@ function onFocusout(event: FocusEvent) {
       <button
         v-for="(bar, index) in bars"
         ref="buttons"
-        :key="bar.day"
+        :key="key(bar.time)"
         type="button"
         :data-tone="bar.status"
-        :data-day="bar.day"
+        data-bar
+        :data-day="'day' in bar.time ? bar.time.day : undefined"
+        :data-hour="'hour' in bar.time ? bar.time.hour : undefined"
         :tabindex="index === current ? 0 : -1"
         :aria-label="label(bar)"
         class="min-w-0 flex-1 rounded-[2px] bg-(--tone) transition-opacity"
@@ -134,7 +149,7 @@ function onFocusout(event: FocusEvent) {
       class="pointer-events-none absolute bottom-full z-10 mb-2 flex flex-col gap-1.5 rounded-lg border border-popover-border bg-popover px-3 py-2.5 text-sm text-popover-foreground shadow-soft-lg"
       :style="{ left: `${left}px`, width: `min(${POPOVER_WIDTH}px, 100%)` }"
     >
-      <p class="font-medium text-primary">{{ formatDay(shown.day, locale) }}</p>
+      <p class="font-medium text-primary">{{ formatBar(shown.time, locale) }}</p>
       <p
         class="flex items-center gap-2"
         :data-tone="shown.status"

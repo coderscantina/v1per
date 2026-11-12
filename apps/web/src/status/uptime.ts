@@ -1,13 +1,15 @@
 import type { PageBar } from '~/generated'
 
-import { formatDay } from './format'
+import { formatBarStart, formatBarEnd } from './format'
 import { locale, t, type MessageKey } from './messages'
+import type { BarTime } from './view'
 
 /**
  * How the page's uptime figures were computed, from the checks the snapshot carries, in the
  * monitoring contract's terms: uptime is up checks over up and down checks, retrying checks count
  * as down, checks under maintenance are left out, and a monitor with several probes is down by
- * its quorum. The headline is the plain average of the components' figures.
+ * its quorum. The headline is the plain average of the components' figures. Every figure covers
+ * the bars of the page's time frame: hours over 24 hours, days otherwise.
  */
 
 /** Monitor-level checks; `down` includes the ones still retrying. */
@@ -25,11 +27,11 @@ export function countsOf(wire: Pick<PageBar, 'up' | 'down' | 'maint'>): Counts {
 /** What one uptime figure stands on. */
 export interface UptimeBasis {
   counts: Counts
-  /** First and last day covered, `YYYY-MM-DD`; absent without any check. */
-  from?: string
-  to?: string
-  /** Days from `from` to `to`, both counted. */
-  days: number
+  /** First and last bar covered; absent without any check. */
+  from?: BarTime
+  to?: BarTime
+  /** Bars from `from` to `to`, both counted. */
+  span: number
   /** Some day came from an imported Uptime Kuma daily row, counted by UTC day. */
   imported: boolean
   /** For the headline: how many component figures it averages. */
@@ -37,14 +39,20 @@ export interface UptimeBasis {
 }
 
 interface BarLike {
-  day: string
+  time: BarTime
   counts: Counts
   approximate: boolean
 }
 
 const checked = (counts: Counts) => counts.up + counts.down + counts.maint > 0
 
-/** The basis of a component's 90-day figure: from its first checked day to today. */
+/** `up / (up + down)`; absent without an up or down check. */
+export function uptimeOf(counts: Counts): number | undefined {
+  const total = counts.up + counts.down
+  return total > 0 ? counts.up / total : undefined
+}
+
+/** The basis of a component's figure: from its first checked bar to the last. */
 export function componentBasis(bars: readonly BarLike[]): UptimeBasis {
   const first = bars.findIndex((bar) => checked(bar.counts))
   const covered = first === -1 ? [] : bars.slice(first)
@@ -54,18 +62,18 @@ export function componentBasis(bars: readonly BarLike[]): UptimeBasis {
   )
   return {
     counts,
-    from: covered[0]?.day,
-    to: covered.at(-1)?.day,
-    days: covered.length,
+    from: covered[0]?.time,
+    to: covered.at(-1)?.time,
+    span: covered.length,
     imported: covered.some((bar) => bar.approximate),
   }
 }
 
 /** The basis of the headline: the figures of the components that have one, averaged. */
-export function pageBasis(components: readonly { uptime?: number; bars: readonly BarLike[] }[]): UptimeBasis {
-  const bases = components.filter((component) => component.uptime !== undefined).map((component) => componentBasis(component.bars))
-  const days = bases.flatMap((basis) => (basis.from && basis.to ? [basis] : []))
-  const longest = days.reduce<UptimeBasis | undefined>((best, basis) => (best && best.days >= basis.days ? best : basis), undefined)
+export function pageBasis(components: readonly UptimeBasis[]): UptimeBasis {
+  const bases = components.filter((basis) => uptimeOf(basis.counts) !== undefined)
+  const covered = bases.flatMap((basis) => (basis.from && basis.to ? [basis] : []))
+  const longest = covered.reduce<UptimeBasis | undefined>((best, basis) => (best && best.span >= basis.span ? best : basis), undefined)
   return {
     counts: bases.reduce(
       (sum, basis) => ({ up: sum.up + basis.counts.up, down: sum.down + basis.counts.down, maint: sum.maint + basis.counts.maint }),
@@ -73,7 +81,7 @@ export function pageBasis(components: readonly { uptime?: number; bars: readonly
     ),
     from: longest?.from,
     to: longest?.to,
-    days: longest?.days ?? 0,
+    span: longest?.span ?? 0,
     imported: bases.some((basis) => basis.imported),
     averaged: bases.length,
   }
@@ -91,6 +99,7 @@ function count(value: number): string {
 
 const plurals = {
   days: { one: 'uptime.days.one', other: 'uptime.days.other' },
+  hours: { one: 'uptime.hours.one', other: 'uptime.hours.other' },
   average: { one: 'uptime.average.one', other: 'uptime.average.other' },
 } satisfies Record<string, Record<'one' | 'other', MessageKey>>
 
@@ -113,9 +122,9 @@ function checks(counts: Counts): string[] {
 export function explain(basis: UptimeBasis): Explanation {
   const facts = checks(basis.counts)
   if (basis.from && basis.to) {
-    const from = formatDay(basis.from, locale.value)
-    const to = formatDay(basis.to, locale.value)
-    facts.push(plural(plurals.days, basis.days, { from, to }))
+    const from = formatBarStart(basis.from, locale.value)
+    const to = 'hour' in basis.to ? formatBarEnd(basis.to, locale.value) : formatBarStart(basis.to, locale.value)
+    facts.push(plural('hour' in basis.from ? plurals.hours : plurals.days, basis.span, { from, to }))
   }
   if (basis.averaged !== undefined) facts.push(plural(plurals.average, basis.averaged))
   const rules = [t('uptime.rule.down'), t('uptime.rule.maintenance'), t('uptime.rule.quorum')]
@@ -123,7 +132,7 @@ export function explain(basis: UptimeBasis): Explanation {
   return { facts, rules }
 }
 
-/** One day: its checks, and the rules behind a day that was not all up. */
+/** One bar: its checks, and the rules behind a bar that was not all up. */
 export function explainDay(counts: Counts): Explanation {
   return {
     facts: checked(counts) ? checks(counts) : [],

@@ -10,12 +10,14 @@ import LocaleSwitch from './LocaleSwitch.vue'
 import MaintenanceCard from './MaintenanceCard.vue'
 import { t } from './messages'
 import PageFigures from './PageFigures.vue'
+import { usePageRange } from './range'
+import RangeSwitch from './RangeSwitch.vue'
 import { usePageRoute, viewLabel, views } from './route'
 import SlaCard from './SlaCard.vue'
 import StatusBanner from './StatusBanner.vue'
 import SubscribeDialog from './SubscribeDialog.vue'
 import UptimeRules from './UptimeRules.vue'
-import { pageView } from './view'
+import { pageFigures, pageView } from './view'
 
 /** Where "Powered by" points. */
 const REPOSITORY = 'https://github.com/coderscantina/v1per'
@@ -25,12 +27,14 @@ const props = defineProps<{ snapshot: PageSnapshot; base: string; client: PageCl
 const view = computed(() => pageView(props.snapshot, props.base))
 const route = usePageRoute(props.base)
 const underWay = computed(() => view.value.maintenance.filter((window) => window.active))
+const { range, options: rangeOptions, pick } = usePageRange(() => props.snapshot.range_max)
 
 // The clock for "5 minutes ago" and running durations, ticking once a minute.
 const now = ref(Date.now())
 let tick: ReturnType<typeof setInterval> | undefined
 onMounted(() => (tick = setInterval(() => (now.value = Date.now()), 60_000)))
 onBeforeUnmount(() => clearInterval(tick))
+const figures = computed(() => pageFigures(view.value, range.value, now.value))
 const incidentsKey = computed(() =>
   props.snapshot.incidents
     .map((incident) => `${incident.id}:${incident.state}:${incident.updates.length}:${incident.postmortem?.published_at ?? ''}`)
@@ -100,7 +104,10 @@ const incidentsKey = computed(() =>
           :generated-at="view.generatedAt"
         />
 
-        <PageFigures :figures="view.figures" />
+        <PageFigures
+          :figures="figures"
+          :range="range"
+        />
 
         <section
           v-if="view.active.length > 0 || underWay.length > 0"
@@ -130,14 +137,22 @@ const incidentsKey = computed(() =>
           aria-labelledby="components"
           class="flex flex-col gap-3"
         >
-          <h2
-            id="components"
-            class="text-lg font-semibold text-primary"
-          >{{ t('components.title') }}</h2>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2
+              id="components"
+              class="text-lg font-semibold text-primary"
+            >{{ t('components.title') }}</h2>
+            <RangeSwitch
+              :model-value="range"
+              :options="rangeOptions"
+              @update:model-value="pick"
+            />
+          </div>
           <ComponentGroup
             v-for="group in view.groups"
             :key="group.id"
             :group="group"
+            :range="range"
           />
         </section>
 

@@ -27,10 +27,10 @@
 [data-tone='none'] {
   --tone: var(--tone-none);
 }
-/* A day or SLA period without data is an absence, not a state: its bar stays the quiet `faint`
+/* A bar or SLA period without data is an absence, not a state: its bar stays the quiet `faint`
    gray so a new page's strip does not outshout the colors that mean something. Its label says
    "No data". */
-[data-day][data-tone='none'],
+[data-bar][data-tone='none'],
 [data-period][data-tone='none'] {
   --tone: var(--faint);
 }

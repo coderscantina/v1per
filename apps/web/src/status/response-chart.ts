@@ -6,8 +6,6 @@ import type { LatencyPoint, PageResponseTimes, ResponseMark, ResponseRange, Resp
  * incidents and maintenance.
  */
 
-export const ranges: readonly ResponseRange[] = ['24h', '7d', '30d', '90d']
-
 /** The most series drawn at once; the slowest win. */
 export const SERIES_MAX = 6
 
